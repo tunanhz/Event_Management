@@ -1,0 +1,42 @@
+.card {
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-base);
+}
+
+/* ─── Variants ───────────────────────────────────────────── */
+.default {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.bordered {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+}
+
+/* ─── Hover ──────────────────────────────────────────────── */
+.hoverable:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-primary);
+}
+
+/* ─── Padding ────────────────────────────────────────────── */
+.padsm {
+  padding: var(--space-md);
+}
+
+.padmd {
+  padding: var(--space-xl);
+}
+
+.padlg {
+  padding: var(--space-2xl);
+}
