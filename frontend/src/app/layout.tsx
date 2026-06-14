@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const outfit = Outfit({
-  subsets: ["latin", "latin-ext"],
+const inter = Inter({
+  subsets: ["latin", "latin-ext", "vietnamese"],
   variable: "--font-outfit",
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Event Management",
-    template: "%s | Event Management",
+    default: "EventBox - Nền tảng sự kiện hàng đầu",
+    template: "%s | EventBox",
   },
   description:
-    "Nền tảng quản lý sự kiện toàn diện - Tạo, quản lý và tham gia các sự kiện dễ dàng.",
-  keywords: ["event", "management", "sự kiện", "quản lý"],
+    "Khám phá vô vàn sự kiện âm nhạc, sân khấu, thể thao, workshop & quản lý sự kiện trực tuyến thật dễ dàng trên EventBox.",
+  keywords: ["event", "management", "sự kiện", "quản lý", "vé", "ticketbox"],
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={outfit.variable}>
+    <html lang="vi" className={inter.variable}>
       <body>{children}</body>
     </html>
   );

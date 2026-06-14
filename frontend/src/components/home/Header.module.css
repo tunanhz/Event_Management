@@ -1,0 +1,359 @@
+.headerWrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.header {
+  width: 100%;
+  height: 72px;
+  background: linear-gradient(135deg, #0891B2, #0E7490);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+/* ───────── Logo ───────── */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.logoIcon {
+  width: 28px;
+  height: 28px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.logoText {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.actionIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ───────── Search Bar ───────── */
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 2rem;
+  height: 42px;
+  flex: 1;
+  max-width: 540px;
+  margin: 0 2rem;
+  padding: 0 0.25rem 0 1rem;
+  transition: box-shadow 0.3s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.searchBar:focus-within {
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.35), 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+.searchIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.875rem;
+  color: #1f2937;
+  padding: 0 0.75rem;
+  height: 100%;
+  font-family: inherit;
+}
+
+.searchInput::placeholder {
+  color: #9ca3af;
+}
+
+.searchDivider {
+  width: 1px;
+  height: 24px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+
+.cityButton {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 0.85rem;
+  height: 100%;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+  font-family: inherit;
+  border-radius: 0 2rem 2rem 0;
+}
+
+.cityButton:hover {
+  color: #0891B2;
+}
+
+.cityButton svg {
+  width: 16px;
+  height: 16px;
+  color: #0891B2;
+  flex-shrink: 0;
+}
+
+/* ───────── Right Actions ───────── */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.createEventBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.15rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  border-radius: 2rem;
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.createEventBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.createEventBtn:active {
+  transform: translateY(0);
+}
+
+.loginLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.loginLink:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.loginLink:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.loginLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.langSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 2rem;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.35rem 0.75rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
+  font-family: inherit;
+}
+
+.langSelector:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.langSelector svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ───────── Mobile Header ───────── */
+.mobileHeader {
+  display: none;
+}
+
+.mobileContainer {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.mobileActions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.mobileIconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+}
+
+.mobileIconBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #ffffff;
+}
+
+.mobileIconBtn:active {
+  transform: scale(0.93);
+}
+
+.mobileIconBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ───────── Sub-navigation Bar ───────── */
+.subHeader {
+  width: 100%;
+  height: 40px;
+  background: #090b11;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subContainer {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+.subLink {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.subLink:hover {
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 1200px) {
+  .subContainer {
+    gap: 1.25rem;
+  }
+  .subLink {
+    font-size: 0.75rem;
+  }
+}
+
+/* ───────── Responsive ───────── */
+@media (max-width: 1023px) {
+  .headerWrapper {
+    display: none;
+  }
+
+  .mobileHeader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 64px;
+    background: linear-gradient(135deg, #0891B2, #0E7490);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .logoIcon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .logoText {
+    font-size: 1.25rem;
+  }
+}
