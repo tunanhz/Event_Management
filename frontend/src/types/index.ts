@@ -1,64 +1,40 @@
-/**
- * Shared TypeScript types for the frontend
- * These mirror the backend models
- */
+export type EventStatus = "draft" | "published" | "cancelled" | "completed"
 
-// ─── Event Types ───────────────────────────────────────────
 export interface Event {
-  _id: string;
-  title: string;
-  description: string;
-  date: string;
-  location: string;
-  maxAttendees: number;
-  organizer: string;
-  category: string;
-  status: "draft" | "published" | "cancelled" | "completed";
-  imageUrl?: string;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  title: string
+  description: string
+  date: string
+  location: string
+  capacity: number
+  ticketsSold: number
+  revenue: number
+  status: EventStatus
+  imageUrl?: string
+  createdAt: string
+  updatedAt: string
 }
 
-// ─── User Types ────────────────────────────────────────────
-export interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: "user" | "organizer" | "admin";
-  avatar?: string;
-  createdAt: string;
-  updatedAt: string;
+export interface Attendee {
+  id: string
+  eventId: string
+  name: string
+  email: string
+  ticketType: string
+  status: "checked-in" | "registered" | "cancelled"
+  purchasedAt: string
 }
 
-// ─── API Response Types ────────────────────────────────────
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  message: string;
-  data?: T;
-  meta?: Record<string, unknown>;
+export interface DashboardMetrics {
+  totalEvents: number
+  activeEvents: number
+  totalRevenue: number
+  totalAttendees: number
+  revenueGrowth: number // percentage
+  attendeeGrowth: number // percentage
 }
 
-export interface PaginatedResponse<T> {
-  success: boolean;
-  message: string;
-  data: T[];
-  meta: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
-  };
-}
-
-// ─── Query Types ───────────────────────────────────────────
-export interface PaginationParams {
-  page?: number;
-  limit?: number;
-  sort?: string;
-  order?: "asc" | "desc";
-}
-
-export interface EventFilterParams extends PaginationParams {
-  status?: string;
-  category?: string;
+export interface RevenueData {
+  month: string
+  revenue: number
 }

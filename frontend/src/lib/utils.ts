@@ -1,6 +1,13 @@
 /**
  * Utility functions and constants
  */
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 
 // ─── Date Formatting ───────────────────────────────────────
 export function formatDate(dateString: string): string {
@@ -56,7 +63,22 @@ export function getStatusLabel(status: string): string {
   return labels[status] || status;
 }
 
-// ─── Query String Builder ──────────────────────────────────
+// ─── Locale-safe Number Formatting (avoids SSR hydration mismatch) ────────────
+export function formatNumber(value: number): string {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+export function formatCurrency(value: number): string {
+  if (value >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ đ`
+  }
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 0 })} tr đ`
+  }
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value)
+}
+
+
 export function buildQueryString(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
