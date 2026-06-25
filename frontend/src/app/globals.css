@@ -10,6 +10,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -35,28 +36,29 @@
 
 @layer base {
   :root {
-    /* Soft lavender-indigo with warm undertones for Asian aesthetic */
-    --background: #f8f7ff;
-    --foreground: #1e1b4b;
+    /* Clean cyan/slate colors */
+    --background: #f8fafc;
+    --foreground: #0f172a;
     --card: #ffffff;
-    --card-foreground: #1e1b4b;
+    --card-foreground: #0f172a;
     --popover: #ffffff;
-    --popover-foreground: #1e1b4b;
-    --primary: #6366f1;
+    --popover-foreground: #0f172a;
+    --primary: #0891b2; /* cyan-600 */
+    --primary-hover: #0e7490; /* cyan-700 */
     --primary-foreground: #ffffff;
-    --secondary: #ede9fe;
-    --secondary-foreground: #4c1d95;
-    --muted: #f3f0ff;
-    --muted-foreground: #6b7280;
-    --accent: #fdf4ff;
-    --accent-foreground: #7c3aed;
+    --secondary: #cffafe; /* cyan-100 */
+    --secondary-foreground: #164e63; /* cyan-900 */
+    --muted: #f1f5f9; /* slate-100 */
+    --muted-foreground: #64748b; /* slate-500 */
+    --accent: #e0f2fe; /* sky-100 */
+    --accent-foreground: #0369a1; /* sky-700 */
     --destructive: #f43f5e;
     --destructive-foreground: #ffffff;
-    --border: #e5e0f8;
-    --input: #ede9fe;
-    --ring: #8b5cf6;
-    --chart-1: #8b5cf6;
-    --chart-2: #a78bfa;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #0891b2;
+    --chart-1: #0891b2;
+    --chart-2: #06b6d4;
     --chart-3: #34d399;
     --chart-4: #fb7185;
     --chart-5: #60a5fa;
@@ -102,7 +104,7 @@
   background: var(--muted);
 }
 ::-webkit-scrollbar-thumb {
-  background: #c4b5fd;
+  background: #a5f3fc;
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -128,7 +130,7 @@
 
 /* ─── Gradient Utilities ─────────────────────────────────── */
 .gradient-primary {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #818cf8 100%);
+  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
 }
 .gradient-rose {
   background: linear-gradient(135deg, #fb7185 0%, #f43f5e 100%);
@@ -142,16 +144,16 @@
 
 /* ─── Card soft glow ─────────────────────────────────────── */
 .card-glow {
-  box-shadow: 0 2px 20px 0 rgba(139, 92, 246, 0.08),
-              0 1px 4px 0 rgba(99, 102, 241, 0.06);
+  box-shadow: 0 2px 20px 0 rgba(8, 145, 178, 0.08),
+              0 1px 4px 0 rgba(8, 145, 178, 0.06);
 }
 .card-glow:hover {
-  box-shadow: 0 4px 28px 0 rgba(139, 92, 246, 0.14),
-              0 2px 8px 0 rgba(99, 102, 241, 0.10);
+  box-shadow: 0 4px 28px 0 rgba(8, 145, 178, 0.14),
+              0 2px 8px 0 rgba(8, 145, 178, 0.10);
 }
 
 /* ─── Selection ──────────────────────────────────────────── */
 ::selection {
-  background: rgba(139, 92, 246, 0.25);
-  color: #1e1b4b;
+  background: rgba(8, 145, 178, 0.25);
+  color: #0f172a;
 }

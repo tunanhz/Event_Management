@@ -38,7 +38,7 @@ const statCards = [
     growth: (m: typeof mockMetrics) => `+${m.revenueGrowth}%`,
     icon: Banknote,
     colorClass: "gradient-primary",
-    textColor: "text-violet-700",
+    textColor: "text-cyan-700",
     bgLight: "#f5f3ff",
   },
   {
@@ -141,8 +141,8 @@ export default function DashboardOverview() {
                 <AreaChart data={mockRevenueData}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#0891b2" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
@@ -183,11 +183,11 @@ export default function DashboardOverview() {
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#8b5cf6"
+                    stroke="#0891b2"
                     strokeWidth={2.5}
                     fill="url(#colorRevenue)"
-                    dot={{ r: 3, fill: "#8b5cf6", strokeWidth: 0 }}
-                    activeDot={{ r: 5, fill: "#6366f1" }}
+                    dot={{ r: 3, fill: "#0891b2", strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: "#0e7490" }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -206,7 +206,7 @@ export default function DashboardOverview() {
               {mockEvents.slice(0, 4).map((event, idx) => (
                 <div
                   key={event.id}
-                  className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-violet-50"
+                  className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-cyan-50"
                   style={{ animationDelay: `${idx * 60}ms` }}
                 >
                   <div

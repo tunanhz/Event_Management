@@ -67,13 +67,13 @@ export function Sidebar() {
                   "group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                   isActive
                     ? "gradient-primary text-white shadow-sm"
-                    : "text-gray-600 hover:bg-violet-50 hover:text-violet-700"
+                    : "text-gray-600 hover:bg-cyan-50 hover:text-cyan-700"
                 )}
               >
                 <item.icon
                   className={cn(
                     "mr-3 h-4.5 w-4.5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110",
-                    isActive ? "text-white" : "text-gray-400 group-hover:text-violet-600"
+                    isActive ? "text-white" : "text-gray-400 group-hover:text-cyan-600"
                   )}
                   aria-hidden="true"
                 />
@@ -91,7 +91,7 @@ export function Sidebar() {
           >
             <div
               className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}
+              style={{ background: "linear-gradient(135deg, #0891b2, #0e7490)" }}
             >
               A
             </div>

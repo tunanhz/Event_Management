@@ -86,7 +86,7 @@ export default function EventsPage() {
               return (
                 <div
                   key={event.id}
-                  className="group flex flex-col gap-3 px-6 py-4 transition-colors hover:bg-violet-50/40 sm:flex-row sm:items-center"
+                  className="group flex flex-col gap-3 px-6 py-4 transition-colors hover:bg-cyan-50/40 sm:flex-row sm:items-center"
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
                   {/* Avatar */}
@@ -140,7 +140,7 @@ export default function EventsPage() {
                               fillPercent >= 90
                                 ? "linear-gradient(90deg, #f43f5e, #fb7185)"
                                 : fillPercent >= 60
-                                ? "linear-gradient(90deg, #8b5cf6, #a78bfa)"
+                                ? "linear-gradient(90deg, #0891b2, #22d3ee)"
                                 : "linear-gradient(90deg, #34d399, #6ee7b7)",
                           }}
                         />
@@ -164,13 +164,13 @@ export default function EventsPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-violet-100 hover:text-violet-700 transition-colors"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-cyan-100 hover:text-cyan-700 transition-colors"
                       title="Xem chi tiết"
                     >
                       <Eye className="h-4 w-4" />
                     </button>
                     <button
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-violet-100 hover:text-violet-700 transition-colors"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-cyan-100 hover:text-cyan-700 transition-colors"
                       title="Chỉnh sửa"
                     >
                       <Edit className="h-4 w-4" />

@@ -31,7 +31,7 @@ export function Header() {
       <div className="flex items-center gap-3">
         {/* Notification bell */}
         <button
-          className="relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:bg-violet-50"
+          className="relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:bg-cyan-50"
           aria-label="Thông báo"
         >
           <Bell className="h-4.5 w-4.5 text-gray-500" />
@@ -45,10 +45,10 @@ export function Header() {
         <div className="h-6 w-px" style={{ background: "var(--border)" }} />
 
         {/* User */}
-        <button className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-violet-50">
+        <button className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-cyan-50">
           <div
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-            style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}
+            style={{ background: "linear-gradient(135deg, #0891b2, #0e7490)" }}
           >
             A
           </div>
