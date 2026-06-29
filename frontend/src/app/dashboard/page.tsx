@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { mockMetrics, mockRevenueData, mockEvents } from "@/lib/mock-data"
 import { formatCurrency, formatNumber, formatDateTime } from "@/lib/utils"
+import { useAuth } from "@/context/AuthContext"
 
 const statusMap: Record<string, { label: string; variant: "success" | "warning" | "destructive" | "default" }> = {
   published: { label: "Đã công bố", variant: "success" },
@@ -71,13 +72,16 @@ const statCards = [
 ]
 
 export default function DashboardOverview() {
+  const { user } = useAuth()
+  const welcomeName = user ? user.fullName : "Bạn"
+
   return (
     <div className="space-y-7 animate-fade-up">
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-            Xin chào, Admin! 👋
+            Xin chào, {welcomeName}! 👋
           </h2>
           <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>
             Đây là tổng quan hoạt động của bạn hôm nay, {new Date().toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
@@ -175,8 +179,8 @@ export default function DashboardOverview() {
                       fontSize: "12px",
                       boxShadow: "0 4px 16px rgba(139,92,246,0.1)",
                     }}
-                    formatter={(value: number) => [
-                      `${(value / 1_000_000).toFixed(0)} triệu đồng`,
+                    formatter={(value: any) => [
+                      `${(Number(value || 0) / 1_000_000).toFixed(0)} triệu đồng`,
                       "Doanh thu",
                     ]}
                   />

@@ -5,24 +5,42 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   CalendarDays,
-  Users,
-  Ticket,
   Settings,
   LogOut,
   Sparkles,
+  ShieldCheck,
+  Ticket,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-const navigation = [
-  { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Sự kiện", href: "/dashboard/events", icon: CalendarDays },
-  { name: "Người tham dự", href: "/dashboard/attendees", icon: Users },
-  { name: "Vé & Bán hàng", href: "/dashboard/ticketing", icon: Ticket },
-  { name: "Cài đặt", href: "/dashboard/settings", icon: Settings },
-]
+import { useAuth } from "@/context/AuthContext"
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { user, logout } = useAuth()
+
+  // Generate dynamic navigation items based on user role
+  const navigation = [
+    { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Sự kiện", href: "/dashboard/events", icon: CalendarDays },
+    { name: "Vé & Bán hàng", href: "/dashboard/ticketing", icon: Ticket },
+  ]
+
+  // Only admins can access account management
+  if (user?.role === "ADMIN") {
+    navigation.push({ name: "Quản lý tài khoản", href: "/dashboard/accounts", icon: ShieldCheck })
+  }
+
+  navigation.push({ name: "Cài đặt", href: "/dashboard/settings", icon: Settings })
+
+  const getInitials = (name: string) => {
+    if (!name) return "?"
+    return name.charAt(0).toUpperCase()
+  }
+
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault()
+    logout()
+  }
 
   return (
     <div
@@ -85,32 +103,42 @@ export function Sidebar() {
 
         {/* User + Logout */}
         <div className="space-y-2">
-          <div
-            className="flex items-center gap-3 rounded-xl p-3"
-            style={{ background: "var(--muted)" }}
-          >
+          {user && (
             <div
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #0891b2, #0e7490)" }}
+              className="flex items-center gap-3 rounded-xl p-3"
+              style={{ background: "var(--muted)" }}
             >
-              A
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.fullName}
+                  className="h-8 w-8 flex-shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                  style={{ background: "linear-gradient(135deg, #0891b2, #0e7490)" }}
+                >
+                  {getInitials(user.fullName)}
+                </div>
+              )}
+              <div className="overflow-hidden">
+                <p className="truncate text-xs font-semibold" style={{ color: "var(--foreground)" }}>
+                  {user.fullName}
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {user.role}
+                </p>
+              </div>
             </div>
-            <div className="overflow-hidden">
-              <p className="truncate text-xs font-semibold" style={{ color: "var(--foreground)" }}>
-                Admin
-              </p>
-              <p className="truncate text-xs" style={{ color: "var(--muted-foreground)" }}>
-                admin@eventbox.vn
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/"
-            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-rose-50 hover:text-rose-600"
+          )}
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
             Đăng xuất
-          </Link>
+          </button>
         </div>
       </div>
     </div>

@@ -1,24 +1,34 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import bcrypt from 'bcrypt';
 
 export interface IUser extends Document {
-  name: string;
+  fullName: string;
   email: string;
-  password: string;
-  role: 'user' | 'organizer' | 'admin';
+  passwordHash?: string; // Optional if registered via Google OAuth
+  phone?: string;
+  role: 'ADMIN' | 'ORGANIZER' | 'PARTICIPANT' | 'STAFF';
+  accountStatus: 'ACTIVE' | 'BANNED';
   avatar?: string;
   createdAt: Date;
   updatedAt: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 const userSchema = new Schema<IUser>(
   {
-    name: { type: String, required: true, trim: true },
+    fullName: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, select: false },
+    passwordHash: { type: String, select: false }, // optional for Google Sign-in
+    phone: { type: String, trim: true },
     role: {
       type: String,
-      enum: ['user', 'organizer', 'admin'],
-      default: 'user',
+      enum: ['ADMIN', 'ORGANIZER', 'PARTICIPANT', 'STAFF'],
+      default: 'PARTICIPANT',
+    },
+    accountStatus: {
+      type: String,
+      enum: ['ACTIVE', 'BANNED'],
+      default: 'ACTIVE',
     },
     avatar: { type: String },
   },
@@ -29,4 +39,25 @@ const userSchema = new Schema<IUser>(
 
 userSchema.index({ email: 1 });
 
+// Pre-save hook to hash password
+userSchema.pre('save', async function () {
+  const user = this as any;
+  if (!user.isModified('passwordHash')) return;
+  if (!user.passwordHash) return;
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(user.passwordHash, salt);
+  } catch (err: any) {
+    throw err;
+  }
+});
+
+// Method to compare passwords
+userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+  if (!this.passwordHash) return false;
+  return bcrypt.compare(candidatePassword, this.passwordHash);
+};
+
 export const User = mongoose.model<IUser>('User', userSchema);
+

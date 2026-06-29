@@ -1,8 +1,31 @@
 "use client"
 
 import { Bell, Search, ChevronDown } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
 
 export function Header() {
+  const { user } = useAuth()
+
+  const getInitials = (name: string) => {
+    if (!name) return "?"
+    return name.charAt(0).toUpperCase()
+  }
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "ADMIN":
+        return "Quản trị viên"
+      case "ORGANIZER":
+        return "Người tổ chức"
+      case "STAFF":
+        return "Nhân viên"
+      case "PARTICIPANT":
+        return "Người tham gia"
+      default:
+        return "Thành viên"
+    }
+  }
+
   return (
     <header
       className="flex h-16 shrink-0 items-center justify-between border-b bg-white px-6"
@@ -45,23 +68,33 @@ export function Header() {
         <div className="h-6 w-px" style={{ background: "var(--border)" }} />
 
         {/* User */}
-        <button className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-cyan-50">
-          <div
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-            style={{ background: "linear-gradient(135deg, #0891b2, #0e7490)" }}
-          >
-            A
-          </div>
-          <div className="hidden text-left md:block">
-            <p className="text-sm font-semibold leading-tight" style={{ color: "var(--foreground)" }}>
-              Quản trị viên
-            </p>
-            <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-              admin@eventbox.vn
-            </p>
-          </div>
-          <ChevronDown className="h-3.5 w-3.5 hidden md:block text-gray-400" />
-        </button>
+        {user && (
+          <button className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-cyan-50">
+            {user.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.fullName}
+                className="h-8 w-8 flex-shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                style={{ background: "linear-gradient(135deg, #0891b2, #0e7490)" }}
+              >
+                {getInitials(user.fullName)}
+              </div>
+            )}
+            <div className="hidden text-left md:block">
+              <p className="text-sm font-semibold leading-tight" style={{ color: "var(--foreground)" }}>
+                {user.fullName}
+              </p>
+              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                {getRoleLabel(user.role)}
+              </p>
+            </div>
+            <ChevronDown className="h-3.5 w-3.5 hidden md:block text-gray-400" />
+          </button>
+        )}
       </div>
     </header>
   )
