@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   const { user, logout } = useAuth()
 
@@ -44,7 +44,7 @@ export function Sidebar() {
 
   return (
     <div
-      className="flex h-full w-64 flex-col border-r bg-white px-4 py-5"
+      className="flex h-full w-64 flex-col border-r bg-card px-4 py-5"
       style={{ borderColor: "var(--border)" }}
     >
       {/* Logo */}
@@ -81,17 +81,18 @@ export function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={onNavigate}
                 className={cn(
                   "group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                   isActive
                     ? "gradient-primary text-white shadow-sm"
-                    : "text-gray-600 hover:bg-cyan-50 hover:text-cyan-700"
+                    : "text-muted-foreground hover:bg-cyan-50 hover:text-cyan-700"
                 )}
               >
                 <item.icon
                   className={cn(
                     "mr-3 h-4.5 w-4.5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110",
-                    isActive ? "text-white" : "text-gray-400 group-hover:text-cyan-600"
+                    isActive ? "text-white" : "text-muted-foreground group-hover:text-cyan-600"
                   )}
                   aria-hidden="true"
                 />
@@ -126,7 +127,7 @@ export function Sidebar() {
                 <p className="truncate text-xs font-semibold" style={{ color: "var(--foreground)" }}>
                   {user.fullName}
                 </p>
-                <p className="truncate text-xs text-slate-500">
+                <p className="truncate text-xs text-muted-foreground">
                   {user.role}
                 </p>
               </div>
@@ -134,7 +135,7 @@ export function Sidebar() {
           )}
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
             Đăng xuất

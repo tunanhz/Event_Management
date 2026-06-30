@@ -1,9 +1,10 @@
 "use client"
 
-import { Bell, Search, ChevronDown } from "lucide-react"
+import { Bell, Search, ChevronDown, Menu } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
-export function Header() {
+export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user } = useAuth()
 
   const getInitials = (name: string) => {
@@ -28,11 +29,19 @@ export function Header() {
 
   return (
     <header
-      className="flex h-16 shrink-0 items-center justify-between border-b bg-white px-6"
+      className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-6"
       style={{ borderColor: "var(--border)" }}
     >
-      {/* Search */}
-      <div className="flex flex-1 items-center">
+      {/* Menu toggle (mobile) + Search */}
+      <div className="flex flex-1 items-center gap-2">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Mở menu điều hướng"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-cyan-50 lg:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
         <div className="relative w-full max-w-sm">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
@@ -41,6 +50,7 @@ export function Header() {
           <input
             type="search"
             placeholder="Tìm kiếm sự kiện, người tham dự..."
+            aria-label="Tìm kiếm sự kiện, người tham dự"
             className="h-9 w-full rounded-xl border pl-9 pr-4 text-sm outline-none transition-all focus:ring-2"
             style={{
               background: "var(--muted)",
@@ -52,12 +62,15 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Theme toggle */}
+        <ThemeToggle className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-cyan-50" />
+
         {/* Notification bell */}
         <button
           className="relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:bg-cyan-50"
           aria-label="Thông báo"
         >
-          <Bell className="h-4.5 w-4.5 text-gray-500" />
+          <Bell className="h-4.5 w-4.5 text-muted-foreground" />
           <span
             className="absolute right-2 top-2 flex h-2 w-2 rounded-full"
             style={{ background: "var(--destructive)" }}
@@ -92,7 +105,7 @@ export function Header() {
                 {getRoleLabel(user.role)}
               </p>
             </div>
-            <ChevronDown className="h-3.5 w-3.5 hidden md:block text-gray-400" />
+            <ChevronDown className="h-3.5 w-3.5 hidden md:block text-muted-foreground" />
           </button>
         )}
       </div>

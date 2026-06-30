@@ -1,0 +1,52 @@
+.row {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.logo,
+.logoFallback {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+}
+
+.logoFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--secondary);
+  color: var(--color-primary-light);
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.info {
+  min-width: 0;
+}
+
+.name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 0.5rem;
+}
+
+.description {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}

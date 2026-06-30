@@ -1,0 +1,199 @@
+/* ─── FeaturedStars ──────────────────────────────────────────
+   Scoped dark feature band (like footer/bottom-nav) with a cyan
+   aurora ambiance and glowing avatar rings (brand cyan). Dark
+   values stay literal — this band is dark in both themes. */
+
+.section {
+  position: relative;
+  overflow: hidden;
+  background: #0a0e1a;
+  padding: 2.5rem 0;
+  isolation: isolate;
+}
+
+/* Cyan flowing aurora — layered blurred radial/linear washes */
+.aurora {
+  position: absolute;
+  inset: -30% -10%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 60% at 12% 55%, rgba(34, 211, 238, 0.36), transparent 70%),
+    radial-gradient(34% 52% at 50% 28%, rgba(6, 182, 212, 0.30), transparent 72%),
+    radial-gradient(42% 62% at 88% 60%, rgba(8, 145, 178, 0.30), transparent 70%),
+    linear-gradient(115deg, transparent 40%, rgba(103, 232, 249, 0.18) 50%, transparent 60%);
+  filter: blur(44px);
+  animation: auroraDrift 14s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDrift {
+  from { transform: translateX(-3%) translateY(0) scale(1.02); }
+  to   { transform: translateX(3%) translateY(-2%) scale(1.08); }
+}
+
+.container {
+  position: relative;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+}
+
+/* ─── Header row ─────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.starIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: #fbbf24; /* gold star */
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.5));
+}
+
+.viewAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.5rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--transition-fast);
+}
+
+.viewAll svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.viewAll:hover {
+  color: #ffffff;
+}
+
+/* ─── Horizontal list ────────────────────────────────────── */
+.list {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+  padding: 0.25rem 0 0.5rem;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
+}
+
+.item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+/* ─── Card ───────────────────────────────────────────────── */
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 152px;
+  padding: 1rem 0.75rem;
+  border-radius: var(--radius-lg, 1rem);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+  transition: transform var(--transition-base),
+              border-color var(--transition-base),
+              background var(--transition-base);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(34, 211, 238, 0.55);
+}
+
+/* ─── Avatar with cyan glow ring ─────────────────────────── */
+.avatarRing {
+  display: block;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  padding: 3px;
+  background: conic-gradient(from 180deg, #0891b2, #22d3ee, #06b6d4, #67e8f9, #0891b2);
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.5),
+              0 0 6px rgba(34, 211, 238, 0.35);
+  flex-shrink: 0;
+}
+
+.avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #0a0e1a; /* dark gap between ring and photo */
+  background: #111827;
+}
+
+/* ─── Name + verified badge ──────────────────────────────── */
+.nameRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  max-width: 100%;
+}
+
+.name {
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.verified {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 var(--space-md);
+  }
+
+  .card {
+    width: 132px;
+    padding: 0.875rem 0.625rem;
+  }
+
+  .avatarRing {
+    width: 84px;
+    height: 84px;
+  }
+}

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import styles from './EventCard.module.css';
 
 export interface EventItem {
@@ -21,7 +22,7 @@ export default function EventCard({ event }: EventCardProps) {
   const isFree = event.price === 'Miễn phí';
 
   return (
-    <div className={styles.card}>
+    <Link href={`/su-kien/${event.id}`} className={styles.card}>
       {/* Image Section */}
       <div className={styles.imageWrapper}>
         <img
@@ -80,6 +81,6 @@ export default function EventCard({ event }: EventCardProps) {
           {event.price}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

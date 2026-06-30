@@ -1,0 +1,226 @@
+/* ─── DatePanel popover ─────────────────────────────────── */
+.panel {
+  width: 600px;
+  max-width: calc(100vw - 2rem);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18);
+  padding: 1rem 1.25rem;
+}
+
+/* ─── Presets ────────────────────────────────────────────── */
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.preset {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.preset:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-light);
+}
+
+.presetOn {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.preset:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.3);
+}
+
+.divider {
+  border-top: 1px dashed var(--color-border);
+  margin: 1rem 0;
+}
+
+/* ─── Calendar header ────────────────────────────────────── */
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.monthTitle,
+.monthTitleRight {
+  flex: 1;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-primary-light);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.navBtn:hover:not(:disabled) {
+  background: rgba(8, 145, 178, 0.08);
+  border-color: var(--color-primary);
+}
+
+.navBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Months ─────────────────────────────────────────────── */
+.months {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.month {
+  flex: 1;
+  min-width: 0;
+}
+
+.weekRow,
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.weekRow {
+  margin-bottom: 6px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.cellEmpty {
+  aspect-ratio: 1;
+}
+
+.cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cell:hover:not(:disabled) {
+  background: rgba(8, 145, 178, 0.1);
+}
+
+.cell:disabled {
+  color: #cbd5e1; /* slate-300 — past/out of range */
+  cursor: not-allowed;
+}
+
+.today {
+  box-shadow: inset 0 0 0 1.5px var(--color-primary);
+  color: var(--color-primary-light);
+}
+
+.selected {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+.cell:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.35);
+}
+
+/* ─── Footer actions ─────────────────────────────────────── */
+.footer {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.resetBtn,
+.applyBtn {
+  flex: 1;
+  height: 44px;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.resetBtn {
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary-light);
+}
+
+.resetBtn:hover {
+  background: rgba(8, 145, 178, 0.08);
+}
+
+.applyBtn {
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  color: #ffffff;
+}
+
+.applyBtn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.applyBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.resetBtn:focus-visible,
+.applyBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.35);
+}
+
+/* ─── Mobile: single month ───────────────────────────────── */
+@media (max-width: 640px) {
+  .month:nth-child(2) {
+    display: none;
+  }
+  .monthTitleRight {
+    display: none;
+  }
+}
