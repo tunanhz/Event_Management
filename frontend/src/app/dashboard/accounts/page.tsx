@@ -219,8 +219,8 @@ export default function AccountsPage() {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center text-center px-4">
         <ShieldAlert className="h-16 w-16 text-rose-500 mb-4 animate-bounce" />
-        <h3 className="text-xl font-bold text-slate-800">Quyền truy cập bị từ chối</h3>
-        <p className="text-sm text-slate-500 mt-2 max-w-md">
+        <h3 className="text-xl font-bold text-foreground">Quyền truy cập bị từ chối</h3>
+        <p className="text-sm text-muted-foreground mt-2 max-w-md">
           Chỉ tài khoản có vai trò Quản trị viên (ADMIN) mới có quyền truy cập trang quản lý tài khoản này.
         </p>
       </div>
@@ -232,8 +232,8 @@ export default function AccountsPage() {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Quản lý tài khoản & Phân quyền</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <h2 className="text-2xl font-bold text-foreground">Quản lý tài khoản & Phân quyền</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Quản trị và phân quyền tất cả tài khoản trong hệ thống EventBox.
           </p>
         </div>
@@ -261,17 +261,17 @@ export default function AccountsPage() {
       )}
 
       {/* Filter and Search Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <form onSubmit={handleSearchSubmit} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Search bar */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Tìm kiếm tài khoản theo tên hoặc email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-4 text-sm outline-none transition-all focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20"
+              className="h-10 w-full rounded-xl border border-border bg-muted pl-10 pr-4 text-sm outline-none transition-all focus:border-cyan-500 focus:bg-card focus:ring-2 focus:ring-cyan-500/20"
             />
           </div>
 
@@ -281,7 +281,7 @@ export default function AccountsPage() {
               <select
                 value={roleFilter}
                 onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-                className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                className="h-10 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
               >
                 <option value="">Tất cả vai trò</option>
                 <option value="ADMIN">ADMIN - Quản trị</option>
@@ -295,7 +295,7 @@ export default function AccountsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                className="h-10 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
               >
                 <option value="">Tất cả trạng thái</option>
                 <option value="ACTIVE">ACTIVE - Hoạt động</option>
@@ -314,13 +314,13 @@ export default function AccountsPage() {
       </div>
 
       {/* Account Table List */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-cyan-600"></div>
           </div>
         ) : accounts.length === 0 ? (
-          <div className="flex h-64 flex-col items-center justify-center text-slate-500">
+          <div className="flex h-64 flex-col items-center justify-center text-muted-foreground">
             <Users className="h-12 w-12 text-slate-300 mb-2" />
             <p>Không tìm thấy tài khoản nào khớp với bộ lọc.</p>
           </div>
@@ -328,7 +328,7 @@ export default function AccountsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/75 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted/50 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                   <th className="px-6 py-4">Tài khoản</th>
                   <th className="px-6 py-4">Vai trò (Role)</th>
                   <th className="px-6 py-4">Trạng thái (Status)</th>
@@ -336,11 +336,11 @@ export default function AccountsPage() {
                   <th className="px-6 py-4 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
+              <tbody className="divide-y divide-border text-sm">
                 {accounts.map((account) => {
                   const isSelf = account._id === currentUser?._id
                   return (
-                    <tr key={account._id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={account._id} className="hover:bg-muted/50 transition-colors">
                       {/* Name & Email */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -351,7 +351,7 @@ export default function AccountsPage() {
                             {account.fullName ? account.fullName.charAt(0).toUpperCase() : "?"}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900 flex items-center gap-1.5">
+                            <p className="font-semibold text-foreground flex items-center gap-1.5">
                               {account.fullName}
                               {isSelf && (
                                 <span className="rounded bg-cyan-100 text-[10px] font-bold text-cyan-800 px-1 border border-cyan-200">
@@ -359,8 +359,8 @@ export default function AccountsPage() {
                                 </span>
                               )}
                             </p>
-                            <p className="text-xs text-slate-500">{account.email}</p>
-                            {account.phone && <p className="text-[10px] text-slate-400 font-medium">📞 {account.phone}</p>}
+                            <p className="text-xs text-muted-foreground">{account.email}</p>
+                            {account.phone && <p className="text-[10px] text-muted-foreground font-medium">📞 {account.phone}</p>}
                           </div>
                         </div>
                       </td>
@@ -379,7 +379,7 @@ export default function AccountsPage() {
                             <select
                               value={account.role}
                               onChange={(e) => handleUpdateRole(account._id, e.target.value)}
-                              className="text-xs rounded border border-slate-300 bg-white p-1 outline-none focus:border-cyan-500 cursor-pointer"
+                              className="text-xs rounded border border-border bg-card p-1 outline-none focus:border-cyan-500 cursor-pointer"
                               title="Thay đổi vai trò"
                             >
                               <option value="PARTICIPANT">PARTICIPANT</option>
@@ -399,7 +399,7 @@ export default function AccountsPage() {
                       </td>
 
                       {/* Date Created */}
-                      <td className="px-6 py-4 text-xs text-slate-500">
+                      <td className="px-6 py-4 text-xs text-muted-foreground">
                         {new Date(account.createdAt).toLocaleDateString("vi-VN", {
                           day: "2-digit",
                           month: "2-digit",
@@ -433,7 +433,7 @@ export default function AccountsPage() {
                           {!isSelf && (
                             <button
                               onClick={() => handleDeleteUser(account._id)}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer shadow-sm hover:scale-105"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer shadow-sm hover:scale-105"
                               title="Xóa tài khoản"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -448,22 +448,22 @@ export default function AccountsPage() {
             </table>
 
             {/* Pagination Controls */}
-            <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/50 px-6 py-4">
-              <span className="text-xs text-slate-500">
+            <div className="flex items-center justify-between border-t border-border bg-muted/50 px-6 py-4">
+              <span className="text-xs text-muted-foreground">
                 Hiển thị trang <b>{pagination?.currentPage || 1}</b> trên tổng số <b>{pagination?.totalPages || 1}</b> trang ({pagination?.totalItems || 0} kết quả)
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors cursor-pointer"
+                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50 transition-colors cursor-pointer"
                 >
                   Trang trước
                 </button>
                 <button
                   onClick={() => setPage(p => Math.min(pagination?.totalPages || 1, p + 1))}
                   disabled={page === (pagination?.totalPages || 1)}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors cursor-pointer"
+                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50 transition-colors cursor-pointer"
                 >
                   Trang sau
                 </button>
@@ -476,16 +476,16 @@ export default function AccountsPage() {
       {/* MODAL: Create Staff account */}
       {showStaffModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-zoom-in">
+          <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-zoom-in">
             {/* Modal header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h3 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-cyan-600" />
                 Cấp tài khoản STAFF mới
               </h3>
               <button
                 onClick={() => setShowStaffModal(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -493,12 +493,12 @@ export default function AccountsPage() {
 
             {/* Modal content Form */}
             <form onSubmit={handleCreateStaffSubmit} className="mt-4 space-y-4">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Nhập tên và email nhân viên. Hệ thống sẽ tự động tạo mật khẩu ngẫu nhiên và gửi thông tin đăng nhập trực tiếp qua Email của nhân viên.
               </p>
               
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1">
                   Họ và tên Staff
                 </label>
                 <input
@@ -506,37 +506,37 @@ export default function AccountsPage() {
                   required
                   value={staffName}
                   onChange={(e) => setStaffName(e.target.value)}
-                  className="block w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-cyan-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                  className="block w-full rounded-xl border border-border bg-muted py-2.5 px-3.5 text-sm text-foreground focus:border-cyan-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all"
                   placeholder="Lê Văn B"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1">
                   Email làm việc
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <Mail className="h-4.5 w-4.5 text-slate-400" />
+                    <Mail className="h-4.5 w-4.5 text-muted-foreground" />
                   </div>
                   <input
                     type="email"
                     required
                     value={staffEmail}
                     onChange={(e) => setStaffEmail(e.target.value)}
-                    className="block w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-3.5 text-sm text-slate-900 focus:border-cyan-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                    className="block w-full rounded-xl border border-border bg-muted py-2.5 pl-10 pr-3.5 text-sm text-foreground focus:border-cyan-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all"
                     placeholder="staff-email@work.com"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1">
                   Số điện thoại Staff
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <svg className="h-4.5 w-4.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4.5 w-4.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                   </div>
@@ -544,17 +544,17 @@ export default function AccountsPage() {
                     type="text"
                     value={staffPhone}
                     onChange={(e) => setStaffPhone(e.target.value)}
-                    className="block w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-3.5 text-sm text-slate-900 focus:border-cyan-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                    className="block w-full rounded-xl border border-border bg-muted py-2.5 pl-10 pr-3.5 text-sm text-foreground focus:border-cyan-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all"
                     placeholder="09xxxxxxxx"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4 justify-end border-t border-slate-100 mt-6">
+              <div className="flex gap-3 pt-4 justify-end border-t border-border mt-6">
                 <button
                   type="button"
                   onClick={() => setShowStaffModal(false)}
-                  className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted cursor-pointer"
                 >
                   Hủy bỏ
                 </button>

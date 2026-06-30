@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import styles from "./Header.module.css";
 
 const Header: React.FC = () => {
@@ -13,7 +15,7 @@ const Header: React.FC = () => {
         <header className={styles.header}>
           <div className={styles.container}>
             {/* Logo */}
-            <a href="/" className={styles.logo}>
+            <Link href="/" className={styles.logo}>
               <svg className={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
                 <path d="M13 5v2" />
@@ -21,7 +23,7 @@ const Header: React.FC = () => {
                 <path d="M13 11v2" />
               </svg>
               <span className={styles.logoText}>EventBox</span>
-            </a>
+            </Link>
 
             {/* Search Bar */}
             <div className={styles.searchBar}>
@@ -32,9 +34,10 @@ const Header: React.FC = () => {
                 </svg>
               </span>
               <input
-                type="text"
+                type="search"
                 className={styles.searchInput}
                 placeholder="Tìm kiếm sự kiện, nghệ sĩ..."
+                aria-label="Tìm kiếm sự kiện, nghệ sĩ"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -60,6 +63,8 @@ const Header: React.FC = () => {
               <a href="/login" className={styles.loginLink}>
                 <span className={styles.loginLabel}>Đăng nhập | Đăng ký</span>
               </a>
+
+              <ThemeToggle className={styles.themeToggle} />
 
               <button className={styles.langSelector} type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -92,7 +97,7 @@ const Header: React.FC = () => {
       <header className={styles.mobileHeader}>
         <div className={styles.mobileContainer}>
           {/* Logo */}
-          <a href="/" className={styles.logo}>
+          <Link href="/" className={styles.logo}>
             <svg className={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
               <path d="M13 5v2" />
@@ -100,10 +105,12 @@ const Header: React.FC = () => {
               <path d="M13 11v2" />
             </svg>
             <span className={styles.logoText}>EventBox</span>
-          </a>
+          </Link>
 
           {/* Mobile Actions */}
           <div className={styles.mobileActions}>
+            <ThemeToggle className={styles.mobileIconBtn} />
+
             <button className={styles.mobileIconBtn} type="button" aria-label="Tìm kiếm">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />

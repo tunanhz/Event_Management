@@ -12,8 +12,8 @@ import {
   Filter,
 } from "lucide-react"
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/badge"
 import { mockEvents } from "@/lib/mock-data"
 import { formatCurrency, formatNumber } from "@/lib/utils"
@@ -161,23 +161,26 @@ export default function EventsPage() {
                     </span>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Actions — always visible on touch, subtle until hover on desktop */}
+                  <div className="flex items-center gap-1 opacity-100 transition-opacity sm:opacity-60 sm:group-hover:opacity-100">
                     <button
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-cyan-100 hover:text-cyan-700 transition-colors"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-cyan-100 hover:text-cyan-700 transition-colors"
                       title="Xem chi tiết"
+                      aria-label={`Xem chi tiết ${event.title}`}
                     >
                       <Eye className="h-4 w-4" />
                     </button>
                     <button
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-cyan-100 hover:text-cyan-700 transition-colors"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-cyan-100 hover:text-cyan-700 transition-colors"
                       title="Chỉnh sửa"
+                      aria-label={`Chỉnh sửa ${event.title}`}
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-rose-100 hover:text-rose-600 transition-colors"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-rose-100 hover:text-rose-600 transition-colors"
                       title="Xóa"
+                      aria-label={`Xóa ${event.title}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

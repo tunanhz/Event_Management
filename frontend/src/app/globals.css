@@ -63,6 +63,76 @@
     --chart-4: #fb7185;
     --chart-5: #60a5fa;
     --radius: 0.75rem;
+
+    /* ── Extended tokens consumed by the home CSS modules ──
+       Mapped onto the light theme above. Single source of truth so
+       components stop referencing undefined variables. */
+    --color-surface: var(--card);              /* #ffffff card/surface */
+    --color-surface-hover: #f1f5f9;            /* slate-100 hover */
+    --color-text: var(--foreground);           /* #0f172a primary text */
+    --color-text-secondary: var(--muted-foreground); /* #64748b on light */
+    --color-text-muted: #cbd5e1;               /* slate-300 — used only on dark footer/nav */
+    --color-primary-light: #0e7490;            /* cyan-700 — readable accent on light surfaces */
+    --color-primary-bright: #22d3ee;           /* cyan-400 — accent on dark footer/nav */
+    --color-primary-50: #155e75;               /* cyan-800 — hover on light */
+    --color-bg: var(--background);
+
+    /* Layout */
+    --header-height: 112px;                    /* 72px header + 40px sub-nav (desktop) */
+    --mobile-nav-height: 64px;
+
+    /* Spacing */
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+
+    /* Motion */
+    --transition-fast: 0.2s ease;
+    --transition-base: 0.3s ease;
+  }
+
+  /* Header collapses to a single 64px bar below the desktop breakpoint */
+  @media (max-width: 1023px) {
+    :root {
+      --header-height: 64px;
+    }
+  }
+
+  /* ── Dark theme ──
+     Activated by the `.dark` class on <html>. Only base tokens + the few
+     literal extended tokens are overridden; var()-based extended tokens
+     (--color-surface, --color-text, --color-text-secondary, --color-bg)
+     follow their base tokens automatically. */
+  .dark {
+    --background: #0b1120;        /* slate-950 */
+    --foreground: #e2e8f0;        /* slate-200 */
+    --card: #111827;              /* gray-900 (elevated above bg) */
+    --card-foreground: #e2e8f0;
+    --popover: #111827;
+    --popover-foreground: #e2e8f0;
+    --primary: #22d3ee;           /* cyan-400 — pops on dark */
+    --primary-hover: #67e8f9;     /* cyan-300 */
+    --primary-foreground: #0b1120;
+    --secondary: #164e63;         /* cyan-900 */
+    --secondary-foreground: #cffafe;
+    --muted: #1e293b;             /* slate-800 (input surface) */
+    --muted-foreground: #94a3b8;  /* slate-400 */
+    --accent: #155e75;            /* cyan-800 */
+    --accent-foreground: #e0f2fe;
+    --destructive: #fb7185;       /* rose-400 */
+    --destructive-foreground: #0b1120;
+    --border: #334155;            /* slate-700 — kept visible on dark surfaces */
+    --input: #334155;             /* slate-700 */
+    --ring: #22d3ee;
+    --chart-1: #22d3ee;
+    --chart-2: #06b6d4;
+    --chart-3: #34d399;
+    --chart-4: #fb7185;
+    --chart-5: #60a5fa;
+
+    /* Literal extended tokens */
+    --color-surface-hover: #1e293b;
+    --color-primary-light: #22d3ee;
+    --color-primary-50: #67e8f9;
   }
 }
 
@@ -78,7 +148,7 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: 'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans), 'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     line-height: 1.6;
@@ -89,8 +159,10 @@
     text-decoration: none;
   }
 
+  /* Sensible default weight so headings without an explicit utility/rule
+     still read as headings (utility classes keep higher specificity). */
   h1, h2, h3, h4, h5, h6 {
-    font-weight: inherit;
+    font-weight: 600;
     margin: 0;
   }
 }
@@ -124,9 +196,35 @@
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
 
-.animate-fade-up   { animation: fadeSlideUp 0.4s ease both; }
+.animate-fade-up    { animation: fadeSlideUp 0.4s ease both; }
+.animate-fade-down  { animation: fadeDown 0.3s ease both; }
 .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+.animate-shake      { animation: shake 0.4s ease both; }
+
+/* ─── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* ─── Gradient Utilities ─────────────────────────────────── */
 .gradient-primary {

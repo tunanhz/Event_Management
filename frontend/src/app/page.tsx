@@ -6,6 +6,7 @@ import CategoryNav from "@/components/home/CategoryNav";
 import EventSection from "@/components/home/EventSection";
 import Footer from "@/components/home/Footer";
 import MobileBottomNav from "@/components/home/MobileBottomNav";
+import { Flame, TrendingUp, CalendarClock } from "lucide-react";
 import {
   featuredEvents,
   trendingEvents,
@@ -40,7 +41,8 @@ export default function HomePage() {
         <div className={styles.sectionDivider} />
 
         <EventSection
-          title="🔥 Sự kiện nổi bật"
+          title="Sự kiện nổi bật"
+          icon={<Flame />}
           events={featuredEvents}
           showViewAll={true}
         />
@@ -48,7 +50,8 @@ export default function HomePage() {
         <div className={styles.sectionDivider} />
 
         <EventSection
-          title="📈 Xu hướng"
+          title="Xu hướng"
+          icon={<TrendingUp />}
           events={trendingEvents}
           showViewAll={true}
         />
@@ -56,7 +59,8 @@ export default function HomePage() {
         <div className={styles.sectionDivider} />
 
         <EventSection
-          title="📅 Sắp diễn ra"
+          title="Sắp diễn ra"
+          icon={<CalendarClock />}
           events={upcomingEvents}
           showViewAll={true}
         />

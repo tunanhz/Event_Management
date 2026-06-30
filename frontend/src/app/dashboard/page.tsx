@@ -18,8 +18,8 @@ import {
   ResponsiveContainer,
 } from "recharts"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/badge"
 import { mockMetrics, mockRevenueData, mockEvents } from "@/lib/mock-data"
 import { formatCurrency, formatNumber, formatDateTime } from "@/lib/utils"
@@ -98,7 +98,7 @@ export default function DashboardOverview() {
         {statCards.map((card) => (
           <div
             key={card.label}
-            className="card-glow group relative overflow-hidden rounded-2xl border bg-white p-5 transition-all duration-300 hover:-translate-y-0.5"
+            className="card-glow group relative overflow-hidden rounded-2xl border bg-card p-5 transition-all duration-300 hover:-translate-y-0.5"
             style={{ borderColor: "var(--border)" }}
           >
             <div className="flex items-start justify-between">
@@ -152,7 +152,7 @@ export default function DashboardOverview() {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
-                    stroke="#ede9fe"
+                    stroke="#e2e8f0"
                   />
                   <XAxis
                     dataKey="month"
@@ -171,13 +171,13 @@ export default function DashboardOverview() {
                     }
                   />
                   <Tooltip
-                    cursor={{ stroke: "#c4b5fd", strokeWidth: 1.5 }}
+                    cursor={{ stroke: "#a5f3fc", strokeWidth: 1.5 }}
                     contentStyle={{
                       backgroundColor: "#ffffff",
-                      borderColor: "#e5e0f8",
+                      borderColor: "#e2e8f0",
                       borderRadius: "12px",
                       fontSize: "12px",
-                      boxShadow: "0 4px 16px rgba(139,92,246,0.1)",
+                      boxShadow: "0 4px 16px rgba(8,145,178,0.12)",
                     }}
                     formatter={(value: any) => [
                       `${(Number(value || 0) / 1_000_000).toFixed(0)} triệu đồng`,

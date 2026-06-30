@@ -34,12 +34,12 @@
 }
 
 .tab:hover {
-  color: var(--color-primary-light);
+  color: var(--color-primary-bright);
 }
 
 .tabActive {
   composes: tab;
-  color: var(--color-primary-light);
+  color: var(--color-primary-bright);
 }
 
 .tabIcon {
