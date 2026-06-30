@@ -177,6 +177,38 @@
   transform: translateY(0);
 }
 
+/* ───────── My Tickets link ───────── */
+.ticketsLink {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.3s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.ticketsLink:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.ticketsLink:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.ticketsIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .loginLink {
   display: flex;
   align-items: center;

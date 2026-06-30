@@ -60,6 +60,16 @@ const Header: React.FC = () => {
                 Tạo sự kiện
               </button>
 
+              <Link href="/ve-cua-toi" className={styles.ticketsLink}>
+                <svg className={styles.ticketsIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                  <path d="M13 5v2" />
+                  <path d="M13 17v2" />
+                  <path d="M13 11v2" />
+                </svg>
+                Vé của tôi
+              </Link>
+
               <a href="/login" className={styles.loginLink}>
                 <span className={styles.loginLabel}>Đăng nhập | Đăng ký</span>
               </a>
@@ -81,14 +91,14 @@ const Header: React.FC = () => {
         {/* Sub Navigation Bar */}
         <div className={styles.subHeader}>
           <div className={styles.subContainer}>
-            <a href="/category/nhac-song" className={styles.subLink}>Nhạc sống</a>
-            <a href="/category/san-khau-nghe-thuat" className={styles.subLink}>Sân khấu & Nghệ thuật</a>
-            <a href="/category/the-thao" className={styles.subLink}>Thể thao</a>
-            <a href="/category/hoi-thao-workshop" className={styles.subLink}>Hội thảo & Workshop</a>
-            <a href="/category/tham-quan-trai-nghiem" className={styles.subLink}>Tham quan & Trải nghiệm</a>
-            <a href="/category/khac" className={styles.subLink}>Khác</a>
-            <a href="/category/ve-ban-lai" className={styles.subLink}>Vé bán lại</a>
-            <a href="/blog" className={styles.subLink}>Blog</a>
+            <Link href="/su-kien?category=nhac-song" className={styles.subLink}>Nhạc sống</Link>
+            <Link href="/su-kien?category=san-khau" className={styles.subLink}>Sân khấu & Nghệ thuật</Link>
+            <Link href="/su-kien?category=the-thao" className={styles.subLink}>Thể thao</Link>
+            <Link href="/su-kien?category=hoi-thao" className={styles.subLink}>Hội thảo & Workshop</Link>
+            <Link href="/su-kien?category=tham-quan" className={styles.subLink}>Tham quan & Trải nghiệm</Link>
+            <Link href="/su-kien?category=khac" className={styles.subLink}>Khác</Link>
+            <Link href="/su-kien" className={styles.subLink}>Vé bán lại</Link>
+            <Link href="/blog" className={styles.subLink}>Blog</Link>
           </div>
         </div>
       </div>

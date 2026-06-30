@@ -1,0 +1,135 @@
+/* ─── EventsToolbar ─────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-primary-light);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.anchor {
+  position: relative;
+}
+
+/* ─── Toolbar buttons ────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 44px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--secondary); /* cyan-100 */
+  color: var(--color-primary-light);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.btn:hover {
+  background: #a5f3fc; /* cyan-200 */
+}
+
+.btnActive {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.btnActive:hover {
+  background: var(--primary-hover);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.35);
+}
+
+.caret {
+  opacity: 0.8;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ─── Active category chip (removable) ───────────────────── */
+.catChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 44px;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background var(--transition-fast);
+}
+
+.catChip:hover {
+  background: var(--primary-hover);
+}
+
+.catChip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.35);
+}
+
+/* ─── Popovers (anchored to button right edge to stay on-screen) ── */
+.popover,
+.popoverRight {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+}
+
+@media (max-width: 640px) {
+  .heading {
+    width: 100%;
+  }
+  .actions {
+    width: 100%;
+  }
+  /* On small screens anchor popovers to the viewport edges via fixed-ish width */
+  .popover,
+  .popoverRight {
+    right: auto;
+    left: 0;
+  }
+}

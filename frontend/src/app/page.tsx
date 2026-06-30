@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import styles from "./page.module.css";
 import Header from "@/components/home/Header";
 import HeroBanner from "@/components/home/HeroBanner";
-import CategoryNav from "@/components/home/CategoryNav";
+import FeaturedStars from "@/components/home/FeaturedStars";
 import EventSection from "@/components/home/EventSection";
 import Footer from "@/components/home/Footer";
 import MobileBottomNav from "@/components/home/MobileBottomNav";
@@ -36,7 +36,7 @@ export default function HomePage() {
       <Header />
       <main className={styles.main}>
         <HeroBanner />
-        <CategoryNav />
+        <FeaturedStars />
 
         <div className={styles.sectionDivider} />
 
@@ -45,6 +45,7 @@ export default function HomePage() {
           icon={<Flame />}
           events={featuredEvents}
           showViewAll={true}
+          viewAllHref="/su-kien?collection=featured"
         />
 
         <div className={styles.sectionDivider} />
@@ -54,6 +55,7 @@ export default function HomePage() {
           icon={<TrendingUp />}
           events={trendingEvents}
           showViewAll={true}
+          viewAllHref="/su-kien?collection=trending"
         />
 
         <div className={styles.sectionDivider} />
@@ -63,6 +65,7 @@ export default function HomePage() {
           icon={<CalendarClock />}
           events={upcomingEvents}
           showViewAll={true}
+          viewAllHref="/su-kien?collection=upcoming"
         />
       </main>
       <Footer />
