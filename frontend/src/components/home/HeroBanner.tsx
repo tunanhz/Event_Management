@@ -8,6 +8,8 @@ const INTERVAL_MS = 5000;
 
 export default function HeroBanner() {
   const [current, setCurrent] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const total = banners.length;
 
   const goTo = useCallback((index: number) => {
@@ -22,14 +24,32 @@ export default function HeroBanner() {
     goTo(current - 1);
   }, [current, goTo]);
 
-  /* Auto-play */
+  /* Honour the user's reduced-motion preference */
   useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReducedMotion(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  /* Auto-play — paused on hover/focus and when motion is reduced */
+  useEffect(() => {
+    if (isPaused || reducedMotion || total <= 1) return;
     const timer = setInterval(goNext, INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [goNext]);
+  }, [goNext, isPaused, reducedMotion, total]);
 
   return (
-    <section className={styles.section}>
+    <section
+      className={styles.section}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocusCapture={() => setIsPaused(true)}
+      onBlurCapture={() => setIsPaused(false)}
+      aria-roledescription="carousel"
+      aria-label="Sự kiện nổi bật"
+    >
       <div className={styles.container}>
         <div className={styles.banner}>
           {/* Slides */}
@@ -49,8 +69,8 @@ export default function HeroBanner() {
                 <div className={styles.content}>
                   <h2 className={styles.title}>{banner.title}</h2>
                   <p className={styles.subtitle}>{banner.subtitle}</p>
-                  <a href={banner.link}>
-                    <button className={styles.ctaButton}>{banner.cta}</button>
+                  <a href={banner.link} className={styles.ctaButton}>
+                    {banner.cta}
                   </a>
                 </div>
               </div>

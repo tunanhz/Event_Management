@@ -1,6 +1,15 @@
 .footer {
   background: #111827;
   padding: 3rem 0 1.5rem;
+
+  /* The footer is a fixed dark band in both light & dark themes.
+     Re-scope surface/border/text tokens to dark-appropriate values so the
+     social + app-store buttons render correctly instead of inheriting the
+     light page surfaces (which made them white-on-white). */
+  --color-surface: rgba(255, 255, 255, 0.06);
+  --color-surface-hover: rgba(255, 255, 255, 0.12);
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-text-secondary: #94a3b8;
 }
 
 .container {
@@ -28,14 +37,14 @@
 .logoSvg {
   width: 24px;
   height: 24px;
-  color: var(--color-primary-light);
+  color: var(--color-primary-bright);
   flex-shrink: 0;
 }
 
 .logo {
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--color-primary-light);
+  color: var(--color-primary-bright);
   margin: 0;
   letter-spacing: -0.02em;
 }
@@ -106,7 +115,7 @@
 }
 
 .linkList a:hover {
-  color: var(--color-primary-light);
+  color: var(--color-primary-bright);
 }
 
 /* Contact info */
