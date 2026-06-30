@@ -3,15 +3,19 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useScrollState } from "@/lib/use-scroll-hide";
 import styles from "./Header.module.css";
 
 const Header: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const { y, dir } = useScrollState();
+  // Hide on scroll-down (past a small threshold), reveal on scroll-up.
+  const hidden = dir === "down" && y > 120;
 
   return (
     <>
       {/* ═══════ Desktop Header ═══════ */}
-      <div className={styles.headerWrapper}>
+      <div className={`${styles.headerWrapper} ${hidden ? styles.hidden : ""}`}>
         <header className={styles.header}>
           <div className={styles.container}>
             {/* Logo */}
@@ -104,7 +108,7 @@ const Header: React.FC = () => {
       </div>
 
       {/* ═══════ Mobile Header ═══════ */}
-      <header className={styles.mobileHeader}>
+      <header className={`${styles.mobileHeader} ${hidden ? styles.hidden : ""}`}>
         <div className={styles.mobileContainer}>
           {/* Logo */}
           <Link href="/" className={styles.logo}>

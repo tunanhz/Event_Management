@@ -5,6 +5,12 @@
   width: 100%;
   z-index: 100;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  transition: transform var(--transition-base);
+}
+
+/* Slide the header out of view on scroll-down */
+.hidden {
+  transform: translateY(-100%);
 }
 
 .header {
@@ -404,6 +410,7 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    transition: transform var(--transition-base);
   }
 
   .logoIcon {

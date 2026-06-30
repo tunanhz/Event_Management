@@ -255,11 +255,12 @@ const exploreSeed: ExploreSeed[] = [
   { id: "e22", title: "EDM Beach Party - Sunset Vibes", date: "30/06/2026", time: "16:00", location: "Bãi biển An Bàng, Hội An", price: "Từ 450.000đ", isFree: false, image: img("1514525253161-7a46d19cd819"), category: "Nhạc sống", categorySlug: "nhac-song", city: "other" },
   { id: "e23", title: "Lễ Hội Pháo Hoa Quốc Tế", date: "12/07/2026", time: "19:00", location: "Sông Hàn, Đà Nẵng", price: "Từ 800.000đ", isFree: false, image: img("1492684223066-81342ee5ff30"), category: "Khác", categorySlug: "khac", city: "other" },
   { id: "e24", title: "Phiên Chợ Đồ Cũ & Vintage Market", date: "19/07/2026", time: "09:00", location: "Hà Nội Creative City", price: "Miễn phí", isFree: true, image: img("1488459716781-31db52582fe9"), category: "Khác", categorySlug: "khac", city: "hanoi" },
+  { id: "e25", title: "Workshop Gốm Tô Vẽ", date: "30/06/2026", time: "10:00 - 18:00", location: "Từ Lâu Space - Phú Nhuận, TP.HCM", price: "Từ 80.000đ", isFree: false, image: img("1516035069371-29a1b244cc32"), category: "Hội thảo", categorySlug: "hoi-thao", city: "hcm" },
 ];
 
 /* Collection membership — drives the home "Xem tất cả" links
    (/su-kien?collection=<key>). Events may belong to several. */
-const FEATURED_IDS = new Set(["e1", "e2", "e3", "e4", "e7", "e8", "e17", "e23"]);
+const FEATURED_IDS = new Set(["e1", "e2", "e3", "e4", "e7", "e8", "e17", "e23", "e25"]);
 const TRENDING_IDS = new Set(["e2", "e5", "e6", "e12", "e13", "e20", "e22", "e24"]);
 const UPCOMING_IDS = new Set(["e21", "e2", "e3", "e4", "e17", "e5", "e6", "e13"]);
 
@@ -295,3 +296,139 @@ export const categoryOptions: { slug: string; label: string }[] = [
   { slug: "tham-quan", label: "Tham quan & Trải nghiệm" },
   { slug: "khac", label: "Khác" },
 ];
+
+/* ── Event detail page ──────────────────────────────────────
+   Rich content shown on /su-kien/[id]. A few events have curated
+   detail; the rest fall back to a generic version built from base
+   fields (see getEventDetail). */
+export type ContentBlock =
+  | { type: "heading"; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "list"; items: string[] };
+
+export interface Organizer {
+  name: string;
+  logo: string;
+  description: string;
+}
+
+export interface EventDetail {
+  showDates: string[]; // DD/MM/YYYY — every date the event runs
+  description: ContentBlock[];
+  organizer: Organizer;
+}
+
+/* Workshop Gốm runs daily: 30/06 + all of July → 1 + 31 suất. */
+function dailyShowDates(): string[] {
+  const out = ["30/06/2026"];
+  for (let d = 1; d <= 31; d += 1) out.push(`${String(d).padStart(2, "0")}/07/2026`);
+  return out;
+}
+
+const eventDetails: Record<string, EventDetail> = {
+  e25: {
+    showDates: dailyShowDates(),
+    organizer: {
+      name: "Từ Lâu Space",
+      logo: img("1493106641515-6b5631de4bb9"),
+      description:
+        "Từ Lâu tạo lập không gian thực hành thủ công và nghệ thuật cho tất cả mọi người, lấy việc thực hành làm trung tâm nhằm tăng cường cảm hứng sáng tạo và kết nối cảm xúc của người tham gia. Các workshop không phải là lớp học chuyên sâu nên dễ tiếp cận, thân thiện với cả trẻ em và người mới bắt đầu.",
+    },
+    description: [
+      { type: "heading", text: "THÔNG TIN ĐẶT LỊCH" },
+      {
+        type: "paragraph",
+        text: "Từ Lâu Space mở cửa từ 9H-21H mỗi ngày. Một buổi workshop kéo dài 3 tiếng, bạn có thể đặt lịch theo khung giờ tự chọn hoặc theo các ca workshop tiêu chuẩn.",
+      },
+      { type: "heading", text: "Thời gian các ca workshop tiêu chuẩn" },
+      {
+        type: "list",
+        items: [
+          "Ca sáng: 10-13H",
+          "Ca chiều: 14-17H",
+          "Ca tối: 18-21H (phụ thu 30K/người, miễn phụ thu cho nhóm trên 4 người)",
+        ],
+      },
+      {
+        type: "paragraph",
+        text: "Tiệm có thể linh động thời gian theo nhu cầu của bạn, nhưng tốt nhất bạn hãy tham gia đúng thời gian tiêu chuẩn để nhân viên hỗ trợ trọn vẹn nhất. Vui lòng liên hệ Tiệm trước nếu muốn đặt ca tối hoặc đặt ngoài khung giờ tiêu chuẩn.",
+      },
+      { type: "heading", text: "THÔNG TIN WORKSHOP" },
+      {
+        type: "paragraph",
+        text: "GỐM TÔ VẼ là gói trải nghiệm sáng tạo trên các phôi gốm có sẵn như ly, chén, tô, đĩa và đồ vật trang trí. Bạn chỉ cần chọn mẫu yêu thích và tự do tô điểm bằng màu sắc, họa tiết hoặc nét vẽ mang phong cách riêng. Dễ thực hiện, phù hợp cho mọi lứa tuổi.",
+      },
+      {
+        type: "list",
+        items: [
+          "Giá vé: 80K/người",
+          "Phí nung: Đã bao gồm trong giá phôi. Sản phẩm thứ 2 trở lên chỉ tính phụ phí nung.",
+          "Hơn 50 mẫu phôi gốm trắng để lựa chọn.",
+          "Có người hướng dẫn từ A-Z.",
+        ],
+      },
+      { type: "heading", text: "Đối tượng phù hợp" },
+      {
+        type: "list",
+        items: [
+          "Người muốn trải nghiệm trọn bộ từ A-Z",
+          "Gia đình, nhóm bạn yêu thủ công",
+          "Khách du lịch hoặc khách ghé trải nghiệm ngắn ngày",
+          "Làm sản phẩm hoàn chỉnh để sử dụng hoặc làm quà tặng",
+        ],
+      },
+      { type: "heading", text: "Bảng giá phôi gốm" },
+      {
+        type: "list",
+        items: [
+          "Muỗng, tượng nhỏ, lót ly: 50 - 95K",
+          "Mặt dây chuyền, móc khóa: 25K",
+          "Ly trơn không quai, chén bát: 125 - 195K",
+          "Ly có quai/họa tiết thú: 155 - 325K",
+          "Tô, đĩa lớn, đồ trang trí: 175 - 275K",
+          "Ống heo, chậu cây, tô lớn: 185 - 385K",
+        ],
+      },
+    ],
+  },
+};
+
+/* Look up any event (explore pool + home sections) by id. */
+export function findEventById(id: string): EventItem | undefined {
+  return [
+    ...exploreEvents,
+    ...featuredEvents,
+    ...trendingEvents,
+    ...upcomingEvents,
+  ].find((e) => e.id === id);
+}
+
+/* Curated detail when available, otherwise a generic one from base fields. */
+export function getEventDetail(event: EventItem): EventDetail {
+  const specific = eventDetails[event.id];
+  if (specific) return specific;
+  return {
+    showDates: [event.date],
+    organizer: {
+      name: "EventBox Organizer",
+      logo: "",
+      description:
+        "Đơn vị tổ chức trên nền tảng EventBox. Theo dõi để cập nhật các sự kiện mới nhất.",
+    },
+    description: [
+      {
+        type: "paragraph",
+        text: `${event.title} diễn ra tại ${event.location}. Đặt vé sớm để không bỏ lỡ trải nghiệm hấp dẫn này.`,
+      },
+      { type: "heading", text: "Thông tin sự kiện" },
+      {
+        type: "list",
+        items: [
+          `Thời gian: ${event.time}, ${event.date}`,
+          `Địa điểm: ${event.location}`,
+          `Giá vé: ${event.price}`,
+        ],
+      },
+    ],
+  };
+}
