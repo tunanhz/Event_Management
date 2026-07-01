@@ -1,8 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
+import { ShieldAlert } from "lucide-react"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Header } from "@/components/layout/Header"
+import { useAuth } from "@/context/AuthContext"
 
 export default function DashboardLayout({
   children,
@@ -10,6 +13,37 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { user, loading } = useAuth()
+
+  // Gate the entire admin area to ADMIN accounts.
+  if (loading) {
+    return (
+      <div className="flex h-dvh items-center justify-center" style={{ backgroundColor: "var(--background)" }}>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-cyan-600" />
+      </div>
+    )
+  }
+
+  if (user?.role !== "ADMIN") {
+    return (
+      <div
+        className="flex h-dvh flex-col items-center justify-center gap-3 px-4 text-center"
+        style={{ backgroundColor: "var(--background)" }}
+      >
+        <ShieldAlert className="h-16 w-16 text-rose-500" />
+        <h1 className="text-xl font-bold text-foreground">Quyền truy cập bị từ chối</h1>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Khu vực Quản trị chỉ dành cho tài khoản Quản trị viên (ADMIN).
+        </p>
+        <Link
+          href="/"
+          className="mt-2 rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-cyan-700"
+        >
+          Về trang chủ
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div

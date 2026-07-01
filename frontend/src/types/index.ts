@@ -32,6 +32,20 @@ export interface DashboardMetrics {
   totalAttendees: number
   revenueGrowth: number // percentage
   attendeeGrowth: number // percentage
+  totalUsers: number
+  pendingApprovals: number
+}
+
+export type ModerationStatus = "pending" | "approved" | "rejected"
+
+export interface ModerationEvent {
+  id: string
+  title: string
+  organizer: string
+  category: string
+  location: string
+  submittedAt: string
+  status: ModerationStatus
 }
 
 export interface RevenueData {

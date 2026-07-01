@@ -4,38 +4,30 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
-  CalendarDays,
+  ClipboardCheck,
+  Users,
+  BarChart3,
   Settings,
   LogOut,
-  Sparkles,
   ShieldCheck,
-  Ticket,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
+
+// Admin Panel navigation — the whole /dashboard area is admin-only.
+const navigation = [
+  { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Kiểm duyệt sự kiện", href: "/dashboard/moderation", icon: ClipboardCheck },
+  { name: "Quản lý người dùng", href: "/dashboard/accounts", icon: Users },
+  { name: "Báo cáo", href: "/dashboard/reports", icon: BarChart3 },
+  { name: "Cài đặt", href: "/dashboard/settings", icon: Settings },
+]
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   const { user, logout } = useAuth()
 
-  // Generate dynamic navigation items based on user role
-  const navigation = [
-    { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Sự kiện", href: "/dashboard/events", icon: CalendarDays },
-    { name: "Vé & Bán hàng", href: "/dashboard/ticketing", icon: Ticket },
-  ]
-
-  // Only admins can access account management
-  if (user?.role === "ADMIN") {
-    navigation.push({ name: "Quản lý tài khoản", href: "/dashboard/accounts", icon: ShieldCheck })
-  }
-
-  navigation.push({ name: "Cài đặt", href: "/dashboard/settings", icon: Settings })
-
-  const getInitials = (name: string) => {
-    if (!name) return "?"
-    return name.charAt(0).toUpperCase()
-  }
+  const getInitials = (name: string) => (name ? name.charAt(0).toUpperCase() : "?")
 
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -49,17 +41,15 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     >
       {/* Logo */}
       <div className="mb-8 flex items-center gap-2.5 px-2">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-sm"
-        >
-          <Sparkles className="h-5 w-5 text-white" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-sm">
+          <ShieldCheck className="h-5 w-5 text-white" />
         </div>
         <div>
           <h1 className="text-base font-bold leading-tight" style={{ color: "var(--foreground)" }}>
-            EventBox
+            EventBox Admin
           </h1>
           <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-            Quản lý sự kiện
+            Quản trị hệ thống
           </p>
         </div>
       </div>
@@ -71,17 +61,18 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider"
             style={{ color: "var(--muted-foreground)" }}
           >
-            Menu chính
+            Quản trị
           </p>
           {navigation.map((item) => {
             const isActive =
               pathname === item.href ||
-              (pathname?.startsWith(`${item.href}/`) && item.href !== "/dashboard")
+              (item.href !== "/dashboard" && pathname?.startsWith(`${item.href}/`))
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 onClick={onNavigate}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                   isActive
@@ -127,9 +118,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 <p className="truncate text-xs font-semibold" style={{ color: "var(--foreground)" }}>
                   {user.fullName}
                 </p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {user.role}
-                </p>
+                <p className="truncate text-xs text-muted-foreground">{user.role}</p>
               </div>
             </div>
           )}
