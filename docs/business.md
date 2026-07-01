@@ -61,6 +61,32 @@ SRS định nghĩa 6 actor; ánh xạ sang 4 `role` trong code (`Guest`/`User` l
 > tạo (không tự đăng ký); self-register chỉ `PARTICIPANT`/`ORGANIZER`. Admin không tự
 > khóa/đổi-role/xóa chính mình.
 
+### 2.1 Luồng xác thực & kích hoạt
+
+#### Participant & Organizer (Self-register)
+- **Đăng ký:** Email → OTP (6 chữ số, TTL 5 phút) → mật khẩu → tạo tài khoản, status `ACTIVE`.
+- **Đăng nhập:** Email/password hoặc Google OAuth; JWT trong cookie HttpOnly (7 ngày).
+- **Profile:** `GET /me` xem, `PUT /me` sửa họ tên & mật khẩu (yêu cầu mật khẩu hiện tại).
+
+#### Staff (Admin-managed activation)
+1. **Admin cấp tài khoản:** `POST /admin/staff` với email + họ tên.
+   - Hệ thống tạo tài khoản status `PENDING` + sinh mật khẩu tạm 10 ký tự.
+   - Tạo activation token (JWT, hạn 7 ngày, purpose="activation").
+   - Gửi email chứa: email + mật khẩu tạm + link `/activate?token=...`.
+
+2. **Staff kích hoạt:** `POST /activate` với token + họ tên (tùy) + mật khẩu mới.
+   - Xác thực token (JWT, purpose="activation").
+   - Cập nhật họ tên nếu có; hash & lưu mật khẩu mới (bcrypt 10 rounds).
+   - Chuyển status `PENDING` → `ACTIVE`.
+   - Lưu ý: Staff **không thể** đăng nhập khi status `PENDING`.
+
+3. **Cập nhật hồ sơ:** Sau kích hoạt, `PUT /me` dùng được bình thường.
+
+#### Trạng thái tài khoản
+- `ACTIVE`: Tài khoản hoạt động; đăng nhập được.
+- `PENDING`: Tài khoản chờ kích hoạt (STAFF mới); không đăng nhập được.
+- `BANNED`: Tài khoản bị khóa; Admin/hệ thống khóa; không đăng nhập được.
+
 ---
 
 ## 3. Danh mục nghiệp vụ (61 use case, 5 nhóm)
@@ -448,20 +474,3 @@ stateDiagram-v2
 
 > Kết luận: code đang hoàn thiện **Auth + quản trị tài khoản**; phần lõi nghiệp vụ sự kiện
 > (vé, thanh toán, check-in, duyệt, tài chính) **chưa hiện thực**. Đây là backlog chính.
-
----
-
-## 10. Câu hỏi chưa giải quyết
-
-- **Phí nền tảng/hoa hồng**: % cụ thể là bao nhiêu? Mô hình tính trên doanh thu hay trên vé?
-  (SDS/SRS chỉ nói "phí theo %", chưa có con số.)
-- **Chính sách refund/withdrawal**: điều kiện, thời hạn, ai chịu phí khi hủy?
-- **Category**: danh mục cố định hay Admin tự cấu hình?
-- **Vé — nhúng hay tách bảng**: `ticketTypes` subdocument (Create Event) vs collection `Tickets`
-  riêng (Booking/Checkin) — chốt một thiết kế.
-- **Đồng bộ đặt tên field & enum**: `startDatetime/endDatetime` vs `startDate/endDate`;
-  `approvedById` vs `reviewedBy`; có giữ thêm `cancelled/completed` cho `Event.status` ngoài 4
-  trạng thái SDS không?
-- **Contact vs Contracts**: giữ cả hai entity hay gộp/bỏ một?
-- **Payment gateway**: chốt **VNPAY** (theo SRS). Phần "Payos" trong Final Report là template
-  sót — xác nhận loại bỏ.

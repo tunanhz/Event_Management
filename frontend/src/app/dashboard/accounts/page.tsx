@@ -5,7 +5,7 @@ import { clientApi } from "@/lib/client-api"
 import { useAuth } from "@/context/AuthContext"
 import { 
   Users, Search, UserPlus, ShieldAlert, CheckCircle2, 
-  Trash2, UserCog, Lock, Unlock, Mail, X, Copy, Check
+  Trash2, UserCog, Lock, Unlock, Mail, X, Copy, Check, KeyRound, ShieldCheck
 } from "lucide-react"
 
 interface Account {
@@ -48,10 +48,7 @@ export default function AccountsPage() {
   const [showStaffModal, setShowStaffModal] = useState(false)
   const [staffName, setStaffName] = useState("")
   const [staffEmail, setStaffEmail] = useState("")
-  const [staffPhone, setStaffPhone] = useState("")
   const [staffLoading, setStaffLoading] = useState(false)
-  const [createdStaffCreds, setCreatedStaffCreds] = useState<{ email: string; passwordPlain: string } | null>(null)
-  const [copied, setCopied] = useState(false)
   
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
@@ -176,14 +173,11 @@ export default function AccountsPage() {
       
       const res = await clientApi.post<{ success: boolean; data: any }>(`/users/admin/staff`, {
         fullName: staffName,
-        email: staffEmail,
-        phone: staffPhone
+        email: staffEmail
       })
       
       if (res.success) {
-        setSuccess(`Đã tạo tài khoản Staff cho ${staffName} thành công!`)
-        
-        
+        setSuccess(`Cấp tài khoản STAFF thành công! Một email kích hoạt và mật khẩu tạm thời đã được gửi tới: ${staffEmail}`)
         setStaffName("")
         setStaffEmail("")
         setShowStaffModal(false)
@@ -195,6 +189,7 @@ export default function AccountsPage() {
       setStaffLoading(false)
     }
   };
+
 
   const getRoleBadgeClass = (role: string) => {
     switch (role) {
@@ -429,6 +424,7 @@ export default function AccountsPage() {
                             </button>
                           )}
 
+
                           {/* Delete button */}
                           {!isSelf && (
                             <button
@@ -494,7 +490,7 @@ export default function AccountsPage() {
             {/* Modal content Form */}
             <form onSubmit={handleCreateStaffSubmit} className="mt-4 space-y-4">
               <p className="text-xs text-muted-foreground">
-                Nhập tên và email nhân viên. Hệ thống sẽ tự động tạo mật khẩu ngẫu nhiên và gửi thông tin đăng nhập trực tiếp qua Email của nhân viên.
+                Nhập tên và email nhân viên. Hệ thống sẽ tự động tạo mật khẩu ngẫu nhiên, gửi qua email và hiển thị thông tin để bạn sao chép trực tiếp.
               </p>
               
               <div>
@@ -530,26 +526,6 @@ export default function AccountsPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1">
-                  Số điện thoại Staff
-                </label>
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <svg className="h-4.5 w-4.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                  </div>
-                  <input
-                    type="text"
-                    value={staffPhone}
-                    onChange={(e) => setStaffPhone(e.target.value)}
-                    className="block w-full rounded-xl border border-border bg-muted py-2.5 pl-10 pr-3.5 text-sm text-foreground focus:border-cyan-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                    placeholder="09xxxxxxxx"
-                  />
-                </div>
-              </div>
-
               <div className="flex gap-3 pt-4 justify-end border-t border-border mt-6">
                 <button
                   type="button"
@@ -570,6 +546,8 @@ export default function AccountsPage() {
           </div>
         </div>
       )}
+
+
     </div>
   )
 }

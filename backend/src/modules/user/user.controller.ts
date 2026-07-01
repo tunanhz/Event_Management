@@ -101,7 +101,7 @@ export class UserController {
   createStaff = asyncHandler(async (req: AuthRequest, res: Response) => {
     const adminId = req.user!.id;
     const staff = await this.userService.createStaffAccount(adminId, req.body);
-    res.status(201).json(ApiResponse.created(staff, 'Tạo tài khoản STAFF thành công và đã gửi mail cấp thông tin'));
+    res.status(201).json(ApiResponse.created(staff, 'Tạo tài khoản STAFF thành công và đã gửi mail kích hoạt tài khoản'));
   });
 
   updateRole = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -122,5 +122,17 @@ export class UserController {
     const adminId = req.user!.id;
     await this.userService.deleteUser(adminId, req.params.id as string);
     res.json(ApiResponse.ok(null, 'Xóa tài khoản thành công'));
+  });
+
+  activateStaff = asyncHandler(async (req: Request, res: Response) => {
+    const { token, fullName, password } = req.body;
+    const user = await this.userService.activateStaffAccount(token, fullName, password);
+    res.json(ApiResponse.ok(user, 'Kích hoạt tài khoản và cập nhật thông tin thành công!'));
+  });
+
+  updateMe = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.id;
+    const user = await this.userService.updateProfile(userId, req.body);
+    res.json(ApiResponse.ok(user, 'Cập nhật thông tin cá nhân thành công'));
   });
 }

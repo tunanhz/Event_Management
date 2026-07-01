@@ -7,7 +7,7 @@ export interface IUser extends Document {
   passwordHash?: string; // Optional if registered via Google OAuth
   phone?: string;
   role: 'ADMIN' | 'ORGANIZER' | 'PARTICIPANT' | 'STAFF';
-  accountStatus: 'ACTIVE' | 'BANNED';
+  accountStatus: 'ACTIVE' | 'BANNED' | 'PENDING';
   avatar?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -27,7 +27,7 @@ const userSchema = new Schema<IUser>(
     },
     accountStatus: {
       type: String,
-      enum: ['ACTIVE', 'BANNED'],
+      enum: ['ACTIVE', 'BANNED', 'PENDING'],
       default: 'ACTIVE',
     },
     avatar: { type: String },
