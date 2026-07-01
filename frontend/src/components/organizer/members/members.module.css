@@ -1,0 +1,190 @@
+/* ─── Members ("Thành viên") page ─────────────────────────────────── */
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 42px;
+  padding: 0 1.2rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.addBtn:hover {
+  background: var(--primary-hover);
+}
+
+/* Search */
+.searchBar {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.searchIcon {
+  color: var(--muted-foreground);
+  margin-right: 0.6rem;
+  flex-shrink: 0;
+}
+.searchInput {
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+}
+.searchInput::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* Filter row */
+.filterRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+.filterBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 40px;
+  padding: 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+.filterBtn:hover {
+  border-color: var(--primary);
+}
+
+/* Table */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+.table th {
+  padding: 1rem 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.table td {
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
+  color: var(--foreground);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.table tr:last-child td {
+  border-bottom: none;
+}
+.memberName {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--muted-foreground);
+}
+.dotOnline {
+  background: #22c55e;
+}
+.nameText {
+  color: var(--primary);
+  font-weight: 600;
+}
+.role {
+  color: var(--primary);
+  font-weight: 500;
+}
+.email {
+  color: var(--muted-foreground);
+}
+.detailLink {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.detailLink:hover {
+  text-decoration: underline;
+}
+.emptyCell {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+
+/* Pagination */
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+.pageBtn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 0.5rem;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .headerRow {
+    flex-wrap: wrap;
+  }
+}

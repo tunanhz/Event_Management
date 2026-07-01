@@ -211,6 +211,34 @@
   flex: 1;
 }
 
+/* ── Event workspace sidebar extras ────────────────────────────────── */
+.sidebarBack {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.15rem 0.9rem 1rem;
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 700;
+  transition: color var(--transition-fast);
+}
+.sidebarBack:hover {
+  color: var(--primary);
+}
+.sidebarBack svg {
+  flex-shrink: 0;
+}
+
+.navSectionLabel {
+  padding: 1rem 0.9rem 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.navSectionLabel:first-child {
+  padding-top: 0.25rem;
+}
+
 .navItem {
   display: flex;
   align-items: center;
