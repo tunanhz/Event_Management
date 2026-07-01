@@ -474,3 +474,20 @@ stateDiagram-v2
 
 > Kết luận: code đang hoàn thiện **Auth + quản trị tài khoản**; phần lõi nghiệp vụ sự kiện
 > (vé, thanh toán, check-in, duyệt, tài chính) **chưa hiện thực**. Đây là backlog chính.
+
+---
+
+## 10. Câu hỏi chưa giải quyết
+
+- **Phí nền tảng/hoa hồng**: % cụ thể là bao nhiêu? Mô hình tính trên doanh thu hay trên vé?
+  (SDS/SRS chỉ nói "phí theo %", chưa có con số.)
+- **Chính sách refund/withdrawal**: điều kiện, thời hạn, ai chịu phí khi hủy?
+- **Category**: danh mục cố định hay Admin tự cấu hình?
+- **Vé — nhúng hay tách bảng**: `ticketTypes` subdocument (Create Event) vs collection `Tickets`
+  riêng (Booking/Checkin) — chốt một thiết kế.
+- **Đồng bộ đặt tên field & enum**: `startDatetime/endDatetime` vs `startDate/endDate`;
+  `approvedById` vs `reviewedBy`; có giữ thêm `cancelled/completed` cho `Event.status` ngoài 4
+  trạng thái SDS không?
+- **Contact vs Contracts**: giữ cả hai entity hay gộp/bỏ một?
+- **Payment gateway**: chốt **VNPAY** (theo SRS). Phần "Payos" trong Final Report là template
+  sót — xác nhận loại bỏ.
