@@ -1,0 +1,62 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.orgLabel {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+/* Placeholder panel for steps 2–4 (not yet built out). */
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  min-height: 420px;
+  margin: 1.5rem;
+  padding: 3rem 1.5rem;
+  border: 1.5px dashed var(--border);
+  border-radius: 16px;
+  background: var(--card);
+}
+.placeholderIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+}
+.placeholderTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.placeholderText {
+  font-size: 0.95rem;
+  color: var(--muted-foreground);
+  max-width: 420px;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .form { padding: 1rem; }
+}

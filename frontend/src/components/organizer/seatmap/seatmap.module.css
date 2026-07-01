@@ -1,0 +1,288 @@
+/* ─── Seat map ("Sơ đồ ghế") page ─────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Left: ticket-type quantity list */
+.left {
+  min-width: 0;
+}
+.leftHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+.leftHeadLabel {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.ticketRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+.ticketInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.ticketName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+.ticketEmpty {
+  font-size: 0.88rem;
+  color: var(--muted-foreground);
+}
+
+/* Stepper */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.stepBtn,
+.stepBtnPlus {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+.stepBtnPlus {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.stepBtn:disabled,
+.stepBtnPlus:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.stepValue {
+  width: 56px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Right: tabbed panel */
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 620px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.tab,
+.tabActive {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+.tab:hover {
+  color: var(--foreground);
+}
+.tabActive {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.panelBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+}
+
+/* Overview tab */
+.overviewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+.overviewRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.overviewName {
+  color: var(--foreground);
+  font-weight: 500;
+}
+.overviewPrice {
+  color: var(--primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Selected-list header */
+.listHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+.listHead svg {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+/* Empty state */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+.emptyIcon {
+  opacity: 0.35;
+}
+.emptyText {
+  font-size: 0.92rem;
+}
+
+/* Action buttons */
+.panelActions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+.ghostBtn {
+  flex: 1;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.ghostBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.panelFooter {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.unlockBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 46px;
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lockBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 46px;
+  border: none;
+  border-radius: 10px;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.primaryBtn {
+  flex: 1;
+  height: 46px;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lockBtn:disabled,
+.unlockBtn:disabled,
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .panel {
+    min-height: 520px;
+  }
+}

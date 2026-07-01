@@ -1,0 +1,335 @@
+/* ─── Ticket card (perforated ticket-stub look) ───────────── */
+.card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease,
+    transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-primary);
+  box-shadow: 0 16px 38px rgba(8, 145, 178, 0.16);
+}
+
+/* Coloured accent strip down the very left edge, keyed to status */
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  z-index: 2;
+}
+.accent_success::before {
+  background: linear-gradient(180deg, #34d399, #059669);
+}
+.accent_muted::before {
+  background: linear-gradient(180deg, #94a3b8, #64748b);
+}
+.accent_danger::before {
+  background: linear-gradient(180deg, #fb7185, #f43f5e);
+}
+
+/* Top notch punched into the tear line (overflow:hidden clips it to a
+   clean semicircle "bite"; colour = page bg so it reads as cut-out) */
+.card::after {
+  content: "";
+  position: absolute;
+  left: 220px;
+  top: -11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+/* Poster */
+.poster {
+  position: relative;
+  display: block;
+  height: 100%;
+  min-height: 178px;
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.poster:hover .image {
+  transform: scale(1.06);
+}
+
+.posterShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.05) 0%,
+    rgba(15, 23, 42, 0.45) 100%
+  );
+}
+
+/* Calendar chip */
+.dateChip {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+  padding: 5px 8px 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(4px);
+}
+.dateDay {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #0f172a;
+}
+.dateMonth {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0891b2;
+  margin-top: 2px;
+}
+
+.statusBadge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  line-height: 1.4;
+  backdrop-filter: blur(4px);
+}
+.success {
+  background: rgba(16, 185, 129, 0.92);
+  color: #fff;
+}
+.muted {
+  background: rgba(100, 116, 139, 0.92);
+  color: #fff;
+}
+.danger {
+  background: rgba(244, 63, 94, 0.92);
+  color: #fff;
+}
+
+/* Body — right stub, separated by a dashed tear line */
+.body {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.1rem 1.25rem 1.1rem 1.75rem;
+}
+.body::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  border-left: 2px dashed var(--color-border);
+}
+/* Bottom notch on the tear line (mirrors .card::after) */
+.body::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.orderCode {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.2s ease;
+}
+.title:hover {
+  color: var(--color-primary-light);
+}
+
+.meta {
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.metaItem svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--color-primary-light);
+}
+.metaItem span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Footer: price + action */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
+}
+
+.priceBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.priceLabel {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+.price {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.viewBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(8, 145, 178, 0.28);
+  transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.viewBtn svg {
+  width: 16px;
+  height: 16px;
+}
+.viewBtn:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 8px 22px rgba(8, 145, 178, 0.36);
+}
+.viewBtn:active {
+  transform: scale(0.97);
+}
+.viewBtn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.refundNote {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+/* ─── Responsive: stack the ticket on small screens ───────── */
+@media (max-width: 640px) {
+  .card {
+    grid-template-columns: 1fr;
+  }
+  /* Notches only make sense on the vertical tear — hide when stacked */
+  .card::after,
+  .body::after {
+    display: none;
+  }
+  .card::before {
+    top: 0;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: 5px;
+  }
+  .accent_success::before {
+    background: linear-gradient(90deg, #34d399, #059669);
+  }
+  .accent_muted::before {
+    background: linear-gradient(90deg, #94a3b8, #64748b);
+  }
+  .accent_danger::before {
+    background: linear-gradient(90deg, #fb7185, #f43f5e);
+  }
+  .poster {
+    height: 160px;
+    min-height: 160px;
+  }
+  .body {
+    padding: 1.4rem 1.1rem 1.1rem;
+  }
+  .body::before {
+    left: 14px;
+    right: 14px;
+    top: 0;
+    bottom: auto;
+    border-left: none;
+    border-top: 2px dashed var(--color-border);
+  }
+}

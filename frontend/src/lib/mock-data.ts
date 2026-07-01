@@ -1,4 +1,4 @@
-import { Event, DashboardMetrics, RevenueData } from "@/types"
+import { Event, DashboardMetrics, RevenueData, ModerationEvent } from "@/types"
 
 export const mockMetrics: DashboardMetrics = {
   totalEvents: 124,
@@ -7,6 +7,8 @@ export const mockMetrics: DashboardMetrics = {
   totalAttendees: 10482,
   revenueGrowth: 20.1,
   attendeeGrowth: 15.2,
+  totalUsers: 8734,
+  pendingApprovals: 6,
 }
 
 export const mockRevenueData: RevenueData[] = [
@@ -89,5 +91,63 @@ export const mockEvents: Event[] = [
     status: "completed",
     createdAt: "2025-08-10T10:00:00Z",
     updatedAt: "2025-12-16T10:00:00Z",
+  },
+]
+
+// Events awaiting / passed admin moderation (organizer submissions).
+export const mockModerationEvents: ModerationEvent[] = [
+  {
+    id: "mod-1",
+    title: "Đêm nhạc Acoustic Trịnh Công Sơn",
+    organizer: "Sài Gòn Music Group",
+    category: "Nhạc sống",
+    location: "Nhà hát Hòa Bình, TP.HCM",
+    submittedAt: "2026-06-28T14:20:00Z",
+    status: "pending",
+  },
+  {
+    id: "mod-2",
+    title: "Hội thảo AI & Tương lai việc làm",
+    organizer: "TechTalk Vietnam",
+    category: "Hội thảo & Workshop",
+    location: "Đại học Bách Khoa, Hà Nội",
+    submittedAt: "2026-06-29T09:05:00Z",
+    status: "pending",
+  },
+  {
+    id: "mod-3",
+    title: "Giải chạy Marathon Vì Cộng Đồng",
+    organizer: "Run For Life",
+    category: "Thể thao",
+    location: "Hồ Tây, Hà Nội",
+    submittedAt: "2026-06-30T08:00:00Z",
+    status: "pending",
+  },
+  {
+    id: "mod-4",
+    title: "Triển lãm Nhiếp ảnh Đường phố",
+    organizer: "Urban Lens Collective",
+    category: "Triển lãm",
+    location: "The Factory, TP.HCM",
+    submittedAt: "2026-06-25T11:30:00Z",
+    status: "approved",
+  },
+  {
+    id: "mod-5",
+    title: "Lễ hội Ẩm thực Đường phố Đà Nẵng",
+    organizer: "Da Nang Events",
+    category: "Khác",
+    location: "Bãi biển Mỹ Khê, Đà Nẵng",
+    submittedAt: "2026-06-24T16:45:00Z",
+    status: "approved",
+  },
+  {
+    id: "mod-6",
+    title: "Đêm diễn hài kịch (nội dung chưa hợp lệ)",
+    organizer: "Comedy Night Co.",
+    category: "Sân khấu & Nghệ thuật",
+    location: "Sân khấu 5B, TP.HCM",
+    submittedAt: "2026-06-22T19:00:00Z",
+    status: "rejected",
   },
 ]

@@ -1,0 +1,204 @@
+/* ─── Analytics ("Phân tích") page ────────────────────────────────── */
+
+/* Header: title + date range + confirm */
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.heading {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+.dateControls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+.dateRange {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 42px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+.dateInput {
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.88rem;
+  outline: none;
+  color-scheme: light dark;
+}
+.arrow {
+  color: var(--muted-foreground);
+}
+.confirmBtn {
+  height: 42px;
+  padding: 0 1.4rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.confirmBtn:hover {
+  background: var(--primary-hover);
+}
+
+/* Stats card: 4 metric cells */
+.statsCard {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 1.5rem;
+}
+.statCell {
+  padding: 1.25rem 1.5rem;
+}
+.statCell:not(:first-child) {
+  border-left: 1px solid var(--border);
+}
+.statHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.statLabel {
+  font-size: 0.92rem;
+  color: var(--muted-foreground);
+}
+.infoIcon {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+.statValue {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* Two-column: chart + channel */
+.grid2 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+.panelTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.panelTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.note {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  margin-bottom: 1.25rem;
+}
+.chartWrap {
+  width: 100%;
+  height: 340px;
+}
+
+/* Reusable "No data" empty box */
+.noDataBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 180px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--muted-foreground);
+}
+.noDataIcon {
+  opacity: 0.4;
+}
+.noDataText {
+  font-size: 0.9rem;
+}
+
+/* Traffic source table */
+.tableWrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th {
+  padding: 1rem 1.5rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--foreground);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.table th:last-child {
+  text-align: right;
+}
+.emptyCell {
+  padding: 2.5rem 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+  .statsCard {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .statCell:nth-child(3) {
+    border-left: none;
+  }
+  .statCell:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+}
+
+@media (max-width: 520px) {
+  .statsCard {
+    grid-template-columns: 1fr;
+  }
+  .statCell:not(:first-child) {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}

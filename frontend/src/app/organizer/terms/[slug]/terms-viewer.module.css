@@ -1,0 +1,40 @@
+.viewer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 72px); /* fill content area below the 72px top bar */
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  font-size: 0.9rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.back:hover { background: var(--muted); border-color: var(--primary); }
+
+.frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #525659; /* neutral PDF-viewer backdrop */
+}
+
+/* Not-found fallback */
+.missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 100%;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+.missingTitle { font-size: 1.15rem; font-weight: 700; color: var(--foreground); }

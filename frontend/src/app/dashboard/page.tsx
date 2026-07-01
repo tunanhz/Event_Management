@@ -1,12 +1,14 @@
 "use client"
 
+import Link from "next/link"
 import {
   Users,
   CalendarDays,
   Banknote,
-  TrendingUp,
+  ClipboardCheck,
   ArrowUpRight,
-  MapPin,
+  ArrowRight,
+  Building2,
 } from "lucide-react"
 import {
   AreaChart,
@@ -19,61 +21,46 @@ import {
 } from "recharts"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import { Button } from "@/components/ui/Button"
-import { Badge } from "@/components/ui/badge"
-import { mockMetrics, mockRevenueData, mockEvents } from "@/lib/mock-data"
-import { formatCurrency, formatNumber, formatDateTime } from "@/lib/utils"
-import { useAuth } from "@/context/AuthContext"
-
-const statusMap: Record<string, { label: string; variant: "success" | "warning" | "destructive" | "default" }> = {
-  published: { label: "Đã công bố", variant: "success" },
-  draft:     { label: "Bản nháp",   variant: "warning" },
-  cancelled: { label: "Đã hủy",     variant: "destructive" },
-  completed: { label: "Hoàn thành", variant: "default" },
-}
+import { mockMetrics, mockRevenueData, mockModerationEvents } from "@/lib/mock-data"
+import { formatCurrency, formatNumber } from "@/lib/utils"
 
 const statCards = [
   {
-    label: "Tổng doanh thu",
-    value: (m: typeof mockMetrics) => formatCurrency(m.totalRevenue),
-    growth: (m: typeof mockMetrics) => `+${m.revenueGrowth}%`,
-    icon: Banknote,
+    label: "Tổng người dùng",
+    value: formatNumber(mockMetrics.totalUsers),
+    sub: `+${mockMetrics.attendeeGrowth}% so với tháng trước`,
+    icon: Users,
     colorClass: "gradient-primary",
     textColor: "text-cyan-700",
-    bgLight: "#f5f3ff",
-  },
-  {
-    label: "Người tham dự",
-    value: (m: typeof mockMetrics) => formatNumber(m.totalAttendees),
-    growth: (m: typeof mockMetrics) => `+${m.attendeeGrowth}%`,
-    icon: Users,
-    colorClass: "gradient-emerald",
-    textColor: "text-emerald-700",
-    bgLight: "#ecfdf5",
-  },
-  {
-    label: "Sự kiện đang mở",
-    value: (m: typeof mockMetrics) => String(m.activeEvents),
-    growth: () => "Đang diễn ra",
-    icon: CalendarDays,
-    colorClass: "gradient-rose",
-    textColor: "text-rose-700",
-    bgLight: "#fff1f2",
   },
   {
     label: "Tổng sự kiện",
-    value: (m: typeof mockMetrics) => String(m.totalEvents),
-    growth: () => "Mọi thời điểm",
-    icon: TrendingUp,
+    value: formatNumber(mockMetrics.totalEvents),
+    sub: `${mockMetrics.activeEvents} đang diễn ra`,
+    icon: CalendarDays,
+    colorClass: "gradient-emerald",
+    textColor: "text-emerald-700",
+  },
+  {
+    label: "Doanh thu toàn hệ thống",
+    value: formatCurrency(mockMetrics.totalRevenue),
+    sub: `+${mockMetrics.revenueGrowth}% so với tháng trước`,
+    icon: Banknote,
     colorClass: "gradient-amber",
     textColor: "text-amber-700",
-    bgLight: "#fffbeb",
+  },
+  {
+    label: "Sự kiện chờ duyệt",
+    value: String(mockMetrics.pendingApprovals),
+    sub: "Cần xử lý",
+    icon: ClipboardCheck,
+    colorClass: "gradient-rose",
+    textColor: "text-rose-700",
   },
 ]
 
-export default function DashboardOverview() {
-  const { user } = useAuth()
-  const welcomeName = user ? user.fullName : "Bạn"
+export default function AdminOverview() {
+  const pending = mockModerationEvents.filter((e) => e.status === "pending")
 
   return (
     <div className="space-y-7 animate-fade-up">
@@ -81,16 +68,19 @@ export default function DashboardOverview() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-            Xin chào, {welcomeName}! 👋
+            Bảng điều khiển Quản trị
           </h2>
           <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>
-            Đây là tổng quan hoạt động của bạn hôm nay, {new Date().toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
+            Tổng quan hoạt động toàn hệ thống EventBox.
           </p>
         </div>
-        <Button className="shrink-0 rounded-xl gap-2 shadow-sm">
-          <CalendarDays className="h-4 w-4" />
-          Tạo sự kiện mới
-        </Button>
+        <Link
+          href="/dashboard/moderation"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-cyan-700"
+        >
+          <ClipboardCheck className="h-4 w-4" />
+          Duyệt {pending.length} sự kiện
+        </Link>
       </div>
 
       {/* KPI Cards */}
@@ -107,37 +97,27 @@ export default function DashboardOverview() {
                   {card.label}
                 </p>
                 <p className="mt-1.5 text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-                  {card.value(mockMetrics)}
+                  {card.value}
                 </p>
-                <span
-                  className={`mt-1 inline-flex items-center gap-0.5 text-xs font-medium ${card.textColor}`}
-                >
+                <span className={`mt-1 inline-flex items-center gap-0.5 text-xs font-medium ${card.textColor}`}>
                   <ArrowUpRight className="h-3 w-3" />
-                  {card.growth(mockMetrics)} so với tháng trước
+                  {card.sub}
                 </span>
               </div>
-              <div
-                className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-sm ${card.colorClass}`}
-              >
+              <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-sm ${card.colorClass}`}>
                 <card.icon className="h-5 w-5 text-white" />
               </div>
             </div>
-            {/* Subtle background shape */}
-            <div
-              className="pointer-events-none absolute -bottom-4 -right-4 h-20 w-20 rounded-full opacity-10 transition-opacity group-hover:opacity-20"
-              style={{ background: card.bgLight }}
-            />
           </div>
         ))}
       </div>
 
-      {/* Charts + Recent events */}
+      {/* Chart + pending queue */}
       <div className="grid gap-4 lg:grid-cols-7">
-        {/* Area chart */}
         <Card className="col-span-4 rounded-2xl border card-glow" style={{ borderColor: "var(--border)" }}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Biểu đồ doanh thu</CardTitle>
-            <CardDescription>Doanh thu theo từng tháng trong năm 2026 (VNĐ)</CardDescription>
+            <CardTitle className="text-base font-semibold">Doanh thu toàn hệ thống</CardTitle>
+            <CardDescription>Doanh thu theo tháng trong năm 2026 (VNĐ)</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <div className="h-[280px] w-full">
@@ -149,26 +129,14 @@ export default function DashboardOverview() {
                       <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="#e2e8f0"
-                  />
-                  <XAxis
-                    dataKey="month"
-                    stroke="#9ca3af"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="month" stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis
                     stroke="#9ca3af"
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(v) =>
-                      v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}tr` : String(v)
-                    }
+                    tickFormatter={(v) => (v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}tr` : String(v))}
                   />
                   <Tooltip
                     cursor={{ stroke: "#a5f3fc", strokeWidth: 1.5 }}
@@ -179,8 +147,8 @@ export default function DashboardOverview() {
                       fontSize: "12px",
                       boxShadow: "0 4px 16px rgba(8,145,178,0.12)",
                     }}
-                    formatter={(value: any) => [
-                      `${(Number(value || 0) / 1_000_000).toFixed(0)} triệu đồng`,
+                    formatter={(value: unknown) => [
+                      `${(Number(value ?? 0) / 1_000_000).toFixed(0)} triệu đồng`,
                       "Doanh thu",
                     ]}
                   />
@@ -199,47 +167,44 @@ export default function DashboardOverview() {
           </CardContent>
         </Card>
 
-        {/* Recent events */}
+        {/* Pending approval queue */}
         <Card className="col-span-3 rounded-2xl border card-glow" style={{ borderColor: "var(--border)" }}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Sự kiện gần đây</CardTitle>
-            <CardDescription>Các sự kiện được tạo mới nhất</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div>
+              <CardTitle className="text-base font-semibold">Sự kiện chờ duyệt</CardTitle>
+              <CardDescription>Do Ban tổ chức gửi lên</CardDescription>
+            </div>
+            <Link
+              href="/dashboard/moderation"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 hover:text-cyan-700"
+            >
+              Tất cả <ArrowRight className="h-3 w-3" />
+            </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {mockEvents.slice(0, 4).map((event, idx) => (
-                <div
+            <div className="space-y-3">
+              {pending.slice(0, 4).map((event) => (
+                <Link
                   key={event.id}
+                  href="/dashboard/moderation"
                   className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-cyan-50"
-                  style={{ animationDelay: `${idx * 60}ms` }}
                 >
-                  <div
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-white text-sm font-bold gradient-primary"
-                  >
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl gradient-primary text-sm font-bold text-white">
                     {event.title.charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p
-                      className="truncate text-sm font-semibold"
-                      style={{ color: "var(--foreground)" }}
-                    >
+                    <p className="truncate text-sm font-semibold" style={{ color: "var(--foreground)" }}>
                       {event.title}
                     </p>
                     <p
                       className="mt-0.5 flex items-center gap-1 truncate text-xs"
                       style={{ color: "var(--muted-foreground)" }}
                     >
-                      <MapPin className="h-3 w-3 flex-shrink-0" />
-                      {event.location}
+                      <Building2 className="h-3 w-3 flex-shrink-0" />
+                      {event.organizer}
                     </p>
                   </div>
-                  <Badge
-                    variant={statusMap[event.status]?.variant ?? "default"}
-                    className="ml-auto shrink-0 text-xs"
-                  >
-                    {statusMap[event.status]?.label ?? event.status}
-                  </Badge>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>

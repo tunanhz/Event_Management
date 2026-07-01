@@ -20,8 +20,9 @@ export const metadata: Metadata = {
   keywords: ["event", "management", "sự kiện", "quản lý", "vé", "ticketbox"],
 };
 
-// Applies the saved (or system) theme before first paint to avoid a flash.
-const themeInitScript = `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+// Applies the theme before first paint to avoid a flash. Dark is the default:
+// only an explicit saved 'light' choice opts out — otherwise dark is applied.
+const themeInitScript = `(function(){try{if(localStorage.getItem('theme')!=='light'){document.documentElement.classList.add('dark');}}catch(e){document.documentElement.classList.add('dark');}})();`;
 
 export default function RootLayout({
   children,
