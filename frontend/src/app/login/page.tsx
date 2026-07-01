@@ -27,7 +27,7 @@ export default function LoginPage() {
       const g = (window as any).google;
       if (g) {
         g.accounts.id.initialize({
-          client_id: "your-google-client-id.apps.googleusercontent.com", // Will fallback in backend if blank
+          client_id: "182516438144-c810a7p012fhgbhmqpgk3bjs3en1om48.apps.googleusercontent.com", // Will fallback in backend if blank
           callback: handleGoogleCredentialResponse,
         });
         g.accounts.id.renderButton(

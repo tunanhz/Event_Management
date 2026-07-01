@@ -11,9 +11,11 @@ router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.post('/google', userController.googleLogin);
 router.post('/logout', userController.logout);
+router.post('/activate', userController.activateStaff);
 
 // ─── Private Profile Routes ──────────────────────────────────────────
 router.get('/me', isAuthenticated as any, userController.getMe as any);
+router.put('/me', isAuthenticated as any, userController.updateMe as any);
 
 // ─── Admin Account Management Routes (mounted under /api/users/admin) ─────────────────────────────────
 router.get('/admin', isAuthenticated as any, authorize('ADMIN') as any, userController.getAllUsers as any);

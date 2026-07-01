@@ -1,4 +1,4 @@
-import { UserRepository } from './user.repository';
+import { UserRepository, mockUsersStore } from './user.repository';
 import { IUser } from './user.model';
 import { OTP } from './otp.model';
 import { AppError } from '../../common/utils/AppError';
@@ -8,6 +8,8 @@ import { generateToken } from '../../common/utils/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import { config } from '../../config';
 import { isDbConnected } from '../../config/database';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 const googleClient = new OAuth2Client(config.google.clientId);
 
@@ -137,6 +139,10 @@ export class UserService {
       throw new AppError('Email hoặc mật khẩu không chính xác', 401);
     }
 
+    if (user.accountStatus === 'PENDING') {
+      throw new AppError('Tài khoản của bạn chưa được kích hoạt. Vui lòng kiểm tra email kích hoạt.', 403);
+    }
+
     if (user.accountStatus === 'BANNED') {
       throw new AppError('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.', 403);
     }
@@ -252,8 +258,8 @@ export class UserService {
     return this.userRepository.findAll(query);
   }
 
-  async createStaffAccount(adminId: string, data: { fullName: string; email: string; phone?: string }): Promise<IUser> {
-    const { fullName, email, phone } = data;
+  async createStaffAccount(adminId: string, data: { fullName: string; email: string }): Promise<IUser> {
+    const { fullName, email } = data;
 
     if (!fullName || !email) {
       throw new AppError('Full name and email are required for Staff account', 400);
@@ -276,21 +282,28 @@ export class UserService {
     // Generate random 8-character password
     const passwordPlain = Math.random().toString(36).slice(-8) + Math.random().toString(36).toUpperCase().slice(-2);
 
-    // Create Staff User
+    // Create Staff User in PENDING state
     const staff = await this.userRepository.create({
       fullName,
       email: lowerEmail,
       passwordHash: passwordPlain,
-      phone,
       role: 'STAFF',
-      accountStatus: 'ACTIVE',
+      accountStatus: 'PENDING',
     });
 
-    // Send credentials via email
+    // Generate activation token
+    const activationToken = jwt.sign(
+      { id: (staff._id as any).toString(), email: staff.email, purpose: 'activation' },
+      config.jwt.secret,
+      { expiresIn: '7d' }
+    );
+
+    const activationLink = `${config.frontendUrl}/activate?token=${activationToken}`;
+
+    // Send credentials and activation link via email
     try {
-      await emailService.sendStaffCredential(lowerEmail, fullName, passwordPlain);
+      await emailService.sendStaffActivation(lowerEmail, fullName, passwordPlain, activationLink);
     } catch (emailErr) {
-      // Log error but do not rollback since user was created successfully
       console.error(`❌ Failed to send credentials email to Staff ${lowerEmail}:`, emailErr);
     }
 
@@ -363,6 +376,124 @@ export class UserService {
     if (!user) {
       throw new AppError('User not found', 404);
     }
+  }
+
+  async activateStaffAccount(token: string, fullName?: string, newPassword?: string): Promise<IUser> {
+    if (!token) {
+      throw new AppError('Activation token is required', 400);
+    }
+
+    try {
+      const decoded = jwt.verify(token, config.jwt.secret) as any;
+      if (!decoded || decoded.purpose !== 'activation') {
+        throw new AppError('Mã kích hoạt không hợp lệ', 400);
+      }
+
+      // Fetch mongoose doc to allow hashing on save
+      const user = await this.userRepository.findByIdDocument(decoded.id);
+      if (!user) {
+        throw new AppError('Không tìm thấy tài khoản', 404);
+      }
+
+      if (user.accountStatus !== 'PENDING') {
+        throw new AppError('Tài khoản này đã được kích hoạt hoặc đang bị khóa.', 400);
+      }
+
+      // Update fields
+      if (fullName) {
+        user.fullName = fullName;
+      }
+      if (newPassword) {
+        if (newPassword.length < 6) {
+          throw new AppError('Mật khẩu mới phải có ít nhất 6 ký tự', 400);
+        }
+        if (!isDbConnected) {
+          const salt = await bcrypt.genSalt(10);
+          user.passwordHash = await bcrypt.hash(newPassword, salt);
+        } else {
+          user.passwordHash = newPassword;
+        }
+      }
+
+      user.accountStatus = 'ACTIVE';
+
+      if (isDbConnected) {
+        await (user as any).save();
+      } else {
+        const idx = mockUsersStore.findIndex(u => u._id === decoded.id);
+        if (idx !== -1) {
+          mockUsersStore[idx].fullName = user.fullName;
+          mockUsersStore[idx].passwordHash = user.passwordHash;
+          mockUsersStore[idx].accountStatus = 'ACTIVE';
+          mockUsersStore[idx].updatedAt = new Date();
+        }
+      }
+
+      const userJson = isDbConnected ? (user as any).toJSON() : user;
+      delete userJson.passwordHash;
+
+      return userJson;
+    } catch (err: any) {
+      if (err.name === 'TokenExpiredError') {
+        throw new AppError('Mã kích hoạt tài khoản đã hết hạn. Vui lòng liên hệ Admin để cấp lại.', 400);
+      }
+      throw new AppError(err.message || 'Kích hoạt tài khoản thất bại', 400);
+    }
+  }
+
+  async updateProfile(userId: string, data: { fullName?: string; currentPassword?: string; newPassword?: string }): Promise<IUser> {
+    const user = await this.userRepository.findByIdDocument(userId);
+    if (!user) {
+      throw new AppError('Không tìm thấy tài khoản', 404);
+    }
+
+    if (data.fullName) {
+      user.fullName = data.fullName;
+    }
+
+    if (data.newPassword) {
+      if (!data.currentPassword) {
+        throw new AppError('Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu', 400);
+      }
+      
+      const userWithAuth = await this.userRepository.findByEmailForAuth(user.email);
+      if (!userWithAuth) {
+        throw new AppError('Tài khoản không hợp lệ', 404);
+      }
+
+      const isMatch = await userWithAuth.comparePassword(data.currentPassword);
+      if (!isMatch) {
+        throw new AppError('Mật khẩu hiện tại không chính xác', 400);
+      }
+
+      if (data.newPassword.length < 6) {
+        throw new AppError('Mật khẩu mới phải có ít nhất 6 ký tự', 400);
+      }
+
+      if (!isDbConnected) {
+        const salt = await bcrypt.genSalt(10);
+        user.passwordHash = await bcrypt.hash(data.newPassword, salt);
+      } else {
+        user.passwordHash = data.newPassword;
+      }
+    }
+
+    if (isDbConnected) {
+      await (user as any).save();
+    } else {
+      const idx = mockUsersStore.findIndex(u => u._id === userId);
+      if (idx !== -1) {
+        mockUsersStore[idx].fullName = user.fullName;
+        if (data.newPassword) {
+          mockUsersStore[idx].passwordHash = user.passwordHash;
+        }
+        mockUsersStore[idx].updatedAt = new Date();
+      }
+    }
+
+    const userJson = isDbConnected ? (user as any).toJSON() : user;
+    delete userJson.passwordHash;
+    return userJson;
   }
 }
 

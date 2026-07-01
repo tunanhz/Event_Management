@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import {
   Users,
   CalendarDays,
@@ -74,6 +75,163 @@ const statCards = [
 export default function DashboardOverview() {
   const { user } = useAuth()
   const welcomeName = user ? user.fullName : "Bạn"
+  const userRole = user?.role || "ORGANIZER"
+
+  // Define role specific contents
+  const getRoleConfigs = (role: string) => {
+    switch (role) {
+      case "ADMIN":
+        return {
+          title: "Tổng quan Hệ thống (Admin)",
+          sub: "Quản trị và giám sát toàn bộ hoạt động của nền tảng EventBox.",
+          actionText: "Quản lý tài khoản",
+          actionHref: "/dashboard/accounts",
+          kpi: [
+            {
+              label: "Tổng doanh thu hệ thống",
+              value: formatCurrency(2450000000),
+              growth: "+18.2% so với tháng trước",
+              icon: Banknote,
+              colorClass: "gradient-primary",
+              textColor: "text-cyan-700",
+              bgLight: "#f5f3ff",
+            },
+            {
+              label: "Tổng người tham gia",
+              value: formatNumber(48290),
+              growth: "+12.5% so với tháng trước",
+              icon: Users,
+              colorClass: "gradient-emerald",
+              textColor: "text-emerald-700",
+              bgLight: "#ecfdf5",
+            },
+            {
+              label: "Nhà tổ chức hoạt động",
+              value: "324",
+              growth: "+8.4% so với tháng trước",
+              icon: CalendarDays,
+              colorClass: "gradient-rose",
+              textColor: "text-rose-700",
+              bgLight: "#fff1f2",
+            },
+            {
+              label: "Tổng sự kiện toàn sàn",
+              value: "1,204",
+              growth: "Mọi thời điểm",
+              icon: TrendingUp,
+              colorClass: "gradient-amber",
+              textColor: "text-amber-700",
+              bgLight: "#fffbeb",
+            },
+          ],
+          chartTitle: "Biểu đồ doanh thu toàn hệ thống",
+          recentTitle: "Sự kiện vừa tạo",
+          recentSub: "Các sự kiện mới nhất trên hệ thống",
+          eventsToShow: mockEvents.slice(0, 4)
+        };
+      case "STAFF":
+        return {
+          title: "Khu vực làm việc (Staff)",
+          sub: "Xem và phê duyệt các sự kiện mới đăng ký trên hệ thống.",
+          actionText: "Duyệt sự kiện",
+          actionHref: "/dashboard/events",
+          kpi: [
+            {
+              label: "Sự kiện chờ duyệt",
+              value: "8",
+              growth: "Cần xử lý ngay",
+              icon: CalendarDays,
+              colorClass: "gradient-rose",
+              textColor: "text-rose-700",
+              bgLight: "#fff1f2",
+            },
+            {
+              label: "Sự kiện đã duyệt",
+              value: "312",
+              growth: "Trong tháng này",
+              icon: TrendingUp,
+              colorClass: "gradient-emerald",
+              textColor: "text-emerald-700",
+              bgLight: "#ecfdf5",
+            },
+            {
+              label: "Tài khoản hoạt động",
+              value: "1,452",
+              growth: "Đã xác minh",
+              icon: Users,
+              colorClass: "gradient-primary",
+              textColor: "text-cyan-700",
+              bgLight: "#f5f3ff",
+            },
+            {
+              label: "Sự kiện đang diễn ra",
+              value: "124",
+              growth: "Mọi thời điểm",
+              icon: Banknote,
+              colorClass: "gradient-amber",
+              textColor: "text-amber-700",
+              bgLight: "#fffbeb",
+            },
+          ],
+          chartTitle: "Biểu đồ sự kiện được duyệt theo tháng",
+          recentTitle: "Sự kiện chờ duyệt",
+          recentSub: "Danh sách yêu cầu phê duyệt mới nhất",
+          eventsToShow: mockEvents.filter(e => e.status === "draft").slice(0, 4)
+        };
+      case "ORGANIZER":
+      default:
+        return {
+          title: "Tổng quan hoạt động (Organizer)",
+          sub: "Quản lý các sự kiện và theo dõi doanh số bán vé của riêng bạn.",
+          actionText: "Tạo sự kiện mới",
+          actionHref: "/dashboard/events",
+          kpi: [
+            {
+              label: "Tổng doanh thu bán vé",
+              value: formatCurrency(mockMetrics.totalRevenue),
+              growth: `+${mockMetrics.revenueGrowth}% so với tháng trước`,
+              icon: Banknote,
+              colorClass: "gradient-primary",
+              textColor: "text-cyan-700",
+              bgLight: "#f5f3ff",
+            },
+            {
+              label: "Người mua vé của tôi",
+              value: formatNumber(mockMetrics.totalAttendees),
+              growth: `+${mockMetrics.attendeeGrowth}% so với tháng trước`,
+              icon: Users,
+              colorClass: "gradient-emerald",
+              textColor: "text-emerald-700",
+              bgLight: "#ecfdf5",
+            },
+            {
+              label: "Sự kiện đang mở",
+              value: String(mockMetrics.activeEvents),
+              growth: "Đang diễn ra",
+              icon: CalendarDays,
+              colorClass: "gradient-rose",
+              textColor: "text-rose-700",
+              bgLight: "#fff1f2",
+            },
+            {
+              label: "Tổng sự kiện của tôi",
+              value: String(mockMetrics.totalEvents),
+              growth: "Mọi thời điểm",
+              icon: TrendingUp,
+              colorClass: "gradient-amber",
+              textColor: "text-amber-700",
+              bgLight: "#fffbeb",
+            },
+          ],
+          chartTitle: "Biểu đồ doanh thu bán vé",
+          recentTitle: "Sự kiện của tôi",
+          recentSub: "Các sự kiện bạn đã tạo gần đây",
+          eventsToShow: mockEvents.slice(0, 4)
+        };
+    }
+  };
+
+  const config = getRoleConfigs(userRole);
 
   return (
     <div className="space-y-7 animate-fade-up">
@@ -84,18 +242,20 @@ export default function DashboardOverview() {
             Xin chào, {welcomeName}! 👋
           </h2>
           <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>
-            Đây là tổng quan hoạt động của bạn hôm nay, {new Date().toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
+            {config.sub}
           </p>
         </div>
-        <Button className="shrink-0 rounded-xl gap-2 shadow-sm">
-          <CalendarDays className="h-4 w-4" />
-          Tạo sự kiện mới
-        </Button>
+        <Link href={config.actionHref}>
+          <Button className="shrink-0 rounded-xl gap-2 shadow-sm cursor-pointer">
+            <CalendarDays className="h-4 w-4" />
+            {config.actionText}
+          </Button>
+        </Link>
       </div>
 
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((card) => (
+        {config.kpi.map((card) => (
           <div
             key={card.label}
             className="card-glow group relative overflow-hidden rounded-2xl border bg-card p-5 transition-all duration-300 hover:-translate-y-0.5"
@@ -107,13 +267,13 @@ export default function DashboardOverview() {
                   {card.label}
                 </p>
                 <p className="mt-1.5 text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-                  {card.value(mockMetrics)}
+                  {card.value}
                 </p>
                 <span
                   className={`mt-1 inline-flex items-center gap-0.5 text-xs font-medium ${card.textColor}`}
                 >
                   <ArrowUpRight className="h-3 w-3" />
-                  {card.growth(mockMetrics)} so với tháng trước
+                  {card.growth}
                 </span>
               </div>
               <div
@@ -136,8 +296,8 @@ export default function DashboardOverview() {
         {/* Area chart */}
         <Card className="col-span-4 rounded-2xl border card-glow" style={{ borderColor: "var(--border)" }}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Biểu đồ doanh thu</CardTitle>
-            <CardDescription>Doanh thu theo từng tháng trong năm 2026 (VNĐ)</CardDescription>
+            <CardTitle className="text-base font-semibold">{config.chartTitle}</CardTitle>
+            <CardDescription>Doanh số thống kê theo từng tháng trong năm 2026 (VNĐ)</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <div className="h-[280px] w-full">
@@ -181,7 +341,7 @@ export default function DashboardOverview() {
                     }}
                     formatter={(value: any) => [
                       `${(Number(value || 0) / 1_000_000).toFixed(0)} triệu đồng`,
-                      "Doanh thu",
+                      "Doanh số",
                     ]}
                   />
                   <Area
@@ -202,45 +362,51 @@ export default function DashboardOverview() {
         {/* Recent events */}
         <Card className="col-span-3 rounded-2xl border card-glow" style={{ borderColor: "var(--border)" }}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Sự kiện gần đây</CardTitle>
-            <CardDescription>Các sự kiện được tạo mới nhất</CardDescription>
+            <CardTitle className="text-base font-semibold">{config.recentTitle}</CardTitle>
+            <CardDescription>{config.recentSub}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockEvents.slice(0, 4).map((event, idx) => (
-                <div
-                  key={event.id}
-                  className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-cyan-50"
-                  style={{ animationDelay: `${idx * 60}ms` }}
-                >
+              {config.eventsToShow.length > 0 ? (
+                config.eventsToShow.map((event, idx) => (
                   <div
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-white text-sm font-bold gradient-primary"
+                    key={event.id}
+                    className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-cyan-50"
+                    style={{ animationDelay: `${idx * 60}ms` }}
                   >
-                    {event.title.charAt(0)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className="truncate text-sm font-semibold"
-                      style={{ color: "var(--foreground)" }}
+                    <div
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-white text-sm font-bold gradient-primary"
                     >
-                      {event.title}
-                    </p>
-                    <p
-                      className="mt-0.5 flex items-center gap-1 truncate text-xs"
-                      style={{ color: "var(--muted-foreground)" }}
+                      {event.title.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="truncate text-sm font-semibold"
+                        style={{ color: "var(--foreground)" }}
+                      >
+                        {event.title}
+                      </p>
+                      <p
+                        className="mt-0.5 flex items-center gap-1 truncate text-xs"
+                        style={{ color: "var(--muted-foreground)" }}
+                      >
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
+                        {event.location}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={statusMap[event.status]?.variant ?? "default"}
+                      className="ml-auto shrink-0 text-xs"
                     >
-                      <MapPin className="h-3 w-3 flex-shrink-0" />
-                      {event.location}
-                    </p>
+                      {statusMap[event.status]?.label ?? event.status}
+                    </Badge>
                   </div>
-                  <Badge
-                    variant={statusMap[event.status]?.variant ?? "default"}
-                    className="ml-auto shrink-0 text-xs"
-                  >
-                    {statusMap[event.status]?.label ?? event.status}
-                  </Badge>
+                ))
+              ) : (
+                <div className="text-center py-8 text-xs text-muted-foreground">
+                  Không có sự kiện nào hiển thị
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>

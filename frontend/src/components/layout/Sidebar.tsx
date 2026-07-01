@@ -19,15 +19,22 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { user, logout } = useAuth()
 
   // Generate dynamic navigation items based on user role
-  const navigation = [
-    { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Sự kiện", href: "/dashboard/events", icon: CalendarDays },
-    { name: "Vé & Bán hàng", href: "/dashboard/ticketing", icon: Ticket },
-  ]
+  const navigation = [{ name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard }];
 
-  // Only admins can access account management
   if (user?.role === "ADMIN") {
-    navigation.push({ name: "Quản lý tài khoản", href: "/dashboard/accounts", icon: ShieldCheck })
+    navigation.push(
+      { name: "Duyệt sự kiện", href: "/dashboard/events", icon: CalendarDays },
+      { name: "Quản lý tài khoản", href: "/dashboard/accounts", icon: ShieldCheck }
+    );
+  } else if (user?.role === "STAFF") {
+    navigation.push(
+      { name: "Duyệt sự kiện", href: "/dashboard/events", icon: CalendarDays }
+    );
+  } else if (user?.role === "ORGANIZER") {
+    navigation.push(
+      { name: "Sự kiện của tôi", href: "/dashboard/events", icon: CalendarDays },
+      { name: "Vé & Bán hàng", href: "/dashboard/ticketing", icon: Ticket }
+    );
   }
 
   navigation.push({ name: "Cài đặt", href: "/dashboard/settings", icon: Settings })
