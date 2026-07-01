@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
     "target": "ES2020",
     "module": "commonjs",
     "lib": ["ES2020"],
@@ -14,12 +13,11 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "baseUrl": "./src",
     "paths": {
-      "@/*": ["./*"],
-      "@modules/*": ["modules/*"],
-      "@common/*": ["common/*"],
-      "@config/*": ["config/*"]
+      "@/*": ["./src/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@common/*": ["./src/common/*"],
+      "@config/*": ["./src/config/*"]
     }
   },
   "include": ["src/**/*"],
