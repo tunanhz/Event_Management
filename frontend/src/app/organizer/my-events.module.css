@@ -1,0 +1,105 @@
+.wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Toolbar: search + tabs ────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  overflow: hidden;
+}
+.searchIcon { color: var(--muted-foreground); margin: 0 0.5rem 0 1rem; flex-shrink: 0; }
+.searchInput {
+  height: 100%;
+  width: 260px;
+  max-width: 45vw;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+}
+.searchInput::placeholder { color: var(--muted-foreground); }
+.searchBtn {
+  height: 100%;
+  padding: 0 1.25rem;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.searchBtn:hover { color: var(--primary); }
+
+.tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-inline: auto;
+  padding: 0.25rem;
+  border-radius: 999px;
+}
+.tab {
+  height: 40px;
+  padding: 0 1.25rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+.tab:hover { color: var(--foreground); }
+.tabActive { background: var(--primary); color: var(--primary-foreground); }
+.tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+/* ── Empty state ───────────────────────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  flex: 1;
+  min-height: 55vh;
+  text-align: center;
+}
+.emptyIcon { color: var(--muted-foreground); opacity: 0.55; }
+.emptyText { font-size: 0.95rem; color: var(--muted-foreground); }
+
+@media (max-width: 640px) {
+  .wrap { padding: 1rem; }
+  .tabs { margin-inline: 0; }
+}
