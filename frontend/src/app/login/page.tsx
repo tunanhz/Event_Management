@@ -180,7 +180,7 @@ export default function LoginPage() {
                   Ghi nhớ đăng nhập
                 </label>
               </div>
-              <a href="#" className="font-medium text-cyan-600 hover:text-cyan-500">
+              <a href="#" className="font-medium text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300">
                 Quên mật khẩu?
               </a>
             </div>
@@ -212,7 +212,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             Chưa có tài khoản?{" "}
-            <Link href="/register" className="font-bold text-cyan-600 hover:text-cyan-500">
+            <Link href="/register" className="font-bold text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300">
               Đăng ký ngay
             </Link>
           </p>
