@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import Link from 'next/link';
 import { ChevronLeft, ChevronRight, List, CalendarDays } from 'lucide-react';
 import SectionCard from './SectionCard';
 import { formatLongDate } from './format-date';
@@ -11,6 +12,7 @@ const WEEKDAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 
 interface EventScheduleProps {
   showDates: string[]; // DD/MM/YYYY
   time: string;
+  eventId: string;
 }
 
 interface YMD { d: number; m: number; y: number }
@@ -25,7 +27,7 @@ const addMonths = (y: number, m: number, n: number) => {
   return { y: y + Math.floor(idx / 12), m: (((idx % 12) + 12) % 12) + 1 };
 };
 
-export default function EventSchedule({ showDates, time }: EventScheduleProps) {
+export default function EventSchedule({ showDates, time, eventId }: EventScheduleProps) {
   const parsed = showDates.map(parse);
   const sorted = [...parsed].sort((a, b) => a.y - b.y || a.m - b.m || a.d - b.d);
   const first = sorted[0];
@@ -147,7 +149,7 @@ export default function EventSchedule({ showDates, time }: EventScheduleProps) {
                   <span className={styles.listDate}>{formatLongDate(iso)}</span>
                   <span className={styles.listTime}>{time}</span>
                 </div>
-                <a href="#" className={styles.listBuy}>Mua vé</a>
+                <Link href={`/su-kien/${eventId}/dat-ve`} className={styles.listBuy}>Mua vé</Link>
               </li>
             );
           })}

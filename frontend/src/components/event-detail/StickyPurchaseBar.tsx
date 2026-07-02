@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { EventItem } from '@/lib/mockData';
 import { useScrollState } from '@/lib/use-scroll-hide';
 import styles from './StickyPurchaseBar.module.css';
@@ -28,9 +29,9 @@ export default function StickyPurchaseBar({ event }: StickyPurchaseBarProps) {
           <span>{venue}</span>
         </div>
 
-        <a href="#lich-dien" className={styles.buyBtn} tabIndex={visible ? 0 : -1}>
+        <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.buyBtn} tabIndex={visible ? 0 : -1}>
           Mua vé ngay
-        </a>
+        </Link>
       </div>
     </div>
   );

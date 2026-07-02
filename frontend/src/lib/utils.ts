@@ -79,6 +79,11 @@ export function formatCurrency(value: number): string {
 }
 
 
+/** Full VND amount with grouped thousands, e.g. 700000 → "700.000 đ". */
+export function formatVnd(value: number): string {
+  return `${new Intl.NumberFormat("vi-VN").format(value)} đ`;
+}
+
 export function buildQueryString(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {

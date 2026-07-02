@@ -49,7 +49,7 @@ export default async function EventDetailPage({
         <div className={styles.content}>
           <div className={styles.left}>
             <EventIntro blocks={detail.description} />
-            <EventSchedule showDates={detail.showDates} time={event.time} />
+            <EventSchedule showDates={detail.showDates} time={event.time} eventId={event.id} />
             <EventOrganizer organizer={detail.organizer} />
           </div>
 
@@ -62,7 +62,7 @@ export default async function EventDetailPage({
                 <li>Thanh toán bảo mật, hoàn tiền theo chính sách</li>
                 <li>Hỗ trợ đặt nhóm & quà tặng</li>
               </ul>
-              <a href="#lich-dien" className={styles.promoCta}>Chọn suất & mua vé</a>
+              <a href={`/su-kien/${id}/dat-ve`} className={styles.promoCta}>Chọn suất & mua vé</a>
             </div>
           </aside>
         </div>

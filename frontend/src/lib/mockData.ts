@@ -312,11 +312,26 @@ export interface Organizer {
   description: string;
 }
 
+export interface TicketType {
+  id: string;
+  name: string;
+  price: number; // VND
+}
+
 export interface EventDetail {
   showDates: string[]; // DD/MM/YYYY — every date the event runs
   description: ContentBlock[];
   organizer: Organizer;
+  tickets?: TicketType[]; // optional per-event override; getEventDetail fills defaults
 }
+
+/** Default ticket tiers attached to every event (no per-event ticket data yet). */
+export const defaultTicketTiers: TicketType[] = [
+  { id: "standard-2", name: "STANDARD 2", price: 700_000 },
+  { id: "standard-1", name: "STANDARD 1", price: 1_000_000 },
+  { id: "vip", name: "VIP", price: 2_100_000 },
+  { id: "super-vip", name: "SUPER VIP", price: 2_300_000 },
+];
 
 /* Workshop Gốm runs daily: 30/06 + all of July → 1 + 31 suất. */
 function dailyShowDates(): string[] {
@@ -403,11 +418,13 @@ export function findEventById(id: string): EventItem | undefined {
   ].find((e) => e.id === id);
 }
 
-/* Curated detail when available, otherwise a generic one from base fields. */
-export function getEventDetail(event: EventItem): EventDetail {
+/* Curated detail when available, otherwise a generic one from base fields.
+   Ticket tiers always resolved so booking screens can rely on them. */
+export function getEventDetail(event: EventItem): EventDetail & { tickets: TicketType[] } {
   const specific = eventDetails[event.id];
-  if (specific) return specific;
+  if (specific) return { ...specific, tickets: specific.tickets ?? defaultTicketTiers };
   return {
+    tickets: defaultTicketTiers,
     showDates: [event.date],
     organizer: {
       name: "EventBox Organizer",

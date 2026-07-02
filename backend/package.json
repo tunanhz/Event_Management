@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
-    "seed:admin": "tsx src/scripts/create-admin.ts"
+    "seed:admin": "tsx src/scripts/create-admin.ts",
+    "seed:homepage": "tsx src/scripts/seed-homepage.ts"
   },
   "keywords": [
     "event-management",

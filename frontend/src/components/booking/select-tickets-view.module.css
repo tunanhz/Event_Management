@@ -1,0 +1,214 @@
+/* Full-screen dark booking step — "Chọn vé".
+   Palette is fixed dark (independent of app light/dark theme) to match the
+   immersive checkout takeover. Accent = brand cyan. */
+.page {
+  --bk-bg: #0b0b0d;
+  --bk-sidebar: #17191f;
+  --bk-line: rgba(255, 255, 255, 0.12);
+  --bk-text: #f5f6f7;
+  --bk-muted: #9aa0a8;
+  --bk-accent: #0891b2; /* cyan-600 — app brand primary */
+  --bk-accent-hover: #0e7490; /* cyan-700 */
+  min-height: 100dvh;
+  padding-top: var(--header-height); /* clear the fixed site header */
+  display: flex;
+  flex-direction: column;
+  background: var(--bk-bg);
+  color: var(--bk-text);
+}
+
+.body {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;      /* same centered container as the payment page */
+  margin: 0 auto;         /* → symmetric left/right margins on wide screens */
+  display: grid;
+  grid-template-columns: 1fr 420px;
+}
+
+/* ── Main column ── */
+.main {
+  padding: 1.25rem 2rem 2rem;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0.25rem 0 1.5rem;
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-self: start;
+  color: var(--bk-accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  padding: 0.4rem 0.2rem;
+  border-radius: 0.5rem;
+}
+.back:hover { color: var(--bk-accent-hover); }
+.stepTitle {
+  color: var(--bk-accent);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+}
+.topbarSpacer { display: block; }
+
+.ticketList { list-style: none; margin: 0; padding: 0; }
+.ticketRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1rem;
+  margin: 0 -1rem;
+  border-radius: 12px;
+  border-bottom: 1px dashed var(--bk-line);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+  animation: rowIn 0.35s ease both;
+}
+/* Selected tier — accent tint + inset ring for clear affordance */
+.ticketRowActive {
+  background: rgba(8, 145, 178, 0.1);
+  box-shadow: inset 3px 0 0 0 var(--bk-accent);
+  border-bottom-color: transparent;
+}
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ticketInfo { display: flex; flex-direction: column; gap: 0.4rem; }
+.ticketName { font-size: 1.05rem; font-weight: 700; }
+.ticketPrice { color: var(--bk-accent); font-weight: 700; font-size: 0.95rem; }
+
+/* ── Stepper ── */
+.stepper { display: flex; align-items: center; gap: 0.6rem; }
+.stepBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+}
+.stepBtn:hover { background: #f1f5f9; }
+.stepBtn:active { transform: scale(0.92); }
+.stepBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.stepBtnPlus { color: var(--bk-accent); }
+.stepBtn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.5); }
+.qty {
+  min-width: 56px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--bk-sidebar);
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+}
+.eventTitle {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--bk-text);
+  font-size: 0.9rem;
+  margin-bottom: 0.85rem;
+}
+.metaIcon { color: var(--bk-accent); flex-shrink: 0; }
+
+.priceHead {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--bk-line);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+.priceList { list-style: none; margin: 0; padding: 0; }
+.priceItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+  color: var(--bk-muted);
+}
+.priceValue { color: var(--bk-accent); font-weight: 600; }
+
+/* ── Action button (bottom of summary card) ── */
+.sidebarCta {
+  margin-top: auto;              /* pushes CTA to the bottom of the sidebar */
+  padding-top: 1.75rem;
+  position: sticky;
+  bottom: 1.25rem;
+}
+.cta {
+  width: 100%;
+  min-height: 56px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.ctaActive:active { transform: scale(0.99); }
+.cta:disabled {
+  background: #3a3d44;
+  color: var(--bk-muted);
+  cursor: not-allowed;
+}
+.ctaActive {
+  background: var(--bk-accent);
+  color: #ffffff;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+}
+.ctaActive:hover { background: var(--bk-accent-hover); }
+.ctaActive:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.5); }
+.ctaTotal { font-size: 1.1rem; font-weight: 800; }
+.ctaLabel { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .body { grid-template-columns: 1fr; }
+  .sidebar { padding: 1.5rem 1.25rem; }
+  .main { padding: 1rem 1.25rem 1.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticketRow { animation: none; }
+  .stepBtn, .cta, .ctaActive { transition: none; }
+}

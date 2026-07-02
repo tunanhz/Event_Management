@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import type { EventItem } from '@/lib/mockData';
 import { formatLongDate, priceValue } from './format-date';
@@ -43,7 +44,7 @@ export default function EventDetailHero({ event, extraDates }: EventDetailHeroPr
 
           <div className={styles.divider} />
 
-          <a href="#lich-dien" className={styles.priceRow}>
+          <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.priceRow}>
             {isFree ? (
               <span className={styles.priceFree}>Miễn phí</span>
             ) : (
@@ -53,9 +54,9 @@ export default function EventDetailHero({ event, extraDates }: EventDetailHeroPr
               </>
             )}
             <ChevronRight className={styles.priceChevron} size={20} />
-          </a>
+          </Link>
 
-          <a href="#lich-dien" className={styles.buyBtn}>Mua vé ngay</a>
+          <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.buyBtn}>Mua vé ngay</Link>
         </div>
 
         {/* Ticket-stub perforation */}
