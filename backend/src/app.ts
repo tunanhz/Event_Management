@@ -10,6 +10,9 @@ import { notFoundHandler } from './common/middleware/notFound';
 // Module routes
 import { eventRoutes } from './modules/event';
 import { userRoutes } from './modules/user';
+import { categoryRoutes } from './modules/category';
+import { starRoutes } from './modules/star';
+import { bannerRoutes } from './modules/banner';
 
 const app = express();
 
@@ -30,6 +33,9 @@ app.get('/api/health', (_req, res) => {
 // ─── API Routes ─────────────────────────────────────────────────────
 app.use('/api/events', eventRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/stars', starRoutes);
+app.use('/api/banners', bannerRoutes);
 
 // ─── Error Handling ─────────────────────────────────────────────────
 app.use(notFoundHandler);
