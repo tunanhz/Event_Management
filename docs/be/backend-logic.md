@@ -122,15 +122,34 @@ không chỉ dựa middleware):
 File: `modules/event/{event.model, event.repository, event.service, event.controller, event.routes}.ts`
 
 - **`IEvent`**: `title, description, date, location, maxAttendees(min 1), organizer(String),
-  category, status(draft|published|cancelled|completed, mặc định draft), imageUrl` + timestamps.
-  Index: `{date,status}`, `category`, `organizer`.
-- **Service**: `getAllEvents` (lọc `status/category` + phân trang), `getEventById`,
-  `createEvent`, `updateEvent`, `deleteEvent` — không tìm thấy thì `throw AppError(404)`.
+  category, status(draft|published|cancelled|completed, mặc định draft), imageUrl` + timestamps,
+  cùng các field phục vụ trang chủ/trang chi tiết (xem
+  [`homepage-api.md`](./homepage-api.md)): `contentBlocks, time, sessions, city, categorySlug,
+  priceFrom, isFree, isFeatured, isTrending, organizerLogoUrl, organizerDescription, organizerId`.
+  Index: `{date,status}`, `category`, `categorySlug`, `organizer`, `city`, `isFeatured`, `isTrending`.
+- **Service**: `getAllEvents` (lọc `status/category/categorySlug/city/isFree/search/excludeId` +
+  phân trang, **mặc định `status='published'`** nếu không truyền — bảo vệ khách chưa đăng nhập
+  không thấy draft), `getEventById` (cũng chỉ trả event `published`), `createEvent`,
+  `updateEvent`, `deleteEvent` — không tìm thấy thì `throw AppError(404)`.
 - **Repository**: Mongoose thuần (`.lean()`, `findByIdAndUpdate({new:true, runValidators:true})`).
   **Chưa có nhánh offline mock** → cần DB để hoạt động.
 - **Routes** (`/api/events`): `GET /`, `GET /:id`, `POST /`, `PUT /:id`, `DELETE /:id`.
   ⚠️ **Chưa gắn `isAuthenticated`/`authorize`** → đang public; cần bổ sung
-  `authorize('ORGANIZER','ADMIN')` cho các thao tác ghi.
+  `authorize('ORGANIZER','ADMIN')` cho các thao tác ghi. (Do đó organizer cũng chưa có cách xem
+  preview draft của chính mình qua API — xem §8.)
+
+## 4b. Module `category` / `star` / `banner` — dữ liệu trang chủ
+
+Ba module mới, cùng pattern `model → repository → service → controller → routes`, phục vụ trang
+chủ (chi tiết field/API xem [`homepage-api.md`](./homepage-api.md)):
+
+- **`category`** (`/api/categories`): danh mục sự kiện. `GET /` public; `POST/PUT/DELETE` ADMIN.
+- **`star`** (`/api/stars`): nghệ sĩ/đơn vị nổi bật (carousel trang chủ), độc lập với `User`.
+  `GET /` public; `POST/PUT/DELETE` ADMIN.
+- **`banner`** (`/api/banners`): hero banner. `GET /` public (chỉ `isActive`); `GET /admin` (toàn
+  bộ, kể cả inactive) + `POST/PUT/DELETE` đều yêu cầu ADMIN.
+
+Seed dữ liệu mẫu: `npm run seed:homepage` (backend) — idempotent.
 
 ---
 
