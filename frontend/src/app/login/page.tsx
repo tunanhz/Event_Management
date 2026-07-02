@@ -27,7 +27,7 @@ export default function LoginPage() {
       const g = (window as any).google;
       if (g) {
         g.accounts.id.initialize({
-          client_id: "your-google-client-id.apps.googleusercontent.com", // Will fallback in backend if blank
+          client_id: "182516438144-c810a7p012fhgbhmqpgk3bjs3en1om48.apps.googleusercontent.com", // Will fallback in backend if blank
           callback: handleGoogleCredentialResponse,
         });
         g.accounts.id.renderButton(
@@ -180,7 +180,7 @@ export default function LoginPage() {
                   Ghi nhớ đăng nhập
                 </label>
               </div>
-              <a href="#" className="font-medium text-cyan-600 hover:text-cyan-500">
+              <a href="#" className="font-medium text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300">
                 Quên mật khẩu?
               </a>
             </div>
@@ -212,7 +212,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             Chưa có tài khoản?{" "}
-            <Link href="/register" className="font-bold text-cyan-600 hover:text-cyan-500">
+            <Link href="/register" className="font-bold text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300">
               Đăng ký ngay
             </Link>
           </p>

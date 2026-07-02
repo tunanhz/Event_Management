@@ -82,11 +82,15 @@ Mỗi feature là một module độc lập theo mẫu **Controller → Service 
   TTL 5 phút (TTL index trên `otp.model.ts`).
 - **Đăng nhập**: email/password (`/login`) hoặc Google (`/google`); trả JWT đặt vào
   **cookie HttpOnly** (`token`, 7 ngày).
-- **Hồ sơ**: `GET /api/users/me` (yêu cầu đăng nhập).
+- **Hồ sơ**: `GET /api/users/me` (yêu cầu đăng nhập); `PUT /api/users/me` sửa họ tên/mật khẩu.
+- **Kích hoạt STAFF**: `POST /api/users/activate` (public) → xác thực token + đặt mật khẩu
+  mới → chuyển status `PENDING` → `ACTIVE`.
 - **Quản trị tài khoản** (prefix `/api/users/admin`, chỉ `ADMIN`): liệt kê + lọc + phân
-  trang, tạo STAFF (tự sinh mật khẩu + gửi email), đổi role, khóa/mở khóa, xóa.
+  trang, tạo STAFF (`POST /admin/staff`, sinh mật khẩu + gửi email kích hoạt), đổi role,
+  khóa/mở khóa, xóa.
 - **Ràng buộc nghiệp vụ**: chỉ tạo `ADMIN` đầu tiên qua self-register (admin bootstrap);
-  `STAFF` không tự đăng ký; admin không thể tự khóa/đổi-role/xóa chính mình.
+  `STAFF` không tự đăng ký; admin không thể tự khóa/đổi-role/xóa chính mình;
+  STAFF không đăng nhập khi status `PENDING`.
 
 ### Module `event`
 - CRUD đầy đủ: `GET /`, `GET /:id`, `POST /`, `PUT /:id`, `DELETE /:id`.
@@ -102,6 +106,7 @@ Mỗi feature là một module độc lập theo mẫu **Controller → Service 
 |-------|------|---------|---------|
 | `/` | RSC | `lib/mockData.ts` | Trang chủ kiểu Ticketbox: hero, category, các section sự kiện |
 | `/login`, `/register` | Client | API thật | Form + nút Google Sign-In (GSI script động) |
+| `/activate` | Client | API thật | Form kích hoạt STAFF: nhập họ tên + mật khẩu mới, xác thực token |
 | `/dashboard` | Client | `lib/mock-data.ts` | KPI cards + biểu đồ doanh thu (Recharts) + sự kiện gần đây |
 | `/dashboard/events` | Client | `lib/mock-data.ts` | Danh sách sự kiện dạng card-list (chưa nối API) |
 | `/dashboard/accounts` | Client | **API thật** | Quản lý tài khoản, chỉ render khi `role === "ADMIN"` |

@@ -54,6 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser();
   }, []);
 
+  const redirectBasedOnRole = (user: User) => {
+    if (user.role === "ADMIN" || user.role === "STAFF" || user.role === "ORGANIZER") {
+      router.push("/dashboard");
+    } else {
+      router.push("/");
+    }
+  };
+
   const login = async (email: string, passwordPlain: string) => {
     const res = await clientApi.post<{ success: boolean; data: { user: User } }>("/users/login", {
       email,
@@ -61,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (res.success && res.data.user) {
       setUser(res.data.user);
-      router.push("/dashboard");
+      redirectBasedOnRole(res.data.user);
     }
   };
 
@@ -69,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await clientApi.post<{ success: boolean; data: { user: User } }>("/users/register", data);
     if (res.success && res.data.user) {
       setUser(res.data.user);
-      router.push("/dashboard");
+      redirectBasedOnRole(res.data.user);
     }
   };
 
@@ -79,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (res.success && res.data.user) {
       setUser(res.data.user);
-      router.push("/dashboard");
+      redirectBasedOnRole(res.data.user);
     }
   };
 

@@ -83,22 +83,26 @@ class EmailService {
     }
   }
 
-  async sendStaffCredential(email: string, name: string, passwordPlain: string): Promise<void> {
+  async sendStaffActivation(email: string, name: string, passwordPlain: string, activationLink: string): Promise<void> {
     const transporter = await this.getTransporter();
     const mailOptions = {
       from: config.smtp.from || '"EventBox Admin" <noreply@eventbox.com>',
       to: email,
-      subject: 'EventBox - Thông tin tài khoản nhân viên (STAFF)',
+      subject: 'EventBox - Kích hoạt tài khoản nhân viên (STAFF)',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px;">
-          <h2 style="color: #0891b2; text-align: center;">Tạo tài khoản STAFF thành công</h2>
+          <h2 style="color: #0891b2; text-align: center;">Kích hoạt tài khoản STAFF</h2>
           <p>Chào <b>${name}</b>,</p>
-          <p>Bạn đã được quản trị viên cấp tài khoản nhân viên (STAFF) trên hệ thống EventBox. Dưới đây là thông tin đăng nhập của bạn:</p>
+          <p>Bạn đã được quản trị viên cấp tài khoản nhân viên (STAFF) trên hệ thống EventBox. Dưới đây là thông tin đăng nhập tạm thời của bạn:</p>
           <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin: 20px 0;">
             <p style="margin: 5px 0;"><b>Email đăng nhập:</b> ${email}</p>
-            <p style="margin: 5px 0;"><b>Mật khẩu ban đầu:</b> <span style="font-family: monospace; font-size: 16px; color: #e11d48; background: #ffe4e6; padding: 2px 6px; border-radius: 4px;">${passwordPlain}</span></p>
+            <p style="margin: 5px 0;"><b>Mật khẩu tạm thời:</b> <span style="font-family: monospace; font-size: 16px; color: #e11d48; background: #ffe4e6; padding: 2px 6px; border-radius: 4px;">${passwordPlain}</span></p>
           </div>
-          <p>Vui lòng đăng nhập hệ thống và đổi mật khẩu ngay để đảm bảo an toàn thông tin.</p>
+          <p style="font-weight: bold; color: #0891b2;">Vui lòng kích chọn nút dưới đây để kích hoạt tài khoản, cập nhật họ tên và thay đổi mật khẩu của bạn:</p>
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${activationLink}" style="background-color: #0891b2; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 8px; display: inline-block; box-shadow: 0 4px 10px rgba(8,145,178,0.25);">Kích hoạt & Thiết lập tài khoản</a>
+          </div>
+          <p style="color: #e11d48; font-size: 13px;">* Lưu ý: Tài khoản của bạn sẽ không thể đăng nhập cho đến khi được kích hoạt qua đường link trên.</p>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
           <p style="font-size: 12px; color: #999; text-align: center;">Hệ thống quản lý sự kiện EventBox.</p>
         </div>
@@ -106,7 +110,7 @@ class EmailService {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`📧 Staff Credential Email sent to ${email}. Message ID: ${info.messageId}`);
+    console.log(`📧 Staff Activation Email sent to ${email}. Message ID: ${info.messageId}`);
     if (info.messageId && !config.smtp.user) {
       console.log(`🔗 Preview Email at: ${nodemailer.getTestMessageUrl(info)}`);
     }

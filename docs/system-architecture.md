@@ -124,6 +124,37 @@ Backend verify qua `google-auth-library`; nếu chưa cấu hình `GOOGLE_CLIENT
 dạng `mock_*` thì dùng nhánh mock cho mục đích học tập/demo. Người dùng mới mặc định role
 `PARTICIPANT`.
 
+### 3.4 Kích hoạt tài khoản STAFF (Admin-managed activation)
+
+```mermaid
+sequenceDiagram
+  participant Admin as Admin (Dashboard)
+  participant BE as Express
+  participant DB as Mongo/Mock
+  participant Mail as Gmail SMTP
+  participant Staff as Staff (Email)
+
+  Admin->>BE: POST /api/users/admin/staff { email, fullName }
+  BE->>DB: create user (status=PENDING, random password)
+  BE->>BE: generate activation token (JWT, 7d, purpose=activation)
+  BE->>Mail: sendStaffActivation (email, password tạm, link kích hoạt)
+  BE-->>Admin: 201 { user (no passwordHash) }
+
+  Staff->>Staff: Mở email, nhấn nút kích hoạt
+  Staff->>BE: GET /activate?token=... (load form)
+  Staff->>BE: POST /api/users/activate { token, fullName (tùy), newPassword }
+  BE->>BE: verify token (JWT, purpose=activation)
+  BE->>DB: update user (fullName nếu có, hash newPassword, status=ACTIVE)
+  BE-->>Staff: 200 { user (status=ACTIVE) }
+  Staff->>BE: POST /api/users/login { email, password=newPassword }
+  Note over Staff,BE: Giờ STAFF có thể đăng nhập bình thường
+```
+
+**Quy tắc:**
+- **Admin tạo STAFF**: Email activation hợp lệ 7 ngày.
+- **STAFF ở trạng thái PENDING**: Không thể đăng nhập; phải kích hoạt qua link email trước.
+- **Hồ sơ sau kích hoạt**: `PUT /me` dùng như role khác.
+
 ## 4. Mô hình dữ liệu
 
 ```mermaid
@@ -134,7 +165,7 @@ erDiagram
     string passwordHash "select:false; optional cho Google"
     string phone
     enum   role "ADMIN|ORGANIZER|PARTICIPANT|STAFF"
-    enum   accountStatus "ACTIVE|BANNED"
+    enum   accountStatus "ACTIVE|BANNED|PENDING"
     string avatar
     date   createdAt
     date   updatedAt
@@ -160,6 +191,8 @@ erDiagram
 
 - **User**: `email` unique + index; `passwordHash` có `select: false` (phải `.select('+passwordHash')`
   khi auth); pre-save hook tự hash mật khẩu bằng bcrypt; method `comparePassword`.
+  `accountStatus` enum gồm `ACTIVE` (mặc định, đăng nhập được), `PENDING` (STAFF chờ kích hoạt,
+  không đăng nhập được), `BANNED` (khóa tài khoản, không đăng nhập).
 - **Event**: index trên `{date, status}`, `category`, `organizer`. `organizer` đang lưu dạng
   chuỗi — chưa liên kết khóa ngoại tới `User`.
 - **OTP**: TTL index xóa tự động sau 300 giây.
@@ -190,9 +223,11 @@ Mọi response bọc trong `ApiResponse`:
 | POST | `/api/users/login` | — | Đăng nhập email/password |
 | POST | `/api/users/google` | — | Đăng nhập Google |
 | POST | `/api/users/logout` | — | Xóa cookie phiên |
+| POST | `/api/users/activate` | — | Kích hoạt tài khoản STAFF (token + mật khẩu mới) |
+| PUT | `/api/users/me` | cookie | Cập nhật hồ sơ (họ tên, mật khẩu) |
 | GET | `/api/users/me` | cookie | Thông tin user hiện tại |
 | GET | `/api/users/admin` | ADMIN | Danh sách tài khoản (lọc + phân trang) |
-| POST | `/api/users/admin/staff` | ADMIN | Tạo tài khoản STAFF |
+| POST | `/api/users/admin/staff` | ADMIN | Tạo tài khoản STAFF (sinh mật khẩu + email kích hoạt) |
 | POST | `/api/users/admin/:id/role` | ADMIN | Đổi role |
 | POST | `/api/users/admin/:id/status` | ADMIN | Khóa/mở khóa |
 | DELETE | `/api/users/admin/:id` | ADMIN | Xóa tài khoản |
@@ -209,14 +244,14 @@ Mọi response bọc trong `ApiResponse`:
 ```mermaid
 flowchart TD
   Root["RootLayout<br/>AuthProvider + font"] --> Home["/ (RSC) → mockData"]
-  Root --> Auth["/login · /register (Client)"]
+  Root --> Auth["/login · /register · /activate (Client)"]
   Root --> Dash["DashboardLayout<br/>Sidebar + Header"]
   Dash --> Over["/dashboard (mock)"]
   Dash --> Ev["/dashboard/events (mock)"]
   Dash --> Acc["/dashboard/accounts (API thật, ADMIN)"]
   Auth -->|useAuth| Ctx["AuthContext"]
   Acc -->|clientApi| Ctx
-  Ctx -->|/users/me, /login...| BE["Express API"]
+  Ctx -->|/users/me, /login, /activate...| BE["Express API"]
 ```
 
 - **AuthContext** là nguồn sự thật về user phía client; nạp `/users/me` khi khởi động.
