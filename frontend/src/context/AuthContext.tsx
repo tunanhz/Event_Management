@@ -55,9 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const redirectBasedOnRole = (user: User) => {
-    if (user.role === "ADMIN" || user.role === "STAFF" || user.role === "ORGANIZER") {
+    if (user.role === "ORGANIZER") {
+      // Ban tổ chức → khu vực quản lý sự kiện của họ
+      router.push("/organizer");
+    } else if (user.role === "ADMIN" || user.role === "STAFF") {
+      // Quản trị / nhân viên → bảng điều khiển hệ thống
       router.push("/dashboard");
     } else {
+      // PARTICIPANT → trang chủ
       router.push("/");
     }
   };

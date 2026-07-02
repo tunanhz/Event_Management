@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { HeaderAccountMenu } from "./HeaderAccountMenu";
 import { useScrollState } from "@/lib/use-scroll-hide";
 import styles from "./Header.module.css";
 
@@ -80,9 +81,7 @@ const Header: React.FC = () => {
                 Vé của tôi
               </Link>
 
-              <a href="/login" className={styles.loginLink}>
-                <span className={styles.loginLabel}>Đăng nhập | Đăng ký</span>
-              </a>
+              <HeaderAccountMenu variant="desktop" />
 
               <ThemeToggle className={styles.themeToggle} />
 
@@ -145,6 +144,8 @@ const Header: React.FC = () => {
                 <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
+
+            <HeaderAccountMenu variant="mobile" />
           </div>
         </div>
       </header>

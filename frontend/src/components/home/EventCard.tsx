@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { Bookmark } from 'lucide-react';
+import { useSavedEvents } from '@/lib/use-saved-events';
 import styles from './EventCard.module.css';
 
 export interface EventItem {
@@ -20,6 +22,8 @@ interface EventCardProps {
 
 export default function EventCard({ event }: EventCardProps) {
   const isFree = event.price === 'Miễn phí';
+  const { isSaved, toggle } = useSavedEvents();
+  const saved = isSaved(event.id);
 
   return (
     <Link href={`/su-kien/${event.id}`} className={styles.card}>
@@ -32,6 +36,21 @@ export default function EventCard({ event }: EventCardProps) {
           loading="lazy"
         />
         <span className={styles.categoryBadge}>{event.category}</span>
+
+        {/* Save toggle — sits inside the Link, so cancel navigation on click */}
+        <button
+          type="button"
+          className={saved ? `${styles.saveBtn} ${styles.saveBtnActive}` : styles.saveBtn}
+          aria-label={saved ? 'Bỏ lưu sự kiện' : 'Lưu sự kiện'}
+          aria-pressed={saved}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggle(event.id);
+          }}
+        >
+          <Bookmark size={18} strokeWidth={2} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" />
+        </button>
       </div>
 
       {/* Content Section */}
