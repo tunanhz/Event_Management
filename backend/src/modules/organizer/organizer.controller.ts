@@ -76,6 +76,16 @@ export class OrganizerController {
     res.json(ApiResponse.ok(tickets, 'Lấy danh sách vé thành công'));
   });
 
+  configureTickets = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { tickets } = req.body ?? {};
+    const result = await this.organizerService.configureTickets(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      tickets
+    );
+    res.json(ApiResponse.ok(result, 'Cấu hình loại vé thành công'));
+  });
+
   updateTicket = asyncHandler(async (req: AuthRequest, res: Response) => {
     const ticket = await this.organizerService.updateTicket(
       req.params.id as string,
