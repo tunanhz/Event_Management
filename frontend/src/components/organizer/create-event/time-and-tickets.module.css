@@ -1,0 +1,303 @@
+/* ─── Step 2: "Thời gian & Loại vé" (Time & Ticket Types) ──────────── */
+
+/* Header row: title + "Tạo suất diễn" / filter actions */
+.stepHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.stepTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.createShowBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 44px;
+  padding: 0 1.15rem;
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.createShowBtn:hover {
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.createShowBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+.filterWrap {
+  position: relative;
+  min-width: 160px;
+}
+.filterSelect {
+  width: 100%;
+  height: 44px;
+  padding: 0 2.5rem 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--muted);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.filterSelect:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+.filterChevron {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+/* ── Show card ──────────────────────────────────────────────────────── */
+.showList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.showCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.showHead {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+.collapseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.collapseBtn:hover { background: var(--muted); color: var(--foreground); }
+.showTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.deleteShowBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--destructive);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.deleteShowBtn:hover { background: color-mix(in srgb, var(--destructive) 14%, transparent); }
+.deleteShowBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--destructive) 30%, transparent);
+}
+
+/* ── Date range ─────────────────────────────────────────────────────── */
+.dateGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+@media (max-width: 640px) {
+  .dateGrid { grid-template-columns: 1fr; }
+}
+
+.dateInputWrap { position: relative; }
+.dateInput {
+  width: 100%;
+  height: 48px;
+  padding: 0 1rem;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+    background var(--transition-fast);
+}
+.dateInput:focus {
+  border-color: var(--primary);
+  background: var(--background);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+/* Keep the native calendar picker indicator visible on dark surfaces. */
+.dateInput::-webkit-calendar-picker-indicator {
+  filter: invert(0.55);
+  cursor: pointer;
+}
+
+/* ── Ticket-type list ───────────────────────────────────────────────── */
+.ticketLabel {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 1rem;
+}
+
+.ticketList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.ticketRow {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.ticketRow.dragging { opacity: 0.5; }
+.ticketRow.dragOver { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent); }
+
+.grip {
+  display: inline-flex;
+  color: var(--muted-foreground);
+  cursor: grab;
+  touch-action: none;
+}
+.grip:active { cursor: grabbing; }
+
+.ticketIcon {
+  display: inline-flex;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.ticketName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ticketMeta {
+  font-size: 0.82rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.editBtn {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+}
+.editBtn:hover { background: color-mix(in srgb, var(--primary) 24%, transparent); }
+.deleteBtn {
+  background: color-mix(in srgb, var(--destructive) 16%, transparent);
+  color: var(--destructive);
+}
+.deleteBtn:hover { background: color-mix(in srgb, var(--destructive) 26%, transparent); }
+.iconBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 30%, transparent);
+}
+
+/* Centered "Tạo loại vé mới" trigger */
+.addTicketBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  align-self: center;
+  height: 44px;
+  padding: 0 1.5rem;
+  margin: 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background var(--transition-fast);
+}
+.addTicketBtn:hover { background: color-mix(in srgb, var(--primary) 12%, transparent); }
+.addTicketBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+.addTicketWrap {
+  display: flex;
+  justify-content: center;
+}
+
+/* Empty-shows fallback */
+.emptyShows {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+}

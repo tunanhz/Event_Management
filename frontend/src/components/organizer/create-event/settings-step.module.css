@@ -1,0 +1,132 @@
+/* ─── Step 3: "Cài đặt" (Settings) ─────────────────────────────────── */
+
+/* Live public-URL preview under the slug field */
+.urlPreview {
+  margin-top: 1rem;
+  font-size: 0.92rem;
+  color: var(--muted-foreground);
+}
+.urlLink {
+  color: var(--primary);
+  word-break: break-all;
+}
+
+/* ── Privacy radio group ────────────────────────────────────────────── */
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.radioOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--muted);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.radioOption:hover { border-color: var(--primary); }
+.radioOptionActive {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.radioInput {
+  width: 20px;
+  height: 20px;
+  margin-top: 0.15rem;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.radioIcon {
+  color: var(--foreground);
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+.radioText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.radioTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.radioDesc {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+/* ── Confirmation message ───────────────────────────────────────────── */
+.helperText {
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+  margin-bottom: 1rem;
+}
+
+/* ── Question-form toggle ───────────────────────────────────────────── */
+.qTemplates {
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+  line-height: 1.7;
+  margin-bottom: 1.15rem;
+}
+.qTemplates ol {
+  margin: 0.35rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+.switchInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switchTrack {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background var(--transition-fast);
+  flex-shrink: 0;
+}
+.switchKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition-fast);
+}
+.switchInput:checked + .switchTrack {
+  background: var(--primary);
+}
+.switchInput:checked + .switchTrack .switchKnob {
+  transform: translateX(20px);
+}
+.switchInput:focus-visible + .switchTrack {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 32%, transparent);
+}
+.switchLabel {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
