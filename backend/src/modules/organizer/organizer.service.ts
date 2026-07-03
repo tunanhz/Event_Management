@@ -31,10 +31,16 @@ export interface CreateTicketInput {
   quantity: number;
   saleStart?: string | Date;
   saleEnd?: string | Date;
+  status?: 'ACTIVE' | 'HIDDEN';
 }
 
 export type UpdateEventInput = Partial<CreateEventInput>;
 export type UpdateTicketInput = Partial<CreateTicketInput>;
+
+/** One row of a full ticket-type configuration submit (EM-128).
+ *  `_id` present ⇒ update an existing ticket type; absent ⇒ create a new one.
+ *  Any existing ticket type not referenced by `_id` in the submitted set is removed. */
+export type ConfigureTicketInput = CreateTicketInput & { _id?: string };
 
 export class OrganizerService {
   private organizerRepository: OrganizerRepository;
@@ -220,6 +226,7 @@ export class OrganizerService {
       quantity: input.quantity,
       saleStart: input.saleStart ? new Date(input.saleStart) : undefined,
       saleEnd: input.saleEnd ? new Date(input.saleEnd) : undefined,
+      status: input.status,
     });
   }
 
@@ -242,6 +249,7 @@ export class OrganizerService {
       quantity: data.quantity ?? ticket.quantity,
       saleStart: data.saleStart ?? ticket.saleStart,
       saleEnd: data.saleEnd ?? ticket.saleEnd,
+      status: data.status ?? (ticket.status === 'SOLD_OUT' ? undefined : ticket.status),
     };
     this.validateTicketInput(merged);
 
@@ -252,6 +260,7 @@ export class OrganizerService {
       quantity: merged.quantity,
       saleStart: merged.saleStart ? new Date(merged.saleStart) : undefined,
       saleEnd: merged.saleEnd ? new Date(merged.saleEnd) : undefined,
+      status: merged.status,
     });
     if (!updated) {
       throw new AppError('Ticket not found', 404);
@@ -280,6 +289,80 @@ export class OrganizerService {
   async listTickets(eventId: string, actor: OrganizerActor): Promise<ITicket[]> {
     await this.getOwnedEvent(eventId, actor);
     return this.organizerRepository.findTicketsByEvent(eventId);
+  }
+
+  /**
+   * Ticket type configuration (EM-128): replace an event's whole ticket-type
+   * set in one call. Rows carrying `_id` are updated in place, rows without
+   * one are created, and any existing ticket type left out of the submitted
+   * set is removed — so the FE config screen can just POST its current table
+   * instead of diffing add/update/delete calls itself.
+   */
+  async configureTickets(
+    eventId: string,
+    actor: OrganizerActor,
+    tickets: ConfigureTicketInput[]
+  ): Promise<ITicket[]> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    if (event.reviewStatus !== 'DRAFT') {
+      throw new AppError('Chỉ có thể cấu hình loại vé khi sự kiện đang ở trạng thái DRAFT', 400);
+    }
+    if (!Array.isArray(tickets) || tickets.length === 0) {
+      throw new AppError('Cần cấu hình ít nhất 1 loại vé', 400);
+    }
+    for (const ticket of tickets) {
+      this.validateTicketInput(ticket);
+    }
+
+    const existing = await this.organizerRepository.findTicketsByEvent(eventId);
+    const existingById = new Map(existing.map((t) => [String(t._id), t]));
+
+    const keepIds = new Set<string>();
+    for (const ticket of tickets) {
+      if (ticket._id) {
+        if (!existingById.has(ticket._id)) {
+          throw new AppError(`Loại vé ${ticket._id} không tồn tại trong sự kiện này`, 400);
+        }
+        keepIds.add(ticket._id);
+      }
+    }
+
+    const toRemove = existing.filter((t) => !keepIds.has(String(t._id)));
+    for (const ticket of toRemove) {
+      if (ticket.soldQuantity > 0) {
+        throw new AppError(`Không thể xoá loại vé "${ticket.ticketName}" đã có người mua`, 400);
+      }
+    }
+
+    await Promise.all(toRemove.map((t) => this.organizerRepository.deleteTicket(String(t._id))));
+
+    const result: ITicket[] = [];
+    for (const ticket of tickets) {
+      const payload = {
+        ticketName: ticket.ticketName,
+        description: ticket.description,
+        price: ticket.price,
+        quantity: ticket.quantity,
+        saleStart: ticket.saleStart ? new Date(ticket.saleStart) : undefined,
+        saleEnd: ticket.saleEnd ? new Date(ticket.saleEnd) : undefined,
+        status: ticket.status,
+      };
+      if (ticket._id) {
+        const updated = await this.organizerRepository.updateTicket(ticket._id, payload);
+        if (!updated) {
+          throw new AppError('Ticket not found', 404);
+        }
+        result.push(updated);
+      } else {
+        const created = await this.organizerRepository.createTicket({
+          eventId: event._id as mongoose.Types.ObjectId,
+          ...payload,
+        });
+        result.push(created);
+      }
+    }
+
+    return result;
   }
 
   async submitForReview(eventId: string, actor: OrganizerActor): Promise<IEvent> {
@@ -357,6 +440,9 @@ export class OrganizerService {
       if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end < start) {
         throw new AppError('saleEnd phải sau saleStart', 400);
       }
+    }
+    if (ticket.status && ticket.status !== 'ACTIVE' && ticket.status !== 'HIDDEN') {
+      throw new AppError('status của vé chỉ có thể là ACTIVE hoặc HIDDEN', 400);
     }
   }
 }

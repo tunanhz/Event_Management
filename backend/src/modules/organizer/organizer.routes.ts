@@ -17,6 +17,7 @@ router.put('/events/:id', organizerController.updateEvent);
 router.post('/events/:id/submit', organizerController.submitForReview);
 router.get('/events/:id/tickets', organizerController.listTickets);
 router.post('/events/:id/tickets', organizerController.addTicket);
+router.put('/events/:id/tickets', organizerController.configureTickets); // EM-128: bulk ticket type configuration
 router.put('/events/:id/tickets/:ticketId', organizerController.updateTicket);
 router.delete('/events/:id/tickets/:ticketId', organizerController.deleteTicket);
 
