@@ -55,6 +55,10 @@ export class OrganizerRepository {
     return Event.findByIdAndUpdate(id, { reviewStatus }, { new: true, runValidators: true }).lean();
   }
 
+  async updateEvent(id: string, data: Partial<IEvent>): Promise<IEvent | null> {
+    return Event.findByIdAndUpdate(id, data, { new: true, runValidators: true }).lean();
+  }
+
   async deleteEvent(id: string): Promise<void> {
     await Event.findByIdAndDelete(id);
   }
@@ -64,11 +68,23 @@ export class OrganizerRepository {
     return ticket.save();
   }
 
+  async findTicketById(ticketId: string): Promise<ITicket | null> {
+    return Ticket.findById(ticketId);
+  }
+
   async findTicketsByEvent(eventId: string): Promise<ITicket[]> {
     return Ticket.find({ eventId }).sort({ createdAt: 1 }).lean();
   }
 
   async countTicketsByEvent(eventId: string): Promise<number> {
     return Ticket.countDocuments({ eventId });
+  }
+
+  async updateTicket(ticketId: string, data: Partial<ITicket>): Promise<ITicket | null> {
+    return Ticket.findByIdAndUpdate(ticketId, data, { new: true, runValidators: true }).lean();
+  }
+
+  async deleteTicket(ticketId: string): Promise<void> {
+    await Ticket.findByIdAndDelete(ticketId);
   }
 }

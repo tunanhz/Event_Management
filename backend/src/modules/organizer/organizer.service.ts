@@ -33,6 +33,9 @@ export interface CreateTicketInput {
   saleEnd?: string | Date;
 }
 
+export type UpdateEventInput = Partial<CreateEventInput>;
+export type UpdateTicketInput = Partial<CreateTicketInput>;
+
 export class OrganizerService {
   private organizerRepository: OrganizerRepository;
   private categoryRepository: CategoryRepository;
@@ -138,6 +141,66 @@ export class OrganizerService {
     return { event, tickets: createdTickets };
   }
 
+  async updateEvent(
+    eventId: string,
+    actor: OrganizerActor,
+    data: UpdateEventInput
+  ): Promise<IEvent> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    if (event.reviewStatus !== 'DRAFT') {
+      throw new AppError('Chỉ có thể sửa sự kiện khi đang ở trạng thái DRAFT', 400);
+    }
+
+    // Merge onto the existing event so partial updates (e.g. only `title`) still
+    // validate the full date range / capacity correctly.
+    const startDate = new Date(data.startDate ?? event.startDate ?? event.date);
+    const endDate = new Date(data.endDate ?? event.endDate ?? event.date);
+    const capacity = data.capacity ?? event.capacity ?? event.maxAttendees;
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new AppError('startDate/endDate không hợp lệ', 400);
+    }
+    if (startDate.getTime() <= Date.now()) {
+      throw new AppError('Ngày bắt đầu sự kiện phải ở tương lai', 400);
+    }
+    if (endDate.getTime() < startDate.getTime()) {
+      throw new AppError('Ngày kết thúc phải sau ngày bắt đầu', 400);
+    }
+    if (typeof capacity !== 'number' || capacity < 1) {
+      throw new AppError('capacity phải >= 1', 400);
+    }
+
+    const update: Partial<IEvent> = {
+      startDate,
+      endDate,
+      capacity,
+      date: startDate,
+      maxAttendees: capacity,
+    };
+    if (data.title) update.title = data.title;
+    if (data.description) update.description = data.description;
+    if (data.location) update.location = data.location;
+    if (data.banner) {
+      update.banner = data.banner;
+      update.imageUrl = data.banner;
+    }
+    if (data.categoryId) {
+      const category = await this.categoryRepository.findById(data.categoryId);
+      if (!category) {
+        throw new AppError('Category không tồn tại', 400);
+      }
+      update.categoryId = new mongoose.Types.ObjectId(data.categoryId);
+      update.category = category.name;
+      update.categorySlug = category.slug;
+    }
+
+    const updated = await this.organizerRepository.updateEvent(eventId, update);
+    if (!updated) {
+      throw new AppError('Event not found', 404);
+    }
+    return updated;
+  }
+
   async addTicket(
     eventId: string,
     actor: OrganizerActor,
@@ -158,6 +221,60 @@ export class OrganizerService {
       saleStart: input.saleStart ? new Date(input.saleStart) : undefined,
       saleEnd: input.saleEnd ? new Date(input.saleEnd) : undefined,
     });
+  }
+
+  async updateTicket(
+    eventId: string,
+    ticketId: string,
+    actor: OrganizerActor,
+    data: UpdateTicketInput
+  ): Promise<ITicket> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    if (event.reviewStatus !== 'DRAFT') {
+      throw new AppError('Chỉ có thể sửa loại vé khi sự kiện đang ở trạng thái DRAFT', 400);
+    }
+    const ticket = await this.getEventTicket(eventId, ticketId);
+
+    const merged: CreateTicketInput = {
+      ticketName: data.ticketName ?? ticket.ticketName,
+      description: data.description ?? ticket.description,
+      price: data.price ?? ticket.price,
+      quantity: data.quantity ?? ticket.quantity,
+      saleStart: data.saleStart ?? ticket.saleStart,
+      saleEnd: data.saleEnd ?? ticket.saleEnd,
+    };
+    this.validateTicketInput(merged);
+
+    const updated = await this.organizerRepository.updateTicket(ticketId, {
+      ticketName: merged.ticketName,
+      description: merged.description,
+      price: merged.price,
+      quantity: merged.quantity,
+      saleStart: merged.saleStart ? new Date(merged.saleStart) : undefined,
+      saleEnd: merged.saleEnd ? new Date(merged.saleEnd) : undefined,
+    });
+    if (!updated) {
+      throw new AppError('Ticket not found', 404);
+    }
+    return updated;
+  }
+
+  async deleteTicket(eventId: string, ticketId: string, actor: OrganizerActor): Promise<void> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    if (event.reviewStatus !== 'DRAFT') {
+      throw new AppError('Chỉ có thể xoá loại vé khi sự kiện đang ở trạng thái DRAFT', 400);
+    }
+    const ticket = await this.getEventTicket(eventId, ticketId);
+    if (ticket.soldQuantity > 0) {
+      throw new AppError('Không thể xoá loại vé đã có người mua', 400);
+    }
+
+    const ticketCount = await this.organizerRepository.countTicketsByEvent(eventId);
+    if (ticketCount <= 1) {
+      throw new AppError('Sự kiện cần giữ lại ít nhất 1 loại vé', 400);
+    }
+
+    await this.organizerRepository.deleteTicket(ticketId);
   }
 
   async listTickets(eventId: string, actor: OrganizerActor): Promise<ITicket[]> {
@@ -212,6 +329,16 @@ export class OrganizerService {
       }
     }
     return event;
+  }
+
+  // Loads a ticket and enforces it actually belongs to the given event, so an
+  // organizer can't reference another event's ticket id through this event's URL.
+  private async getEventTicket(eventId: string, ticketId: string): Promise<ITicket> {
+    const ticket = await this.organizerRepository.findTicketById(ticketId);
+    if (!ticket || ticket.eventId.toString() !== eventId) {
+      throw new AppError('Ticket not found', 404);
+    }
+    return ticket;
   }
 
   private validateTicketInput(ticket: CreateTicketInput): void {

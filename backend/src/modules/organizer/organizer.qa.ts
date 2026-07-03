@@ -178,7 +178,63 @@ async function main() {
   const ticketsAfterAdd = await api('GET', `/api/organizer/events/${eventId}/tickets`, organizerToken);
   check('Now has 3 tickets', ticketsAfterAdd.json.data?.length === 3);
 
-  console.log('6. Submit for review');
+  console.log('6. Update event while DRAFT (EM-24)');
+  const updateEvent = await api('PUT', `/api/organizer/events/${eventId}`, organizerToken, {
+    title: 'QA EM-23 Test Event (updated)',
+    capacity: 250,
+  });
+  check('Update event returns 200', updateEvent.status === 200, updateEvent.json);
+  check('title updated', updateEvent.json.data?.title === 'QA EM-23 Test Event (updated)');
+  check(
+    'capacity + legacy maxAttendees mirrored',
+    updateEvent.json.data?.capacity === 250 && updateEvent.json.data?.maxAttendees === 250
+  );
+
+  const updateEventNonOwner = await api('PUT', `/api/organizer/events/${eventId}`, participantToken, {
+    title: 'hack',
+  });
+  check('Non-owner cannot update event (403)', updateEventNonOwner.status === 403);
+
+  console.log('7. Update / delete tickets while DRAFT (EM-24)');
+  const ticketToEdit = ticketsAfterAdd.json.data[0]._id;
+  const updateTicket = await api(
+    'PUT',
+    `/api/organizer/events/${eventId}/tickets/${ticketToEdit}`,
+    organizerToken,
+    { price: 350000 }
+  );
+  check('Update ticket returns 200', updateTicket.status === 200, updateTicket.json);
+  check('ticket price updated', updateTicket.json.data?.price === 350000);
+
+  const ticketToDelete = ticketsAfterAdd.json.data[1]._id;
+  const deleteTicket = await api(
+    'DELETE',
+    `/api/organizer/events/${eventId}/tickets/${ticketToDelete}`,
+    organizerToken
+  );
+  check('Delete ticket returns 200', deleteTicket.status === 200, deleteTicket.json);
+
+  const ticketsAfterDelete = await api('GET', `/api/organizer/events/${eventId}/tickets`, organizerToken);
+  check('2 tickets remain after delete', ticketsAfterDelete.json.data?.length === 2);
+
+  const secondDelete = await api(
+    'DELETE',
+    `/api/organizer/events/${eventId}/tickets/${ticketsAfterDelete.json.data[0]._id}`,
+    organizerToken
+  );
+  check('Delete down to 1 remaining ticket allowed', secondDelete.status === 200, secondDelete.json);
+
+  const ticketsWithOne = await api('GET', `/api/organizer/events/${eventId}/tickets`, organizerToken);
+  check('Exactly 1 ticket remains', ticketsWithOne.json.data?.length === 1);
+
+  const deleteLast = await api(
+    'DELETE',
+    `/api/organizer/events/${eventId}/tickets/${ticketsWithOne.json.data[0]._id}`,
+    organizerToken
+  );
+  check('Cannot delete the last remaining ticket type (400)', deleteLast.status === 400, deleteLast.json);
+
+  console.log('8. Submit for review');
   const submit = await api('POST', `/api/organizer/events/${eventId}/submit`, organizerToken);
   check('Submit returns 200', submit.status === 200, submit.json);
   check('reviewStatus becomes PENDING_REVIEW', submit.json.data?.reviewStatus === 'PENDING_REVIEW');
@@ -196,6 +252,40 @@ async function main() {
     'Cannot add ticket after submit (400)',
     addTicketAfterSubmit.status === 400,
     addTicketAfterSubmit.json
+  );
+
+  console.log('9. Update/delete locked once PENDING_REVIEW (EM-24)');
+  const updateEventAfterSubmit = await api('PUT', `/api/organizer/events/${eventId}`, organizerToken, {
+    title: 'Should not apply',
+  });
+  check(
+    'Cannot update event after submit (400)',
+    updateEventAfterSubmit.status === 400,
+    updateEventAfterSubmit.json
+  );
+
+  const remainingTicketId = ticketsWithOne.json.data[0]._id;
+  const updateTicketAfterSubmit = await api(
+    'PUT',
+    `/api/organizer/events/${eventId}/tickets/${remainingTicketId}`,
+    organizerToken,
+    { price: 999 }
+  );
+  check(
+    'Cannot update ticket after submit (400)',
+    updateTicketAfterSubmit.status === 400,
+    updateTicketAfterSubmit.json
+  );
+
+  const deleteTicketAfterSubmit = await api(
+    'DELETE',
+    `/api/organizer/events/${eventId}/tickets/${remainingTicketId}`,
+    organizerToken
+  );
+  check(
+    'Cannot delete ticket after submit (400)',
+    deleteTicketAfterSubmit.status === 400,
+    deleteTicketAfterSubmit.json
   );
 
   console.log(`\n${passed} passed, ${failed} failed`);

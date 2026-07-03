@@ -42,6 +42,15 @@ export class OrganizerController {
     res.json(ApiResponse.ok(result, 'Lấy chi tiết sự kiện thành công'));
   });
 
+  updateEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const event = await this.organizerService.updateEvent(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      req.body
+    );
+    res.json(ApiResponse.ok(event, 'Cập nhật sự kiện thành công'));
+  });
+
   submitForReview = asyncHandler(async (req: AuthRequest, res: Response) => {
     const event = await this.organizerService.submitForReview(req.params.id as string, {
       id: req.user!.id,
@@ -65,5 +74,23 @@ export class OrganizerController {
       role: req.user!.role,
     });
     res.json(ApiResponse.ok(tickets, 'Lấy danh sách vé thành công'));
+  });
+
+  updateTicket = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const ticket = await this.organizerService.updateTicket(
+      req.params.id as string,
+      req.params.ticketId as string,
+      { id: req.user!.id, role: req.user!.role },
+      req.body
+    );
+    res.json(ApiResponse.ok(ticket, 'Cập nhật loại vé thành công'));
+  });
+
+  deleteTicket = asyncHandler(async (req: AuthRequest, res: Response) => {
+    await this.organizerService.deleteTicket(req.params.id as string, req.params.ticketId as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(null, 'Xoá loại vé thành công'));
   });
 }
