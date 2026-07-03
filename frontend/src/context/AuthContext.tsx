@@ -58,8 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user.role === "ORGANIZER") {
       // Ban tổ chức → khu vực quản lý sự kiện của họ
       router.push("/organizer");
-    } else if (user.role === "ADMIN" || user.role === "STAFF") {
-      // Quản trị / nhân viên → bảng điều khiển hệ thống
+    } else if (user.role === "STAFF") {
+      // Nhân viên → trạm soát vé / check-in
+      router.push("/staff");
+    } else if (user.role === "ADMIN") {
+      // Quản trị → bảng điều khiển hệ thống
       router.push("/dashboard");
     } else {
       // PARTICIPANT → trang chủ
