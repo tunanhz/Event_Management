@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { EventService } from './event.service';
 import { asyncHandler } from '../../common/utils/asyncHandler';
 import { ApiResponse } from '../../common/utils/ApiResponse';
+import { AuthRequest } from '../../common/types';
 
 // "yyyy-mm-dd" or any Date-parseable string -> Date, or undefined if missing/invalid.
 // Invalid values are dropped rather than erroring so a bad filter never 500s a listing page.
@@ -59,18 +60,25 @@ export class EventController {
     res.json(ApiResponse.ok(event, 'Event retrieved successfully'));
   });
 
-  create = asyncHandler(async (req: Request, res: Response) => {
-    const event = await this.eventService.createEvent(req.body);
+  // Routes below run isAuthenticated + authorize first, so req.user is always set.
+  create = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const event = await this.eventService.createEvent(req.body, req.user!.id);
     res.status(201).json(ApiResponse.created(event));
   });
 
-  update = asyncHandler(async (req: Request<{id: string}>, res: Response) => {
-    const event = await this.eventService.updateEvent(req.params.id, req.body);
+  update = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const event = await this.eventService.updateEvent(req.params.id as string, req.body, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
     res.json(ApiResponse.ok(event, 'Event updated successfully'));
   });
 
-  delete = asyncHandler(async (req: Request<{id: string}>, res: Response) => {
-    await this.eventService.deleteEvent(req.params.id);
+  delete = asyncHandler(async (req: AuthRequest, res: Response) => {
+    await this.eventService.deleteEvent(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
     res.json(ApiResponse.ok(null, 'Event deleted successfully'));
   });
 }
