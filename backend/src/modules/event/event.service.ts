@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { EventRepository, EventQuery } from './event.repository';
+import { EventRepository, EventQuery, EventSearchQuery } from './event.repository';
 import { IEvent } from './event.model';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
@@ -23,6 +23,11 @@ export class EventService {
   // not object-spread order, otherwise `{ status: undefined }` overwrites the default.)
   async getAllEvents(query: EventQuery): Promise<PaginatedResult<IEvent>> {
     return this.eventRepository.findAll({ ...query, status: query.status ?? 'published' });
+  }
+
+  // Same published-only default as getAllEvents — search is public browsing too.
+  async searchEvents(query: EventSearchQuery): Promise<PaginatedResult<IEvent>> {
+    return this.eventRepository.search({ ...query, status: query.status ?? 'published' });
   }
 
   async getEventById(id: string): Promise<IEvent> {

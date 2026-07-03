@@ -12,6 +12,12 @@ function parseDateParam(value: unknown): Date | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
+// categorySlug accepts a single slug or a comma-separated list (multi-select filter panel)
+function parseCategorySlugParam(value: unknown): string | string[] | undefined {
+  if (typeof value !== 'string' || !value) return undefined;
+  return value.includes(',') ? value.split(',').map((s) => s.trim()).filter(Boolean) : value;
+}
+
 export class EventController {
   private eventService: EventService;
 
@@ -30,10 +36,7 @@ export class EventController {
     const isFeatured = collection === 'featured' ? true : undefined;
     const isTrending = collection === 'trending' ? true : undefined;
 
-    // categorySlug accepts a single slug or a comma-separated list (multi-select filter panel)
-    const categorySlugFilter = typeof categorySlug === 'string' && categorySlug.includes(',')
-      ? categorySlug.split(',').map((s) => s.trim()).filter(Boolean)
-      : (categorySlug as string | undefined);
+    const categorySlugFilter = parseCategorySlugParam(categorySlug);
 
     const result = await this.eventService.getAllEvents({
       page: page ? Number(page) : undefined,
@@ -49,6 +52,29 @@ export class EventController {
       isTrending,
       search: search as string,
       excludeId: excludeId as string,
+      dateFrom: parseDateParam(dateFrom),
+      dateTo: parseDateParam(dateTo),
+    });
+    res.json(ApiResponse.ok(result.data, 'Events retrieved successfully', result.pagination));
+  });
+
+  // Free-text search bar (header): matches title/description/location/organizer/category,
+  // distinct from getAll's single-field `search` param used by the filter-panel listing page.
+  search = asyncHandler(async (req: Request, res: Response) => {
+    const {
+      q, page, limit, sort, order, category, categorySlug, city, isFree, dateFrom, dateTo,
+    } = req.query;
+
+    const result = await this.eventService.searchEvents({
+      q: q as string,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      sort: sort as string,
+      order: order as 'asc' | 'desc',
+      category: category as string,
+      categorySlug: parseCategorySlugParam(categorySlug),
+      city: city as string,
+      isFree: isFree === undefined ? undefined : isFree === 'true',
       dateFrom: parseDateParam(dateFrom),
       dateTo: parseDateParam(dateTo),
     });
