@@ -7,6 +7,7 @@ const eventController = new EventController();
 
 // ─── Public Routes (anyone can browse events) ────────────────────────
 router.get('/', eventController.getAll);
+router.get('/:id/detail', eventController.getDetail);
 router.get('/:id', eventController.getById);
 
 // ─── Organizer Management Routes (create / edit / delete events) ─────

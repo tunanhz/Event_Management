@@ -60,6 +60,13 @@ export class EventController {
     res.json(ApiResponse.ok(event, 'Event retrieved successfully'));
   });
 
+  // Richer payload for the detail page: event + ticket tiers + related events,
+  // in one round trip instead of the plain getById above.
+  getDetail = asyncHandler(async (req: Request<{id: string}>, res: Response) => {
+    const detail = await this.eventService.getEventDetail(req.params.id);
+    res.json(ApiResponse.ok(detail, 'Event detail retrieved successfully'));
+  });
+
   // Routes below run isAuthenticated + authorize first, so req.user is always set.
   create = asyncHandler(async (req: AuthRequest, res: Response) => {
     const event = await this.eventService.createEvent(req.body, req.user!.id);
