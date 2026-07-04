@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { EventRepository, EventQuery, EventSearchQuery } from './event.repository';
 import { IEvent } from './event.model';
+import { ITicket } from '../organizer/ticket.model';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
 
@@ -8,6 +9,12 @@ import { PaginatedResult } from '../../common/types';
 interface EventActor {
   id: string;
   role: string;
+}
+
+export interface EventDetail {
+  event: IEvent;
+  tickets: ITicket[];
+  related: IEvent[];
 }
 
 export class EventService {
@@ -31,11 +38,23 @@ export class EventService {
   }
 
   async getEventById(id: string): Promise<IEvent> {
+    this.assertValidId(id);
     const event = await this.eventRepository.findById(id);
     if (!event || event.status !== 'published') {
       throw new AppError('Event not found', 404);
     }
     return event;
+  }
+
+  // Everything the detail page (/su-kien/:id) needs in one call: the event itself,
+  // its on-sale ticket tiers, and a same-category "related events" rail.
+  async getEventDetail(id: string): Promise<EventDetail> {
+    const event = await this.getEventById(id);
+    const [tickets, related] = await Promise.all([
+      this.eventRepository.findTicketsByEventId(id),
+      this.eventRepository.findRelated(event),
+    ]);
+    return { event, tickets, related };
   }
 
   async createEvent(data: Partial<IEvent>, organizerId: string): Promise<IEvent> {
@@ -48,6 +67,7 @@ export class EventService {
   }
 
   async updateEvent(id: string, data: Partial<IEvent>, actor: EventActor): Promise<IEvent> {
+    this.assertValidId(id);
     const existing = await this.eventRepository.findById(id);
     if (!existing) {
       throw new AppError('Event not found', 404);
@@ -66,6 +86,7 @@ export class EventService {
   }
 
   async deleteEvent(id: string, actor: EventActor): Promise<void> {
+    this.assertValidId(id);
     const existing = await this.eventRepository.findById(id);
     if (!existing) {
       throw new AppError('Event not found', 404);
@@ -73,6 +94,15 @@ export class EventService {
     this.assertCanManage(existing, actor);
 
     await this.eventRepository.delete(id);
+  }
+
+  // A malformed id (not a valid ObjectId) would otherwise reach Mongoose and throw a
+  // CastError, which the global error handler turns into an unhelpful 500 — surface it
+  // as the same 404 a well-formed-but-missing id would produce instead.
+  private assertValidId(id: string): void {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError('Event not found', 404);
+    }
   }
 
   // Organizers may only manage the events they own; admins may manage any event

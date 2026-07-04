@@ -1,4 +1,5 @@
 import { Event, IEvent } from './event.model';
+import { Ticket, ITicket } from '../organizer/ticket.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
 
 export interface EventQuery extends PaginationQuery {
@@ -156,6 +157,25 @@ export class EventRepository {
 
   async findById(id: string): Promise<IEvent | null> {
     return Event.findById(id).lean();
+  }
+
+  // Ticket tiers on sale for the detail page's booking widget. HIDDEN tiers are
+  // organizer-only (surfaced via the organizer module), so they're excluded here.
+  async findTicketsByEventId(eventId: string): Promise<ITicket[]> {
+    return Ticket.find({ eventId, status: { $ne: 'HIDDEN' } }).sort({ price: 1 }).lean();
+  }
+
+  // "You might also like" rail: other published events in the same category,
+  // soonest first, capped to a small carousel-sized page.
+  async findRelated(event: IEvent, limit = 4): Promise<IEvent[]> {
+    return Event.find({
+      _id: { $ne: event._id },
+      status: 'published',
+      categorySlug: event.categorySlug,
+    })
+      .sort({ date: 1 })
+      .limit(limit)
+      .lean();
   }
 
   async create(data: Partial<IEvent>): Promise<IEvent> {
