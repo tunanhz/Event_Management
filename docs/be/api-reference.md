@@ -243,6 +243,18 @@ sort mặc định theo `date asc`).
 }
 ```
 
+### `GET /api/events/search`
+Full-text search cho thanh tìm kiếm (header) — khác `search` param của `GET /` ở chỗ khớp
+**nhiều field** (`title`, `description`, `location`, `organizer`, `category`) qua `$or` thay vì chỉ
+`title`. Cùng cơ chế phân trang/sort + mặc định `status=published` như `GET /`. **Lưu ý thứ tự
+route**: khai báo trước `GET /:id` để `"search"` không bị nuốt làm `:id`.
+
+**Query params** (optional): `q` (từ khoá tìm kiếm, regex không phân biệt hoa/thường), `page`, `limit`,
+`sort`, `order`, `category`, `categorySlug` (1 hoặc nhiều slug cách nhau bởi dấu phẩy), `city`,
+`isFree`, `dateFrom`/`dateTo`.
+
+**Response 200**: cùng shape với `GET /api/events` (`data` + `meta` phân trang).
+
 ### `GET /api/events/:id`
 Chỉ trả event có `status='published'` (khác 404 nếu chưa publish, tránh lộ draft qua đoán ID).
 **Response 200**: `{ success, message: "Event retrieved successfully", data: event }`
