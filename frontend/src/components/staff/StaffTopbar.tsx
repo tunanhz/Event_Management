@@ -1,11 +1,33 @@
 "use client"
 
-import { ScanLine, LogOut } from "lucide-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { ScanLine, CalendarDays, TriangleAlert } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { AccountMenuDropdown } from "@/components/account/AccountMenuDropdown"
 import { useAuth } from "@/context/AuthContext"
 
-/** Refined top bar for the staff check-in station: brand, live status, account. */
+/** Top-level staff sections. "Sự kiện" also covers the per-event check-in routes. */
+const NAV_ITEMS = [
+  {
+    name: "Sự kiện",
+    href: "/staff",
+    icon: CalendarDays,
+    isActive: (path: string) => path === "/staff" || path.startsWith("/staff/check-in"),
+  },
+  {
+    name: "Sự cố",
+    href: "/staff/incidents",
+    icon: TriangleAlert,
+    isActive: (path: string) => path.startsWith("/staff/incidents"),
+  },
+]
+
+/** Refined top bar for the staff area: brand, section nav, live status, account. */
 export function StaffTopbar() {
-  const { user, logout } = useAuth()
+  const pathname = usePathname()
+  const { user } = useAuth()
   const name = user?.fullName ?? "Nhân viên"
   const initial = name.charAt(0).toUpperCase()
 
@@ -33,6 +55,30 @@ export function StaffTopbar() {
           </div>
         </div>
 
+        {/* Section nav */}
+        <nav aria-label="Khu vực nhân viên" className="ml-1 flex items-center gap-1 sm:ml-3">
+          {NAV_ITEMS.map((item) => {
+            const active = item.isActive(pathname)
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors",
+                  active
+                    ? "bg-primary/12 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Icon size={16} aria-hidden="true" />
+                <span className="hidden sm:inline">{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
         <div className="flex-1" />
 
         {/* Live station status */}
@@ -44,28 +90,25 @@ export function StaffTopbar() {
           Trực tuyến
         </span>
 
-        {/* Account chip */}
-        <div className="flex items-center gap-2.5 rounded-full border border-border bg-background/60 py-1 pl-1.5 pr-1.5">
+        {/* Light/dark theme toggle */}
+        <ThemeToggle className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" />
+
+        {/* Account chip — dropdown with profile link + logout */}
+        <AccountMenuDropdown
+          profileHref="/staff/profile"
+          triggerClassName="flex items-center gap-2.5 rounded-full border border-border bg-background/60 py-1 pl-1.5 pr-2.5 text-foreground transition-colors hover:bg-muted"
+        >
           <span
             className="grid h-8 w-8 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary"
             aria-hidden="true"
           >
             {initial}
           </span>
-          <div className="hidden leading-tight sm:block">
-            <div className="text-sm font-semibold text-foreground">{name}</div>
-            <div className="text-[0.7rem] text-muted-foreground">Nhân viên soát vé</div>
-          </div>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            aria-label="Đăng xuất"
-            title="Đăng xuất"
-            className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
+          <span className="hidden text-left leading-tight sm:block">
+            <span className="block text-sm font-semibold text-foreground">{name}</span>
+            <span className="block text-[0.7rem] text-muted-foreground">Nhân viên soát vé</span>
+          </span>
+        </AccountMenuDropdown>
       </div>
     </header>
   )

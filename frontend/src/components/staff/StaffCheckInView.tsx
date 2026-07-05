@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react"
 import {
-  ChevronDown,
   CalendarClock,
   MapPin,
   CheckCircle2,
@@ -15,33 +14,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { CheckInScanner } from "./CheckInScanner"
 import { CheckInProgressRing } from "./CheckInProgressRing"
 import {
-  STAFF_EVENTS,
   normalizeCode,
+  nowHHmm,
   summarizeTickets,
   breakdownByType,
+  type StaffEvent,
   type StaffTicket,
   type CheckInResult,
 } from "./staff-checkin-data"
 
-/** Current wall-clock time as "HH:mm" (called from an event handler only). */
-function nowHHmm(): string {
-  const d = new Date()
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
-}
-
 /**
- * Staff check-in station. Pick an assigned event, scan/enter ticket codes to
- * admit attendees, and watch live counters + a recent-admissions feed.
+ * Staff check-in station for one assigned event (picked on /staff). Scan/enter
+ * ticket codes to admit attendees, watch live counters + a recent-admissions
+ * feed. Render with key={event.id} so state resets when the event changes.
  */
-export function StaffCheckInView() {
-  const [eventId, setEventId] = useState(STAFF_EVENTS[0].id)
+export function StaffCheckInView({ event }: { event: StaffEvent }) {
   // Ticket state is a working copy so admissions mutate without touching seed.
   const [tickets, setTickets] = useState<StaffTicket[]>(() =>
-    STAFF_EVENTS[0].tickets.map((t) => ({ ...t }))
+    event.tickets.map((t) => ({ ...t }))
   )
   const [result, setResult] = useState<CheckInResult | null>(null)
 
-  const event = STAFF_EVENTS.find((e) => e.id === eventId) ?? STAFF_EVENTS[0]
   const stats = summarizeTickets(tickets)
   const types = breakdownByType(tickets)
   const recent = useMemo(
@@ -52,13 +45,6 @@ export function StaffCheckInView() {
         .slice(0, 8),
     [tickets]
   )
-
-  const selectEvent = (id: string) => {
-    const ev = STAFF_EVENTS.find((e) => e.id === id)
-    setEventId(id)
-    setTickets(ev ? ev.tickets.map((t) => ({ ...t })) : [])
-    setResult(null)
-  }
 
   const handleScan = (raw: string) => {
     const code = normalizeCode(raw)
@@ -98,26 +84,6 @@ export function StaffCheckInView() {
                 <MapPin size={15} aria-hidden="true" />
                 {event.venueName}
               </span>
-            </div>
-
-            <div className="relative mt-4 w-full max-w-xs">
-              <select
-                value={eventId}
-                onChange={(e) => selectEvent(e.target.value)}
-                aria-label="Chọn sự kiện"
-                className="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-card pl-4 pr-10 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
-              >
-                {STAFF_EVENTS.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.title}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={18}
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                aria-hidden="true"
-              />
             </div>
           </div>
 
