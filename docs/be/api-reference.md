@@ -414,7 +414,56 @@ Body tạo: `{ title, subtitle?, imageUrl, ctaLabel?, linkUrl?, eventId?, order?
 
 ---
 
-## 7. Bảng tổng hợp nhanh
+## 7. Registration — Event booking (`/api/registrations`, EM-76)
+
+> Toàn bộ route yêu cầu `isAuthenticated` + `authorize('PARTICIPANT')` — chỉ participant mới được
+> đặt vé (organizer/staff/admin bị chặn 403). Chưa có VNPAY thật: flow dùng **giữ chỗ 10 phút**
+> (`holdExpiresAt`) rồi xác nhận thanh toán qua endpoint mock riêng — xem `docs/business.md` §8.
+> `status` mở rộng thêm `PENDING`/`EXPIRED` so với enum gốc trong SDS (`PAID|CANCELLED|REFUNDED`)
+> để biểu diễn trạng thái chờ thanh toán.
+
+### `POST /api/registrations`
+Giữ chỗ `quantity` vé của một `ticketId` thuộc `eventId` (phải `published` và ticket `ACTIVE`,
+trong khung `saleStart`/`saleEnd` nếu có). Trừ tồn kho `Ticket.soldQuantity` **ngay khi giữ chỗ**
+(atomic, chống oversell khi nhiều request cùng tranh vé cuối) — chỉ tạo `Registration` sau khi
+trừ kho thành công.
+
+**Body**: `{ "eventId": "...", "ticketId": "...", "quantity": 1 }`
+**Response 201**: `{ success, message: "Giữ chỗ thành công, vui lòng thanh toán trong 10 phút", data: registration }`
+(`registration.status = "PENDING"`, `holdExpiresAt` = now + 10 phút)
+**Lỗi**: `400` thiếu field/quantity không hợp lệ/vé ngoài khung bán · `404` event chưa published
+hoặc ticket không thuộc event · `409` không đủ vé còn lại.
+
+### `POST /api/registrations/:id/confirm-payment`
+Xác nhận thanh toán (**mock** — chưa gọi VNPAY thật), chuyển `PENDING → PAID` và tạo 1 `Payment`
+(`paymentMethod: "MOCK"`). Tồn kho **không** trừ lại ở bước này (đã trừ từ lúc giữ chỗ).
+
+**Response 200**: `{ success, message: "Xác nhận thanh toán thành công", data: { registration, payment } }`
+**Lỗi**: `400` registration không ở trạng thái `PENDING` · `404` không tìm thấy (hoặc không phải
+chủ sở hữu) · `410` hết hạn giữ chỗ (tự động chuyển sang `EXPIRED` + nhả tồn kho).
+
+### `POST /api/registrations/:id/cancel`
+Hủy đăng ký đang `PENDING` hoặc `PAID`, nhả lại tồn kho vé đã trừ. Hủy vé `PAID` **không** tự
+hoàn tiền (đó là luồng `Withdrawal`/refund riêng, chưa thuộc phạm vi này).
+
+**Response 200**: `{ success, message: "Hủy đăng ký thành công", data: registration }` (`status: "CANCELLED"`)
+**Lỗi**: `400` registration không ở trạng thái hủy được · `404` không tìm thấy/không phải chủ sở hữu.
+
+### `GET /api/registrations/me`
+Danh sách đăng ký của chính participant đang đăng nhập (dữ liệu nguồn cho "Vé của tôi"), phân
+trang. Tự động dọn các hold quá hạn (chuyển `EXPIRED` + nhả tồn kho) trước khi trả kết quả.
+
+**Query params**: `page` (mặc định 1), `limit` (mặc định 10).
+**Response 200**: `{ success, message, data: registration[], meta: pagination }`
+
+### `GET /api/registrations/:id`
+Chi tiết 1 đăng ký — chỉ chủ sở hữu mới xem được.
+**Response 200**: `{ success, message, data: registration }`
+**Lỗi**: `404` không tìm thấy hoặc không phải chủ sở hữu (không phân biệt 2 trường hợp, tránh dò `id`).
+
+---
+
+## 8. Bảng tổng hợp nhanh
 
 | Method | Path | Auth | Role |
 |---|---|---|---|
@@ -446,10 +495,15 @@ Body tạo: `{ title, subtitle?, imageUrl, ctaLabel?, linkUrl?, eventId?, order?
 | GET | `/api/banners` | Không | — |
 | GET | `/api/banners/admin` | Có | ADMIN |
 | POST/PUT/DELETE | `/api/banners...` | Có | ADMIN |
+| POST | `/api/registrations` | Có | PARTICIPANT |
+| GET | `/api/registrations/me` | Có | PARTICIPANT |
+| GET | `/api/registrations/:id` | Có | PARTICIPANT |
+| POST | `/api/registrations/:id/confirm-payment` | Có | PARTICIPANT |
+| POST | `/api/registrations/:id/cancel` | Có | PARTICIPANT |
 
 ---
 
-## 8. Ghi chú cho FE khi kick-off
+## 9. Ghi chú cho FE khi kick-off
 
 1. Luôn gửi request với `credentials: 'include'` (fetch) hoặc `withCredentials: true` (axios) để cookie `token` được đính kèm.
 2. Không cần tự quản lý header `Authorization` trừ khi test qua Postman/curl (khi đó dùng `Bearer <token>` lấy từ `data.token` sau login/register).
