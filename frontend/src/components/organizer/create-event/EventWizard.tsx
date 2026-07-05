@@ -10,6 +10,7 @@ import { OrganizerInfo } from "./OrganizerInfo"
 import { SectionCard } from "./SectionCard"
 import { TimeAndTicketsStep } from "./TimeAndTicketsStep"
 import { SettingsStep } from "./SettingsStep"
+import { LogisticsPermitStep } from "./LogisticsPermitStep"
 import { ContractStep } from "./ContractStep"
 import {
   WIZARD_STEPS,
@@ -29,7 +30,7 @@ export function EventWizard({ initialForm }: { initialForm: CreateEventForm }) {
   const update = (patch: Partial<CreateEventForm>) =>
     setForm((prev) => ({ ...prev, ...patch }))
 
-  const goNext = () => setStep((s) => Math.min(s + 1, 5) as WizardStep)
+  const goNext = () => setStep((s) => Math.min(s + 1, WIZARD_STEPS.length) as WizardStep)
 
   const save = () => {
     // Persisting the draft is out of scope for this screen; log for now.
@@ -66,9 +67,11 @@ export function EventWizard({ initialForm }: { initialForm: CreateEventForm }) {
 
       {step === 3 && <SettingsStep form={form} update={update} />}
 
-      {step === 4 && <ContractStep form={form} update={update} />}
+      {step === 4 && <LogisticsPermitStep form={form} update={update} />}
 
-      {step === 5 && <StepPlaceholder step={step} />}
+      {step === 5 && <ContractStep form={form} update={update} />}
+
+      {step === 6 && <StepPlaceholder step={step} />}
     </div>
   )
 }

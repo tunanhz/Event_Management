@@ -30,6 +30,8 @@ export function mapEventToForm(event: OrganizerEvent): CreateEventForm {
     privacy: "public",
     confirmationMessage: "",
     enableQuestions: false,
+    logisticsServices: [],
+    permitDocuments: [],
     contractRepName: "",
     contractAgreed: false,
   }

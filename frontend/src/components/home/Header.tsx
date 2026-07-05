@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { HeaderAccountMenu } from "./HeaderAccountMenu";
 import { useScrollState } from "@/lib/use-scroll-hide";
 import styles from "./Header.module.css";
@@ -81,6 +82,8 @@ const Header: React.FC = () => {
                 Vé của tôi
               </Link>
 
+              <NotificationBell />
+
               <HeaderAccountMenu variant="desktop" />
 
               <ThemeToggle className={styles.themeToggle} />
@@ -128,6 +131,8 @@ const Header: React.FC = () => {
 
           {/* Mobile Actions */}
           <div className={styles.mobileActions}>
+            <NotificationBell className={styles.mobileIconBtn} />
+
             <ThemeToggle className={styles.mobileIconBtn} />
 
             <button className={styles.mobileIconBtn} type="button" aria-label="Tìm kiếm">

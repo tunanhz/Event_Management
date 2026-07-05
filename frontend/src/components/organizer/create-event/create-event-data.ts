@@ -3,7 +3,7 @@
  * Kept dependency-free so both server and client components can import it.
  */
 
-export type WizardStep = 1 | 2 | 3 | 4 | 5
+export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6
 export type LocationType = "offline" | "online"
 /** Who can book: everyone (public) or link-holders only (private). */
 export type EventPrivacy = "public" | "private"
@@ -60,10 +60,36 @@ export interface CreateEventForm {
   privacy: EventPrivacy
   confirmationMessage: string
   enableQuestions: boolean
-  /** Step 4 — service contract. */
+  /** Step 4 — logistics services requested from the platform. */
+  logisticsServices: string[]
+  /** Step 4 — uploaded legal permit / contract documents (metadata only). */
+  permitDocuments: PermitDocument[]
+  /** Step 5 — service contract. */
   contractRepName: string
   contractAgreed: boolean
 }
+
+/** Metadata of an uploaded permit/contract file (mock — file is not persisted). */
+export interface PermitDocument {
+  id: string
+  name: string
+  sizeKb: number
+}
+
+/** Platform support services the organizer can request (per SRS wizard step 3). */
+export const LOGISTICS_SERVICES: { id: string; label: string; description: string }[] = [
+  { id: "audio-lighting", label: "Âm thanh & ánh sáng", description: "Gói thiết bị âm thanh, ánh sáng sân khấu theo quy mô sự kiện." },
+  { id: "furniture", label: "Thuê bàn ghế & thiết bị", description: "Bàn ghế, quầy check-in, backdrop, lều trại cho khu vực sự kiện." },
+  { id: "checkin-staff", label: "Tuyển nhân viên check-in", description: "Nền tảng cung cấp staff soát vé đã đào tạo cho ngày diễn ra." },
+  { id: "permit-support", label: "Hỗ trợ xin giấy phép", description: "Tư vấn và thay mặt nộp hồ sơ xin phép tổ chức với cơ quan địa phương." },
+]
+
+/** Upload constraints for permit documents (per SRS: PDF/DOCX/PNG, ≤ 15MB). */
+export const PERMIT_FILE_RULES = {
+  accept: ".pdf,.docx,.png",
+  allowedExtensions: ["pdf", "docx", "png"],
+  maxSizeMb: 15,
+} as const
 
 /** Character limits mirrored from the reference UI. */
 export const LIMITS = {
@@ -143,8 +169,9 @@ export const WIZARD_STEPS: { id: WizardStep; label: string }[] = [
   { id: 1, label: "Thông tin sự kiện" },
   { id: 2, label: "Thời gian & Loại vé" },
   { id: 3, label: "Cài đặt" },
-  { id: 4, label: "Hợp đồng" },
-  { id: 5, label: "Thông tin thanh toán" },
+  { id: 4, label: "Logistics & Giấy phép" },
+  { id: 5, label: "Hợp đồng" },
+  { id: 6, label: "Thông tin thanh toán" },
 ]
 
 export const EVENT_CATEGORIES = [
@@ -224,6 +251,8 @@ export const INITIAL_FORM: CreateEventForm = {
   privacy: "public",
   confirmationMessage: "",
   enableQuestions: false,
+  logisticsServices: [],
+  permitDocuments: [],
   contractRepName: "",
   contractAgreed: false,
 }
