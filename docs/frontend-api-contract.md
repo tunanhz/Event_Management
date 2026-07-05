@@ -1,6 +1,6 @@
 # Frontend API Contract — Event Management (EventBox)
 
-> Cập nhật: 2026-07-02 · Branch: `develop`
+> Cập nhật: 2026-07-05 · Branch: `develop`
 > **Mục đích:** Tài liệu API dưới góc nhìn Frontend — **mỗi endpoint gọi thế nào & response trả về ra sao**.
 > Đọc kèm [`business.md`](./business.md), [`system-architecture.md`](./system-architecture.md), [`codebase-summary.md`](./codebase-summary.md).
 >
@@ -41,7 +41,11 @@
 | Prefix | Module |
 |--------|--------|
 | `/api/users` | User + Auth (`user.routes.ts`) |
-| `/api/events` | Event (`event.routes.ts`) |
+| `/api/events` | Event (`event.routes.ts`, public read + protected write) |
+| `/api/organizer` | Organizer event + ticket mgmt (`organizer.routes.ts`, ORGANIZER\|ADMIN) |
+| `/api/categories` | Category (`category.routes.ts`, public read + ADMIN write) |
+| `/api/stars` | Star (`star.routes.ts`, public read + ADMIN write) |
+| `/api/banners` | Banner (`banner.routes.ts`, public read + ADMIN write) |
 | `/api/health` | Health check → `{ status: "ok", timestamp }` (không bọc envelope) |
 
 ### 1.4 Xác thực (cookie `token`)
@@ -249,7 +253,7 @@ Khu **duy nhất** trong Admin dashboard đang gọi API thật (`dashboard/acco
 
 ### 3.5 Events — `/api/events`
 
-⚠️ **Cảnh báo bảo mật:** các route này **KHÔNG có middleware auth/role** (`event.routes.ts`) — ai cũng create/update/delete được. Cần bảo vệ trước khi mở public (business §9).
+✅ **Auth:** `GET` public (để trang chủ/khám phá); `POST/PUT/DELETE` gắn `authorize('ORGANIZER','ADMIN')`.
 
 **Kiểu `EventApi` thật** (`event.model.ts`) — **khác** kiểu FE participant/admin đang dùng (xem §5):
 

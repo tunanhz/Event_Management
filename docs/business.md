@@ -1,45 +1,61 @@
 # Business Logic — Event Management System (EventBox)
 
-> Cập nhật: 2026-06-30 · Branch: `develop`
-> Tài liệu **nghiệp vụ** (không phải kỹ thuật). Tổng hợp từ **SRS** + phần Overview của
-> **Final Report**, đối chiếu hiện trạng code. Đọc kèm [`codebase-summary.md`](./codebase-summary.md),
-> [`system-architecture.md`](./system-architecture.md).
+> Cập nhật: 2026-07-05 · Branch: `develop`
+> Tài liệu **nghiệp vụ** (không phải kỹ thuật). Tổng hợp từ **SRS + SDS + Final Report**
+> (bản Google Docs, đọc đầy đủ text **và toàn bộ sơ đồ/hình ảnh**: context diagram, use-case
+> diagram từng actor, screen flow, ERD, database schema, UI mockup), đối chiếu hiện trạng code.
+> Đọc kèm [`codebase-summary.md`](./codebase-summary.md), [`system-architecture.md`](./system-architecture.md).
 >
 > **Nguồn & độ tin cậy:**
-> - **SRS** (Google Docs): đọc đầy đủ — nguồn chuẩn cho use case, actor, entity, business rule.
-> - **Final Report**: chỉ phần *Overview* (bối cảnh, đối thủ, manday, sprint) và *bảng use case*
->   là của Event Management. Các phần sau (Genealogy/Clan/Family Tree, Payos) là **template sót
->   từ dự án khác → KHÔNG áp dụng**.
-> - **SDS** (Google Docs): đọc đầy đủ — nguồn chuẩn cho **mô hình dữ liệu** (13 bảng), class
->   design, và enum trạng thái. Schema trực quan: <https://dbdiagram.io/d/Event_Management-6a3810305c789b8acbcbee37>.
+> - **SRS — Software Requirement Specification** (Hanoi, 06/2026): nguồn chuẩn cho use case (61),
+>   actor (6), màn hình (33), ma trận phân quyền, business rule, NFR, 5 đặc tả FR chi tiết
+>   (AT-01, CE-01, TB-01, TC-01, AM-01).
+> - **SDS — Software Design Specification** (Hanoi, 05/2025): nguồn chuẩn cho **mô hình dữ liệu 13
+>   bảng** (đã đọc schema đầy đủ từng field), class design, enum trạng thái.
+>   Schema trực quan: <https://dbdiagram.io/d/Event_Management-6a3810305c789b8acbcbee37>.
+> - **Final Report** (Hanoi, 06/2026): chỉ dùng **§I Overview** (bối cảnh, đối thủ, 600 man-hours,
+>   team 5 người), **§II Scrum** (4 sprint) và **§III bảng use case**. Từ **§IV trở đi**
+>   (Family Tree/Clan/Genealogy, subscription, honhaminh.com...) là **template sót từ dự án
+>   khác → KHÔNG áp dụng**.
 
 ---
 
 ## 1. Bối cảnh & mục tiêu sản phẩm
 
-**Bối cảnh:** Nền "kinh tế trải nghiệm" ở Việt Nam tăng mạnh (workshop, giải đấu thể thao
-phong trào, hội nghị doanh nghiệp, sự kiện cộng đồng). Thị trường sôi động nhưng vận hành
+**Bối cảnh:** Nền "kinh tế trải nghiệm" ở Việt Nam tăng mạnh (workshop chuyên môn, giải đấu thể
+thao phong trào, hội nghị doanh nghiệp, sự kiện cộng đồng). Thị trường sôi động nhưng vận hành
 phân mảnh, thủ công, dựa nhiều vào mạng xã hội không an toàn.
 
 **Vấn đề:**
 - Nền tảng hiện tại chỉ tập trung **bán vé thương mại quy mô lớn**, thiếu quy trình quản lý
-  end-to-end cho sự kiện ngách (pre-screening, logistics, check-in linh hoạt).
+  end-to-end cho sự kiện vừa & nhỏ (pre-screening, logistics, check-in linh hoạt).
 - **Logistics & nhân sự thời vụ** (âm thanh/ánh sáng/sân khấu, giấy phép, tuyển staff check-in)
-  vẫn làm thủ công → rủi ro lừa đảo, hủy kèo, thiếu nhân sự ngày sự kiện.
+  vẫn làm thủ công qua mạng xã hội chưa kiểm chứng → rủi ro lừa đảo, hủy kèo, thiếu nhân sự.
 - **Check-in thủ công** gây ùn tắc cổng, sai lệch dữ liệu, không có thống kê real-time.
 
-**Giải pháp — EMS (Online-to-Offline):** một "orchestrator" nối quản lý số với vận hành thực
-địa cho sự kiện mọi quy mô:
-- Hệ sinh thái khép kín **4 actor lõi** (Admin · Organizer · Participant · Staff) trên một
-  CSDL thống nhất, phân quyền **RBAC**.
-- Tự động hóa đăng ký/đặt vé, xác thực vé động, theo dõi trạng thái.
-- Dịch vụ **logistics & cấp nhân sự theo yêu cầu** (Event BPaaS) dưới sự giám sát của Admin.
-- **Dashboard phân tích** real-time (tốc độ đăng ký, phân bố tham dự, vận tốc check-in) + CRM.
+**Giải pháp — EMS (Online-to-Offline):** một "orchestrator" nối quản lý số với vận hành thực địa:
+- Hệ sinh thái khép kín **4 actor lõi** (Admin · Organizer · Participant · Staff) trên một CSDL
+  thống nhất, phân quyền **RBAC** chặt ("a flawless data flow and strict RBAC").
+- Tự động hóa đăng ký/đặt vé, xác thực vé QR động, theo dõi trạng thái real-time.
+- Dịch vụ **logistics & cấp nhân sự theo yêu cầu** dưới sự giám sát của Admin.
+- **Dashboard phân tích** dữ liệu (đăng ký, tham dự, doanh thu) cho Organizer & Admin.
 
-**Khác biệt so với đối thủ (Ticketbox):** Ticketbox mạnh về traffic + hạ tầng thanh toán nhưng
-*thuần thương mại*, **không** có duyệt sự kiện riêng tư, **không** sourcing logistics, **không**
-mạng lưới staff, **phí hoa hồng cao**. EventBox bù đúng các khoảng trống này + phí thấp hơn cho
-tổ chức nhỏ/cộng đồng.
+**Khác biệt so với đối thủ (Ticketbox):** Ticketbox mạnh về xử lý concurrency + seat map tương
+tác nhưng *thuần thương mại*: **không** có workflow duyệt sự kiện riêng tư/doanh nghiệp,
+**không** sourcing logistics, **không** mạng lưới staff, giá kém linh hoạt với organizer nhỏ.
+EventBox bù đúng các khoảng trống này.
+
+**Quy mô dự án** (Final Report §I–II): 10 tuần · 5 người · 600 man-hours; Scrum (PO: Nguyen Khac
+Trang, SM: Duong Tuan Anh); quản lý bằng Jira + Confluence.
+
+### 1.1 Phạm vi giao theo Sprint (Final Report §II)
+
+| Sprint | Phạm vi chính |
+|--------|---------------|
+| 1 | Khởi tạo dự án, Home & Event Discovery, Auth (đăng ký, Google OAuth), quản lý tài khoản/role |
+| 2 | Event Management (tạo/sửa/lịch), cấu hình vé & tồn kho, workflow duyệt sự kiện, nộp giấy phép |
+| 3 | Mua vé & xác nhận thanh toán, vé đã mua & lịch sử, quản lý attendee & check-in (E-ticket), vận hành & báo sự cố, notification |
+| 4 | Triển khai hệ thống, quản trị hợp đồng/giấy phép, tài chính & doanh thu, **VNPay + callback**, dashboard analytics/marketing/report, xử lý sự cố |
 
 ---
 
@@ -50,16 +66,22 @@ SRS định nghĩa 6 actor; ánh xạ sang 4 `role` trong code (`Guest`/`User` l
 
 | Actor (SRS) | Mô tả nghiệp vụ | Role trong code |
 |-------------|-----------------|-----------------|
-| **Guest** | Khách chưa đăng nhập: xem trang chủ, danh sách/chi tiết sự kiện, đăng ký/đăng nhập | (không đăng nhập) |
-| **User** | Người đã đăng nhập (chung) | bất kỳ role |
-| **Participant** | Người tham dự: mua vé, thanh toán, vé của tôi, wishlist, thông báo | `PARTICIPANT` (mặc định) |
-| **Organizer** | Nhà tổ chức: tạo/sửa sự kiện, cấu hình vé, quản lý staff & hợp đồng, xem/ rút doanh thu | `ORGANIZER` |
-| **Staff** | Nhân viên check-in tại cổng: xem sự kiện được phân, check vé (QR/thủ công), báo sự cố | `STAFF` |
-| **Admin** | Quản trị: quản lý tài khoản, duyệt sự kiện, quản lý vé/marketing/hợp đồng, thống kê, thanh toán/payout/refund | `ADMIN` |
+| **Guest** | Khách chưa đăng nhập: xem danh sách/chi tiết/tìm kiếm/lọc sự kiện, đăng ký tài khoản, Google SSO | (không đăng nhập) |
+| **User** | Người đã đăng nhập (chung): login/logout, quên mật khẩu, xem/sửa hồ sơ | bất kỳ role |
+| **Participant** | Người tham dự: mua vé, thanh toán, vé của tôi (QR), wishlist, thông báo | `PARTICIPANT` (mặc định) |
+| **Organizer** | Nhà tổ chức: tạo/sửa sự kiện, cấu hình vé, gửi duyệt, quản lý staff & hợp đồng, báo cáo tham dự/doanh thu, rút tiền | `ORGANIZER` |
+| **Staff** | Nhân viên check-in tại cổng: sự kiện được phân, danh sách tham dự, check vé (QR/mã 8 ký tự), báo sự cố | `STAFF` |
+| **Admin** | Quản trị: tài khoản, duyệt/từ chối sự kiện, phân staff, vé/marketing/hợp đồng, thống kê, payout/refund | `ADMIN` |
 
-> Quy tắc tài khoản (đã hiện thực): chỉ tạo `ADMIN` đầu tiên qua bootstrap; `STAFF` do Admin
-> tạo (không tự đăng ký); self-register chỉ `PARTICIPANT`/`ORGANIZER`. Admin không tự
-> khóa/đổi-role/xóa chính mình.
+**Hệ thống ngoài** (context diagram): **Google Services** (SSO cho Guest/User) và **VNPAY**
+(payment request/status). Luồng dữ liệu chính: Organizer ↔ hệ thống (event data, ticket config,
+contract, withdrawal, permit) · Participant ↔ hệ thống (event data, payment) · Staff ↔ hệ thống
+(assignment, check-in data, issue, offline ticket sale) · Admin ↔ hệ thống (governance: account,
+event, ticket, marketing, contract, payment, reporting).
+
+> Quy tắc tài khoản (đã hiện thực — verified `user.service.ts`): chỉ tạo `ADMIN` đầu tiên qua
+> bootstrap; `STAFF` do Admin tạo (không tự đăng ký); self-register chỉ `PARTICIPANT`/`ORGANIZER`.
+> Admin không tự khóa/đổi-role/xóa chính mình.
 
 ### 2.1 Luồng xác thực & kích hoạt
 
@@ -69,23 +91,32 @@ SRS định nghĩa 6 actor; ánh xạ sang 4 `role` trong code (`Guest`/`User` l
 - **Profile:** `GET /me` xem, `PUT /me` sửa họ tên & mật khẩu (yêu cầu mật khẩu hiện tại).
 
 #### Staff (Admin-managed activation)
-1. **Admin cấp tài khoản:** `POST /admin/staff` với email + họ tên.
-   - Hệ thống tạo tài khoản status `PENDING` + sinh mật khẩu tạm 10 ký tự.
-   - Tạo activation token (JWT, hạn 7 ngày, purpose="activation").
-   - Gửi email chứa: email + mật khẩu tạm + link `/activate?token=...`.
-
-2. **Staff kích hoạt:** `POST /activate` với token + họ tên (tùy) + mật khẩu mới.
-   - Xác thực token (JWT, purpose="activation").
-   - Cập nhật họ tên nếu có; hash & lưu mật khẩu mới (bcrypt 10 rounds).
-   - Chuyển status `PENDING` → `ACTIVE`.
-   - Lưu ý: Staff **không thể** đăng nhập khi status `PENDING`.
-
-3. **Cập nhật hồ sơ:** Sau kích hoạt, `PUT /me` dùng được bình thường.
+1. **Admin cấp tài khoản:** `POST /admin/staff` với email + họ tên → tạo tài khoản `PENDING`
+   + mật khẩu tạm, gửi email chứa link `/activate?token=...` (JWT purpose="activation", hạn 7 ngày).
+2. **Staff kích hoạt:** `POST /activate` với token + mật khẩu mới → `PENDING` → `ACTIVE`.
+   Staff **không thể** đăng nhập khi còn `PENDING`.
 
 #### Trạng thái tài khoản
-- `ACTIVE`: Tài khoản hoạt động; đăng nhập được.
-- `PENDING`: Tài khoản chờ kích hoạt (STAFF mới); không đăng nhập được.
-- `BANNED`: Tài khoản bị khóa; Admin/hệ thống khóa; không đăng nhập được.
+- `ACTIVE`: hoạt động, đăng nhập được · `PENDING`: chờ kích hoạt (STAFF mới) · `BANNED`: bị khóa.
+
+### 2.2 Danh mục màn hình & phân quyền (SRS — 33 màn hình)
+
+| Nhóm | Màn hình | Quyền truy cập |
+|------|----------|----------------|
+| Chung | Home page · View Event Detail | Tất cả (kể cả Guest) |
+| Auth | Register · Login · Forgot Password | Guest |
+| Tài khoản | User profile | Mọi role đã đăng nhập |
+| Participant | Ticket & Seat selection · Confirm & Checkout · View ticket booked | Participant |
+| Organizer | Organizer Dashboard · General Info (wizard B1) · Ticket & Seat mapping (B2) · Logistics & Permit Upload (B3) · View event status · Attendee Tracker Table · Financial Analytics · Withdrawal Request Form | Organizer |
+| Staff | Staff screen · Assigned Events List · Gate Operations Hub · Camera QR Scanner Mode · Manual 8-Char Input Mode | Staff |
+| Admin | Admin Dashboard · Account Management · CRUD account · Event staff assignment · Event Management · Events Pending · Events Detail · Ticket sale management · Data & revenue report · Contract Review Layout · Execute Payout/Refund | Admin |
+
+**Screen flow chính** (theo sơ đồ SRS Figure 1.2.1): sau Login rẽ nhánh theo role —
+Home → Event Detail → Ticket & Seat selection → Confirm & Checkout → View ticket booked (Participant);
+Organizer Dashboard → wizard 3 bước → View event status, + Attendee Tracker / Financial Analytics
+→ Withdrawal; Staff screen → Assigned Events → Gate Operations Hub → QR Scanner / Manual Input;
+Admin Dashboard → Account Management → CRUD → Staff assignment · Event Management → Events
+Pending/Detail → Ticket sale · Data & revenue report → Contract Review → Payout/Refund.
 
 ---
 
@@ -101,35 +132,32 @@ flowchart LR
   STAFF(["🛂 Staff"])
   ADMIN(["🛡️ Admin"])
 
-  subgraph AUTH["Auth & Tài khoản"]
+  subgraph AUTH["Auth & Tài khoản (UC 1-7)"]
     A1["Đăng ký / Đăng nhập / Google"]
     A2["Quên mật khẩu"]
     A3["Xem / Sửa hồ sơ"]
   end
-  subgraph DISC["Khám phá sự kiện"]
-    D1["Xem danh sách / chi tiết"]
-    D2["Wishlist"]
-    D3["Gợi ý bằng AI"]
-  end
-  subgraph BOOK["Đặt vé"]
-    B1["Mua vé"]
-    B2["Thanh toán VNPAY"]
-    B3["Lịch sử vé / QR động"]
-  end
-  subgraph ORGM["Tổ chức (Organizer)"]
+  subgraph ORGM["Tổ chức (UC 8-20)"]
     O1["Tạo sự kiện (wizard)"]
-    O2["Cấu hình vé"]
+    O2["Cấu hình loại vé"]
     O3["Gửi duyệt"]
     O4["Quản lý staff / hợp đồng"]
     O5["Báo cáo tham dự / doanh thu"]
     O6["Yêu cầu rút tiền"]
   end
-  subgraph STAFFM["Check-in (Staff)"]
-    S1["Xem sự kiện được phân"]
+  subgraph PARTM["Tham dự (UC 21-34)"]
+    P1["Xem / tìm / lọc sự kiện"]
+    P2["Gợi ý bằng AI"]
+    P3["Mua vé + VNPAY"]
+    P4["Vé của tôi / QR động"]
+    P5["Wishlist · Thông báo"]
+  end
+  subgraph STAFFM["Check-in (UC 35-41)"]
+    S1["Sự kiện được phân"]
     S2["Quét QR / Nhập mã 8 ký tự"]
     S3["Báo sự cố"]
   end
-  subgraph ADMM["Quản trị (Admin)"]
+  subgraph ADMM["Quản trị (UC 42-61)"]
     M1["Quản lý tài khoản"]
     M2["Duyệt / Từ chối sự kiện"]
     M3["Phân staff"]
@@ -137,20 +165,42 @@ flowchart LR
     M5["Thống kê & báo cáo"]
   end
 
-  GUEST --> AUTH & DISC
-  PART --> AUTH & DISC & BOOK
+  GUEST --> AUTH & PARTM
+  PART --> AUTH & PARTM
   ORG --> AUTH & ORGM
   STAFF --> AUTH & STAFFM
   ADMIN --> ADMM
 ```
 
-| Nhóm | Use case tiêu biểu |
-|------|--------------------|
-| **Authentication & Authorization** (7) | Đăng ký, Đăng nhập Google, Đăng nhập, Đăng xuất, Quên mật khẩu, Xem/Sửa hồ sơ |
-| **Organizer Management** (13) | Tạo sự kiện, Cấu hình loại vé, Gửi duyệt, Sửa/Xem/Xóa sự kiện, Quản lý staff, Quản lý hợp đồng, Xem/Xuất danh sách tham dự, Xem/Xuất báo cáo doanh thu, **Yêu cầu rút doanh thu** |
-| **Participant Management** (14) | Xem danh sách/chi tiết sự kiện, **Gợi ý sự kiện bằng AI**, Đăng ký dự, Mua vé, Thanh toán, Lịch sử vé, Chi tiết vé (QR động), Wishlist (xem/thêm/xóa), Thông báo (xem/chi tiết/xóa) |
-| **Staff Management** (7) | Quản lý/Xem sự kiện được phân, Xem danh sách tham dự, Báo sự cố, Check vé, **Quét QR**, **Nhập mã vé 8 ký tự thủ công** |
-| **Admin Management** (20) | Quản lý & CRUD tài khoản, Phân staff cho sự kiện, Kiểm tra báo cáo/scam, Cập nhật trạng thái user, Quản lý mọi sự kiện, **Duyệt/Từ chối sự kiện (kèm lý do)**, Quản lý bán vé/marketing/hợp đồng, Thống kê (tháng/năm), Quản lý thanh toán, **Refund / Payout / Xác minh tài khoản ngân hàng** |
+### Bảng use case đầy đủ (SRS master table)
+
+| ID | Nhóm | Use case | Ghi chú nghiệp vụ |
+|----|------|----------|-------------------|
+| 1–7 | Auth & Authorization | Register Account · Authenticate with Google · Login · Logout · Forgot Password · View Profile · Update Profile | Google SSO phải liên kết tài khoản đã verify |
+| 8 | Organizer | Create Event | Wizard tạo nháp sự kiện |
+| 9 | Organizer | Configure Ticket Types | Tier vé + giá + tồn kho |
+| 10 | Organizer | Submit for Verification | Đẩy vào hàng đợi duyệt của Admin |
+| 11–13 | Organizer | Update / View / Delete Event | Sửa chỉ khi còn nháp |
+| 14 | Organizer | Manage Staff | Gán staff check-in cho sự kiện |
+| 15 | Organizer | Manage Contract | Hợp đồng logistics & thuê địa điểm |
+| 16–17 | Organizer | View / Export Attendee List | Danh sách tham dự + xuất file |
+| 18–19 | Organizer | View / Export Revenue Report | Thống kê bán vé, doanh thu |
+| 20 | Organizer | Request Revenue Withdrawal | Yêu cầu giải ngân doanh thu |
+| 21–22 | Participant | View List Event · View Event Details | Public, kể cả Guest |
+| 23 | Participant | AI Event Recommendations | Gợi ý theo sở thích |
+| 24–26 | Participant | Register for Event · Buy Ticket · Make Payment | Thanh toán qua cổng ngoài (VNPAY) |
+| 27–28 | Participant | View Ticket History · View Ticket Details | Chi tiết vé kèm QR động |
+| 29–31 | Participant | View / Add / Remove Event Wishlist | Sự kiện đã lưu |
+| 32–34 | Participant | View List / View Details / Delete Notifications | Thông báo hệ thống |
+| 35–37 | Staff | Manage / View Assigned Events · View Attendee List | Sự kiện + cổng được phân công |
+| 38 | Staff | Report Event Issue | Ghi nhận sự cố vận hành |
+| 39–41 | Staff | Check Ticket · Scan Ticket QR Code · Enter Ticket Code Manually | 2 chế độ: camera QR & mã 8 ký tự |
+| 42–46 | Admin | Manage account · CRUD user account · Assign staff to event · Check validate report · Update user status | Trạng thái Active/Suspended/Banned |
+| 47–50 | Admin | Manage all events · View event details · Approve event · Reject event + reason | Duyệt nội dung & giấy phép |
+| 51–53 | Admin | Manage tickets sale · Manage marketing · Manage contract | Phí nền tảng, chiến dịch quảng bá, SLA |
+| 54–55 | Admin | View statistical report · View statistics by month/year | Dashboard chỉ số hệ thống |
+| 56–57 | Admin | Manage payment · Edit payment information | Đối soát giao dịch, cấu hình cổng thanh toán |
+| 58–61 | Admin | Contract review · Process refund · Approve payout · Verify Bank Account | Chu trình quyết toán tài chính |
 
 ---
 
@@ -160,57 +210,59 @@ flowchart LR
 |---|--------|-------------------|
 | 1 | **User** | Tài khoản (Admin/Organizer/Participant/Staff) |
 | 2 | **Category** | Phân loại sự kiện để duyệt/tìm kiếm |
-| 3 | **Event** | Sự kiện do Organizer tạo (tiêu đề, mô tả, địa điểm, ngày, sức chứa, trạng thái, category) |
-| 4 | **Ticket** | Loại vé gắn sự kiện (giá, số lượng, tồn, quyền lợi) |
-| 5 | **Registration** | Bản ghi đăng ký dự sự kiện của participant (trạng thái + thông tin tham dự) |
-| 6 | **Payment** | Giao dịch từ đăng ký (số tiền, phương thức, trạng thái, ngày) |
-| 7 | **Checkin** | Xác nhận tham dự thực tế tại cổng |
-| 8 | **StaffAssignment** | Gán staff vào sự kiện + trách nhiệm |
-| 9 | **Contact** | Yêu cầu hỗ trợ/liên hệ tới admin/organizer |
-| 10 | **Withdrawal** | Yêu cầu rút tiền / hoàn tiền theo chính sách |
-| 11 | **RevenueReport** | Báo cáo doanh thu/bán vé/hiệu quả tài chính |
+| 3 | **Event** | Sự kiện do Organizer tạo (tiêu đề, mô tả, địa điểm, ngày, sức chứa, trạng thái) |
+| 4 | **Ticket** | Loại vé gắn sự kiện (giá, số lượng, đã bán, khung giờ bán) |
+| 5 | **Registration** | Bản ghi đăng ký/đặt vé của participant (ID dùng làm dữ liệu QR vé) |
+| 6 | **Payment** | Giao dịch từ đăng ký (số tiền, phương thức, mã giao dịch, trạng thái) |
+| 7 | **CheckIn** | Xác nhận tham dự thực tế tại cổng |
+| 8 | **StaffAssignment** | Gán staff vào sự kiện (vai trò trong sự kiện, trạng thái) |
+| 9 | **Contract** | Hồ sơ pháp lý/giấy phép/hợp đồng của sự kiện *(SRS ghi "Contact" — hỗ trợ/liên hệ; SDS & DB schema chốt **Contract** — hồ sơ pháp lý; xem §10)* |
+| 10 | **Withdrawal** | Yêu cầu rút tiền của Organizer + kết quả duyệt |
+| 11 | **RevenueReport** | Báo cáo doanh thu/bán vé xuất theo kỳ |
 | 12 | **Issue** | Sự cố/khiếu nại về sự kiện/đăng ký/thanh toán |
-| 13 | **Notification** | Thông báo hệ thống (duyệt sự kiện, xác nhận thanh toán, cập nhật rút tiền, xử lý sự cố...) |
+| 13 | **Notification** | Thông báo hệ thống (kết quả duyệt, xác nhận thanh toán, rút tiền, xử lý sự cố...) |
 
-> **Hiện trạng code:** mới có `User`, `Event`, `OTP`. Các entity còn lại (Category, Ticket,
-> Registration, Payment, Checkin, StaffAssignment, Contract, Withdrawal, RevenueReport, Issue,
-> Notification) **chưa hiện thực** — xem §9.
+> **Hiện trạng code (2026-07-05):** đã có collection `User`, `OTP`, `Event`, `Ticket`,
+> `Category` (+ `Star`, `Banner` phục vụ trang chủ — ngoài SDS). Còn lại (Registration, Payment,
+> CheckIn, StaffAssignment, Contract, Withdrawal, RevenueReport, Issue, Notification)
+> **chưa hiện thực** — xem §9.
 
-### 4.1 Chi tiết mô hình dữ liệu (theo SDS)
+### 4.1 Chi tiết mô hình dữ liệu (theo DB schema trong SDS — đã đọc đầy đủ field)
 
-SDS định nghĩa 13 bảng MongoDB (schema: link dbdiagram ở đầu tài liệu). Các field & enum chính:
-
-- **Users**: `_id, fullName, email, phone, passwordHash, avatar, role[ADMIN|ORGANIZER|PARTICIPANT|STAFF],
-  accountStatus[ACTIVE|BANNED], createdAt, updatedAt` + method `comparePassword()`.
-- **Categories**: phân loại sự kiện (Sports, Music, Education, Technology...).
-- **Events**: `_id, categoryId→Category, creatorId→User(organizer), approvedById/reviewedBy→User(admin),
-  title, description, location, banner, startDate/endDate, capacity,
-  status[DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED], rejectionReason, reviewedAt, timestamps`.
-- **Tickets** (loại vé, tham chiếu `eventId`): `ticketName, description, price, quantity, soldQuantity,
+- **User**: `_id, fullName, email, phone, password, avatar, role, status, createdAt`.
+  Code: `role[ADMIN|ORGANIZER|PARTICIPANT|STAFF]`, `accountStatus[ACTIVE|PENDING|BANNED]`
+  (schema gọi `status`; code thêm `PENDING` cho staff activation).
+- **Category**: `_id, name, description, status, createdAt` (Sports, Music, Education, Technology...).
+- **Event**: `_id, categoryId→Category, creatorId→User(organizer), approvedById→User(admin),
+  title, description, location, banner, startDate, endDate, capacity, status, createdAt`.
+  Enum duyệt (SDS): `DRAFT | PENDING_REVIEW | PUBLISHED | REJECTED` + `rejectionReason,
+  reviewedBy, reviewedAt`.
+- **Ticket**: `_id, eventId→Event, ticketName, description, price, quantity, soldQuantity,
   saleStart, saleEnd, status[ACTIVE|SOLD_OUT|HIDDEN]`.
-- **Registrations** (đăng ký/đặt vé): `participantId→User, eventId, ticketId, quantity, registerDate,
-  status[PAID|CANCELLED|REFUNDED]`. *(ID registration thường dùng làm dữ liệu QR vé.)*
-- **Payments**: giao dịch từ registration (số tiền, phương thức, trạng thái, ngày).
-- **CheckIns**: `registrationId, checkInTime, status[SUCCESS|FAILED|INVALID], note`.
-- **StaffAssignments**: gán staff vào sự kiện + trách nhiệm.
-- **Contracts**: tài liệu pháp lý / giấy phép / hồ sơ tổ chức.
-- **Withdrawals**: yêu cầu rút tiền của Organizer + kết quả duyệt của Admin.
-- **RevenueReports**: báo cáo doanh thu + file báo cáo + lịch sử.
-- **Issues**: sự cố/khiếu nại + kết quả xử lý.
-- **Notification**: thông báo hệ thống (duyệt sự kiện, xác nhận thanh toán, cập nhật rút tiền...).
+- **Registration**: `_id, participantId→User, eventId→Event, ticketId→Ticket, quantity,
+  registerDate, status[PAID|CANCELLED|REFUNDED]`. *(`_id` dùng làm dữ liệu QR vé.)*
+- **Payment**: `_id, registrationId→Registration, amount, paymentMethod, transactionCode,
+  status, paymentDate`.
+- **CheckIn**: `_id, registrationId→Registration, checkInTime, status[SUCCESS|FAILED|INVALID], note`.
+- **StaffAssignment**: `_id, eventId→Event, staffId→User, roleInEvent, status, assignedAt`.
+- **Contract**: `_id, eventId→Event, managedBy→User, documentName, documentType, documentUrl,
+  status, uploadedAt, note`.
+- **Withdrawal**: `_id, organizerId→User, approvedBy→User(admin), amount, requestDate,
+  approvedAt, status, rejectionReason`.
+- **RevenueReport**: `_id, eventId→Event, generatedBy→User, reportName, reportType,
+  fromDate, toDate, totalRevenue, fileUrl, generatedAt`.
+- **Issue**: `_id, eventId→Event, reportedBy→User, resolvedBy→User, title, description,
+  priority, status, resolution, createdAt, resolvedAt`.
+- **Notification**: `_id, userId→User, title, message, type, isRead, createdAt`.
 
-**Lưu ý mâu thuẫn thiết kế (cần chốt):**
-- **Vé**: phần *Create Event* (SDS) mô tả `ticketTypes` là **subdocument nhúng** trong `Event`
-  (`name, price, totalStock, remainingStock, seatMapZones`); nhưng phần *Booking/Checkin* lại coi
-  **Ticket là collection riêng** (`eventId, soldQuantity...`). → cần thống nhất nhúng vs tách bảng.
-- **Logistics**: subdocument `logisticsRequest` (`infrastructurePackages, permitDocumentUrl,
-  supportStatus`) nhúng trong Event; upload file PDF/DOCX/PNG ≤ 15MB qua `FileStorageService`.
-- **Đặt tên field** lệch giữa các phần SDS: `startDatetime/endDatetime` vs `startDate/endDate`;
-  `approvedById` vs `reviewedBy`. → chọn một quy ước khi hiện thực.
-- **Contact vs Contracts**: SRS liệt kê entity *Contact* (yêu cầu hỗ trợ); SDS dùng bảng
-  *Contracts* (hồ sơ pháp lý). Đây là **hai khái niệm khác nhau** — xác nhận giữ cả hai hay bỏ một.
-
----
+**Ghi chú thiết kế (đã chốt bởi code — verified `event.model.ts`, `organizer/ticket.model.ts`):**
+- **Vé tách collection riêng** (`Ticket` tham chiếu `eventId`) — không nhúng subdocument như
+  phần Create Event của SDS gợi ý.
+- **Đặt tên field**: code theo `startDate/endDate` và `approvedById` (đúng DB schema; các biến
+  thể `startDatetime/endDatetime`, `reviewedBy` trong text SDS không dùng).
+- **Logistics**: SDS mô tả subdocument `logisticsRequest` (`infrastructurePackages,
+  permitDocumentUrl, supportStatus`) nhúng trong Event; upload PDF/DOCX/PNG ≤ 15MB — chưa có
+  trong code.
 
 ### 4.2 Sơ đồ ERD tổng
 
@@ -236,15 +288,17 @@ erDiagram
     ObjectId _id PK
     string fullName
     string email UK
-    string passwordHash
     string phone
-    string role "ADMIN|ORGANIZER|PARTICIPANT|STAFF"
-    string accountStatus "ACTIVE|BANNED"
+    string password
     string avatar
+    string role "ADMIN|ORGANIZER|PARTICIPANT|STAFF"
+    string status "ACTIVE|PENDING|BANNED"
   }
   CATEGORIES {
     ObjectId _id PK
     string name
+    string description
+    string status
   }
   EVENTS {
     ObjectId _id PK
@@ -253,11 +307,11 @@ erDiagram
     ObjectId approvedById FK "admin"
     string title
     string location
+    string banner
     date startDate
     date endDate
     number capacity
     string status "DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED"
-    string rejectionReason
   }
   TICKETS {
     ObjectId _id PK
@@ -283,9 +337,10 @@ erDiagram
     ObjectId _id PK
     ObjectId registrationId FK
     number amount
-    string method
+    string paymentMethod
+    string transactionCode
     string status
-    date paidAt
+    date paymentDate
   }
   CHECKINS {
     ObjectId _id PK
@@ -298,48 +353,63 @@ erDiagram
     ObjectId _id PK
     ObjectId eventId FK
     ObjectId staffId FK
-    string responsibility
+    string roleInEvent
+    string status
+    datetime assignedAt
   }
   CONTRACTS {
     ObjectId _id PK
     ObjectId eventId FK
+    ObjectId managedBy FK
+    string documentName
+    string documentType
     string documentUrl
     string status
   }
   WITHDRAWALS {
     ObjectId _id PK
     ObjectId organizerId FK
+    ObjectId approvedBy FK
     number amount
-    string bankAccount
+    date requestDate
     string status
+    string rejectionReason
   }
   REVENUEREPORTS {
     ObjectId _id PK
     ObjectId eventId FK
+    ObjectId generatedBy FK
+    string reportType
+    date fromDate
+    date toDate
     number totalRevenue
-    string reportFileUrl
+    string fileUrl
   }
   ISSUES {
     ObjectId _id PK
     ObjectId eventId FK
-    ObjectId reportedById FK
-    string description
+    ObjectId reportedBy FK
+    ObjectId resolvedBy FK
+    string title
+    string priority
     string status
+    string resolution
   }
   NOTIFICATIONS {
     ObjectId _id PK
     ObjectId userId FK
+    string title
+    string message
     string type
-    string content
     boolean isRead
   }
 ```
 
-> **Ghi chú độ chính xác:** quan hệ + field của `Users/Events/Tickets/Registrations/CheckIns`
-> bám sát class-spec trong SDS. Field của `Payments/Contracts/Withdrawals/RevenueReports/Issues/
-> Notifications` là **suy luận hợp lý** (SDS chỉ mô tả ở mức bảng, chưa liệt kê field) — cần chốt
-> lại khi thiết kế chi tiết. Quan hệ `USERS–EVENTS` gộp hai vai trò *creatorId* (organizer) và
-> *approvedById* (admin) trên một đường cho gọn.
+> Field bám sát **database schema chính thức trong SDS** (dbdiagram) — không còn phần suy luận
+> như bản trước. Quan hệ `USERS–EVENTS` gộp hai vai trò *creatorId* (organizer) và *approvedById*
+> (admin) trên một đường cho gọn.
+
+---
 
 ## 5. Vòng đời sự kiện (Event lifecycle)
 
@@ -358,136 +428,160 @@ stateDiagram-v2
 **Quy tắc:**
 - Sự kiện **không lên public** cho đến khi Admin chuyển sang `Published`.
 - Khi ở `Pending_Review`, Organizer **không** được sửa (bị khóa trong hàng đợi duyệt).
-- Khi `Rejected`: nhả slot/tài nguyên đã giữ; Organizer nhận log lý do để sửa.
+- Khi `Rejected`: nhả slot/tài nguyên đã giữ; Organizer nhận log lý do để sửa & gửi lại.
 - Tồn kho vé & sơ đồ ghế gắn bất biến với `Event ID`.
 
-> **Lệch với code:** SDS chốt enum `Event.status` = `DRAFT | PENDING_REVIEW | PUBLISHED | REJECTED`
-> (+ `reviewedBy`, `reviewedAt`, `rejectionReason`). Code hiện là `draft | published | cancelled |
-> completed` — **thiếu `pending_review`/`rejected`** (và `cancelled/completed` chưa có trong SDS).
-> Cần đồng bộ khi làm luồng duyệt (xem §9).
+> **Hiện trạng code (verified `event.model.ts`, `organizer.routes.ts`):** đã dùng thiết kế
+> **2 field** — `reviewStatus[DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED]` (vòng duyệt, đúng SDS)
+> song song `status[draft|published|cancelled|completed]` (hiển thị public, legacy). Organizer đã
+> có `POST /api/organizer/events/:id/submit` chuyển `DRAFT → PENDING_REVIEW`; **chưa có** endpoint
+> Admin approve/reject (`PENDING_REVIEW → PUBLISHED/REJECTED`, ghi `approvedById`) — sự kiện do
+> organizer tạo hiện chưa thể lên public. Xem §9.
 
 ---
 
-## 6. Các luồng nghiệp vụ chính
+## 6. Các luồng nghiệp vụ chính (5 đặc tả FR trong SRS)
 
-### 6.1 Xác thực & phân quyền
-- Đăng nhập email/mật khẩu hoặc **Google**; tài khoản Google phải liên kết user đã verify.
+### 6.1 Xác thực & phân quyền (AT-01)
+- Đăng nhập email/mật khẩu hoặc **Google** (popup chọn tài khoản); tài khoản Google phải liên
+  kết user đã verify trong hệ thống.
 - Đăng ký kèm **OTP email**; quên mật khẩu khôi phục qua email.
-- Phiên dùng **JWT trong cookie HttpOnly** (RBAC). *(SRS nêu 2FA & Facebook ở phần lẫn template
-  — KHÔNG thuộc phạm vi Event Management; bỏ qua.)*
+- Phiên dùng **JWT trong cookie HttpOnly** (RBAC); log hoạt động đăng nhập (timestamp, IP,
+  thiết bị) phục vụ audit.
 
-### 6.2 Tạo sự kiện (Organizer) — wizard 3 bước
-1. **Thông tin chung**: tiêu đề, category, ngày-giờ (phải ở tương lai), mô tả, địa điểm.
-2. **Cấu hình vé & tồn kho**: định nghĩa tier (VIP/Standard...), giá (≥ 0), sức chứa tối đa,
-   sơ đồ ghế 2D tùy chọn.
-3. **Logistics & giấy phép**: chọn dịch vụ nền tảng (âm thanh/ánh sáng, thuê đồ, tuyển staff
-   check-in, hỗ trợ giấy phép) + upload tài liệu (PDF/DOCX/PNG, ≤ 15MB).
-→ **Submit for Verification** → trạng thái `Pending_Review`, đẩy vào hàng đợi duyệt của Admin.
-- *Other:* UI auto-save nháp mỗi 60 giây.
+### 6.2 Tạo sự kiện (CE-01, Organizer) — wizard 3 bước
+1. **General Information**: tiêu đề, category, ngày-giờ (phải ở **tương lai**), mô tả, địa điểm.
+2. **Ticketing & Inventory**: định nghĩa tier (VIP/Standard...), giá (**≥ 0**), tồn kho tối đa
+   (theo hạn mức nền tảng), sơ đồ ghế 2D tùy chọn.
+3. **Logistics, Infrastructure & Legal Permit**: chọn dịch vụ nền tảng (âm thanh/ánh sáng, thuê
+   thiết bị, tuyển staff check-in, hỗ trợ giấy phép) + upload tài liệu (**PDF/DOCX/PNG, ≤ 15MB**).
+→ **Submit for Verification** → khóa hồ sơ, `Pending_Review`, đẩy vào hàng đợi duyệt Admin.
+- UI **auto-save nháp mỗi 60 giây** chống mất mạng.
 
-### 6.3 Admin duyệt sự kiện
-- Admin mở hàng đợi `Pending_Review` → xem chi tiết (vé, sơ đồ ghế, hồ sơ pháp lý/hợp đồng).
-- **Approve & Publish** → `Published`, đẩy lên directory công khai, gửi thông báo Organizer.
-- **Reject** (bắt buộc nhập **lý do/correction log**) → `Rejected`, khóa public, gửi log về
-  Organizer.
-- Chống xung đột đồng thời (concurrency): nếu bản ghi bị sửa bởi user khác khi đang duyệt →
-  chặn ghi đè, yêu cầu refresh.
+### 6.3 Admin duyệt sự kiện (AM-01)
+- Admin mở hàng đợi `Pending_Review` (lọc theo ngày nộp, rating organizer, độ phức tạp logistics)
+  → xem chi tiết: thông số sự kiện, cấu trúc vé, sơ đồ ghế, hồ sơ pháp lý/hợp đồng đính kèm.
+- **Approve & Publish** (có modal xác nhận) → `Published`, ghi chữ ký điện tử admin, đẩy lên
+  directory công khai, email thông báo Organizer.
+- **Reject** (bắt buộc nhập **lý do/correction log**, vd "thiếu dấu xác nhận giấy phép sân
+  vận động — upload lại") → `Rejected`, khóa index public, gửi log về Organizer.
+- **Concurrency rule**: nếu bản ghi bị organizer rút về / admin khác duyệt song song → chặn ghi
+  đè, báo "Transaction Failed... refresh queue".
 
-### 6.4 Đặt vé & thanh toán (Participant) — qua VNPAY
-1. Chọn tier/ghế, số lượng (pre-fill thông tin liên hệ từ hồ sơ).
-2. **Giữ chỗ tạm 10 phút** (chống double-booking) + đồng hồ đếm ngược hiển thị.
-3. Áp **voucher** giảm giá (%, hoặc số tiền) → tính tổng cuối.
-4. Chọn **VNPAY** → redirect cổng thanh toán → người dùng trả qua banking QR/thẻ.
+### 6.4 Đặt vé & thanh toán (TB-01, Participant) — qua VNPAY
+1. "Register to Attend" trên sự kiện `Published` → pre-fill thông tin liên hệ từ hồ sơ.
+2. Chọn tier/ghế trên sơ đồ zone, số lượng → **giữ chỗ tạm 10 phút** (chống double-booking),
+   hiển thị **đồng hồ đếm ngược**.
+3. Áp **voucher** (giảm % hoặc số tiền) → tính tổng cuối.
+4. Chọn **VNPAY** → hệ thống gửi payload (Order ID, số tiền, mô tả) → redirect cổng thanh toán
+   → trả qua banking QR/thẻ.
 5. Backend nghe **IPN callback** → xác nhận `Paid` → **mới** trừ tồn kho vĩnh viễn → sinh
-   **E-ticket + QR động** → gửi hóa đơn PDF qua email.
-- **Hủy/timeout/hết vé** → rollback, nhả chỗ giữ, báo người dùng.
+   **E-ticket + QR động**, gửi hóa đơn PDF qua email (bất đồng bộ).
+- **Hủy tại cổng VNPAY** ("Hủy giao dịch / Return to Merchant") → rollback, nhả chỗ giữ, banner
+  "Transaction canceled by user".
+- **Hết vé trong lúc giữ chỗ** → chặn, nhả hold, refresh tồn kho, quay lại bước chọn vé.
 
-### 6.5 Check-in tại cổng (Staff)
-- **Quét QR** bằng camera, hoặc **nhập mã vé 8 ký tự thủ công** (fallback khi không có camera /
-  demo desktop). Mã 8 ký tự alphanumeric, so khớp không phân biệt hoa-thường.
-- Kiểm tra: vé thuộc đúng `Event ID` + trong khung giờ + trạng thái `Unused`.
-- Hợp lệ → chuyển `Used` (bất biến, **không** revert), ghi timestamp + Staff ID, tăng bộ đếm
-  tham dự real-time.
-- **Ngoại lệ**: vé đã `Used` (chặn vào lại) · mã sai/không đúng sự kiện · **QR hết hạn**
-  (token động đổi mỗi **30 giây** — chống chụp màn hình/giả mạo).
-- Mất mạng tại cổng → cache log offline, đồng bộ khi có mạng.
-- Dashboard real-time: `[Đã check-in] / [Tổng đăng ký]`.
+### 6.5 Check-in tại cổng (TC-01, Staff)
+- 2 chế độ: **quét QR** bằng camera thiết bị, hoặc **nhập mã vé 8 ký tự** (vd `EV98A7B2`) —
+  fallback khi không có camera / demo desktop; so khớp không phân biệt hoa-thường.
+- Kiểm tra: vé thuộc đúng `Event ID` + trong khung giờ check-in + trạng thái `Unused`.
+- Hợp lệ → chuyển `Used` (**bất biến, không revert**), ghi timestamp + Staff ID, tăng bộ đếm
+  tham dự real-time; overlay xanh "Entry Authorized – [Hạng vé]".
+- **Ngoại lệ**: vé đã `Used` (âm báo + màn đỏ kèm timestamp/cổng đã vào) · mã sai/khác sự kiện
+  (cảnh báo hổ phách) · **QR hết hạn** (token động đổi mỗi **30 giây** — chống chụp màn hình).
+- Mất mạng tại cổng → **cache log offline**, đồng bộ ngay khi có mạng.
+- Micro-dashboard real-time: `[Đã check-in] / [Tổng đăng ký]`.
 
 ### 6.6 Tài chính (Organizer + Admin)
 - Organizer: xem/xuất **báo cáo doanh thu**; gửi **yêu cầu rút tiền** (nhập tài khoản ngân hàng).
-- Admin: **đối soát hợp đồng** khi sự kiện hoàn tất → **Approve Payout** (giải ngân cho
-  Organizer) · **Process Refund** (hoàn tiền participant khi sự kiện bị hủy) · **Xác minh tài
-  khoản ngân hàng**.
-- Phí nền tảng: **dạng % trên doanh thu** (định vị thấp hơn đối thủ; **% cụ thể chưa nêu** —
-  xem §10).
+- Admin: **đối soát hợp đồng** khi sự kiện hoàn tất → **Approve Payout** (giải ngân) ·
+  **Process Refund** (hoàn tiền khi hủy sự kiện) · **Verify Bank Account** · cấu hình
+  **phí nền tảng** (Ticket sale management).
+- Phí nền tảng: **dạng % trên doanh thu** (định vị linh hoạt hơn đối thủ; **% cụ thể chưa nêu** — §10).
 
 ### 6.7 Khác
-- **Staff assignment**: Organizer phân staff cho sự kiện; Admin có thể điều phối staff hệ thống
-  khi thiếu nhân sự.
-- **Wishlist** (Participant), **Notification** (kết quả duyệt, xác nhận thanh toán, nhắc nhở...),
-  **AI gợi ý sự kiện** theo sở thích, **Issue reporting** (Staff/Participant).
+- **Staff assignment**: Organizer quản lý staff của sự kiện; Admin phân bổ staff hệ thống
+  (Event staff assignment grid).
+- **Wishlist** (Participant) · **Notification** (kết quả duyệt, thanh toán, rút tiền, sự cố) ·
+  **AI gợi ý sự kiện** theo sở thích · **Issue reporting** (Staff báo sự cố vận hành; admin
+  kiểm tra validate report với tài khoản bị gắn cờ).
 
 ---
 
 ## 7. Tổng hợp business rule cốt lõi
 
 1. Sự kiện chỉ public khi Admin `Published`; `Pending_Review` thì Organizer không sửa được.
-2. Ngày sự kiện phải ở **tương lai**; giá vé **≥ 0**; sức chứa theo giới hạn nền tảng.
-3. Tồn kho vé chỉ **trừ vĩnh viễn khi callback thanh toán thành công**; giữ chỗ tạm **10 phút**.
-4. Vé `Used` là **bất biến**; QR động đổi mỗi **30 giây**.
+2. Ngày sự kiện phải ở **tương lai**; giá vé **≥ 0**; tồn kho theo hạn mức nền tảng; file upload
+   PDF/DOCX/PNG ≤ 15MB.
+3. Tồn kho vé chỉ **trừ vĩnh viễn khi callback thanh toán thành công** (VNPAY IPN); giữ chỗ tạm
+   **10 phút** có đếm ngược.
+4. Vé `Used` là **bất biến**; QR động đổi mỗi **30 giây**; mã thủ công đúng **8 ký tự**
+   alphanumeric, case-insensitive.
 5. Mật khẩu hash **bcrypt ≥ 10 rounds**; JWT trong **cookie HttpOnly** (chống XSS/CSRF).
-6. Mỗi giao dịch ghi log (timestamp, IP, gateway ref) phục vụ audit tài chính.
-7. Quy tắc tài khoản (admin bootstrap, STAFF do admin tạo, không tự-khóa-mình) — đã hiện thực.
+6. Mỗi giao dịch ghi log bất biến (timestamp, IP, gateway ref) phục vụ audit tài chính.
+7. Mất mạng tại cổng check-in → cache offline + queue đồng bộ; check-in đồng bộ DB < 1 giây.
+8. Quy tắc tài khoản (admin bootstrap, STAFF do admin tạo + kích hoạt email, không tự-khóa-mình)
+   — đã hiện thực.
 
 ---
 
 ## 8. Yêu cầu phi chức năng liên quan nghiệp vụ
 
-- **Bảo mật**: bcrypt 10 rounds, HTTPS/TLS, RBAC + JWT cookie HttpOnly, QR động 30s, input
-  sanitization.
-- **Hiệu năng**: đọc < 2s; ≥ 500 giao dịch đặt vé/phút lúc cao điểm; check-in đồng bộ < 1s;
-  phân trang 20–50 bản ghi/trang.
-- **Khả dụng**: uptime ≥ 99.9%; backup ngày; fault-tolerance thanh toán (giữ `Pending` + giữ
-  chỗ 10 phút khi rớt mạng).
-- **UX**: responsive (đặc biệt màn check-in & vé trên mobile); 2 chế độ check-in (camera +
-  thủ công 8 ký tự); toast màu chuẩn (xanh/đỏ/hổ phách).
+- **Bảo mật (SEC-01…04)**: bcrypt ≥ 10 rounds; HTTPS/TLS 1.3; RBAC + JWT cookie HttpOnly;
+  **QR động 30s** chống vé giả; server-side input sanitization (chống injection/XSS).
+- **Hiệu năng (PER-01…04)**: đọc < 2s; ≥ **500 giao dịch đặt vé/phút** lúc cao điểm không
+  double-booking; check-in đồng bộ **< 1s**; phân trang bắt buộc 20–50 bản ghi/trang.
+- **Khả dụng (AV-01…03)**: uptime ≥ 99.9%; backup ngày (incremental, đa node); fault-tolerance
+  thanh toán (rớt mạng giữa chừng → giữ `Pending` + hold 10 phút rồi mới rollback).
+- **UX (USA-01…03)**: responsive (ưu tiên mobile cho màn check-in staff & vé participant);
+  **bắt buộc 2 chế độ check-in** (camera + nhập 8 ký tự — phục vụ cả demo desktop); toast/modal
+  màu chuẩn (xanh = thành công, đỏ = lỗi, hổ phách = cảnh báo).
+- **Bảo trì (MNT-01…03)**: tách lớp Routes/Controllers/Services/Models; tương thích Chrome/Edge/
+  Firefox/Safari; REST chuẩn hóa JSON. *(SRS yêu cầu prefix version `/api/v1/...` — code hiện
+  dùng `/api/...` không version; xem §10.)*
 
 ---
 
-## 9. Đối chiếu hiện trạng code ↔ spec nghiệp vụ
+## 9. Đối chiếu hiện trạng code ↔ spec nghiệp vụ (2026-07-05)
 
-| Mảng nghiệp vụ | Spec (SRS) | Hiện trạng code |
-|----------------|-----------|-----------------|
-| Auth (login/register/google/OTP) | ✅ | ✅ Đã có (module `user`) |
-| Quản trị tài khoản (CRUD, role, ban) | ✅ | ✅ Đã có (`/api/users/admin`) |
-| Quên mật khẩu | ✅ | ❌ Chưa có |
-| Sự kiện — CRUD cơ bản | ✅ | ⚠️ CRUD có nhưng **routes chưa bảo vệ auth/role** |
-| Luồng duyệt sự kiện (Pending/Approve/Reject) | ✅ | ❌ Thiếu `pending_review`/`rejected` trong enum + chưa có hàng đợi duyệt |
-| Loại vé & tồn kho (Ticket) | ✅ | ❌ Chưa có entity/luồng |
-| Đăng ký + thanh toán VNPAY (Registration/Payment) | ✅ | ❌ Chưa có |
-| Check-in (QR động + 8 ký tự) | ✅ | ❌ Chưa có |
-| Staff assignment | ✅ | ❌ Chưa có |
-| Tài chính (withdrawal/payout/refund/RevenueReport) | ✅ | ❌ Chưa có |
-| Wishlist / Notification / Issue / Contact / Category | ✅ | ❌ Chưa có |
-| AI gợi ý sự kiện | ✅ | ❌ Chưa có |
-| Dashboard thống kê | ✅ | ⚠️ UI có nhưng chạy **mock data** |
+| Mảng nghiệp vụ | Spec | Backend | Frontend |
+|----------------|------|---------|----------|
+| Auth (login/register/google/OTP/staff activation) | ✅ | ✅ module `user` | ✅ gọi API thật |
+| Quản trị tài khoản (CRUD, role, ban, tạo staff) | ✅ | ✅ `/api/users/admin/*` | ✅ gọi API thật |
+| Quên mật khẩu | ✅ | ❌ | ❌ |
+| Khám phá sự kiện (list/search/detail + trang chủ) | ✅ | ✅ `/api/events` (+`/search`, `/:id/detail`), `/api/categories`, `/api/stars`, `/api/banners` (đã bảo vệ auth cho route ghi) | ⚠️ UI đầy đủ nhưng chạy **mock**, chưa nối API |
+| Tạo sự kiện wizard + cấu hình loại vé | ✅ | ✅ `/api/organizer/events*` (EM-23/24) + ticket CRUD & bulk config (EM-128), chỉ sửa khi `DRAFT` | ⚠️ Wizard UI có, `save()` chưa gọi API |
+| Gửi duyệt sự kiện (submit) | ✅ | ✅ `POST /organizer/events/:id/submit` → `PENDING_REVIEW` | ❌ chưa nối |
+| Admin duyệt/từ chối sự kiện | ✅ | ❌ chưa có endpoint approve/reject (`approvedById` chưa được ghi) | ⚠️ UI kiểm duyệt chạy mock |
+| Đặt vé + thanh toán VNPAY (Registration/Payment) | ✅ | ❌ | ⚠️ UI đặt vé/thanh toán chạy mock, đếm ngược 15' (spec: 10') |
+| Vé của tôi + QR động | ✅ | ❌ | ⚠️ UI mock, QR giả trang trí (không quét được) |
+| Check-in (QR động + mã 8 ký tự) | ✅ | ❌ | ⚠️ Staff workspace đầy đủ màn (quét, tra cứu, lịch sử, ca trực, sự cố) chạy mock |
+| Staff assignment | ✅ | ❌ | ⚠️ UI mock |
+| Tài chính (withdrawal/payout/refund/report) | ✅ | ❌ | ⚠️ UI analytics organizer + báo cáo admin chạy mock |
+| Wishlist | ✅ | ❌ | ⚠️ localStorage (chưa đồng bộ server) |
+| Notification / Issue / Contract | ✅ | ❌ | ⚠️ UI sự cố (staff) chạy mock |
+| AI gợi ý sự kiện | ✅ | ❌ | ❌ |
+| Dashboard thống kê | ✅ | ❌ | ⚠️ UI mock |
 
-> Kết luận: code đang hoàn thiện **Auth + quản trị tài khoản**; phần lõi nghiệp vụ sự kiện
-> (vé, thanh toán, check-in, duyệt, tài chính) **chưa hiện thực**. Đây là backlog chính.
+> Kết luận: backend đã xong **Auth + quản trị tài khoản + nền sự kiện** (browse/search/detail,
+> organizer tạo sự kiện & cấu hình vé, submit duyệt, dữ liệu trang chủ). Frontend đã dựng gần đủ
+> **UI mọi vai trò** (participant, organizer, staff, admin) nhưng ngoài Auth/Accounts đều chạy
+> mock. Backlog lõi còn lại: **admin approve/reject → registration/payment (VNPAY) → e-ticket/QR
+> động → check-in/staff assignment → tài chính**.
 
 ---
 
 ## 10. Câu hỏi chưa giải quyết
 
-- **Phí nền tảng/hoa hồng**: % cụ thể là bao nhiêu? Mô hình tính trên doanh thu hay trên vé?
-  (SDS/SRS chỉ nói "phí theo %", chưa có con số.)
+- **Phí nền tảng/hoa hồng**: % cụ thể là bao nhiêu? Tính trên doanh thu hay trên vé?
 - **Chính sách refund/withdrawal**: điều kiện, thời hạn, ai chịu phí khi hủy?
-- **Category**: danh mục cố định hay Admin tự cấu hình?
-- **Vé — nhúng hay tách bảng**: `ticketTypes` subdocument (Create Event) vs collection `Tickets`
-  riêng (Booking/Checkin) — chốt một thiết kế.
-- **Đồng bộ đặt tên field & enum**: `startDatetime/endDatetime` vs `startDate/endDate`;
-  `approvedById` vs `reviewedBy`; có giữ thêm `cancelled/completed` cho `Event.status` ngoài 4
-  trạng thái SDS không?
-- **Contact vs Contracts**: giữ cả hai entity hay gộp/bỏ một?
-- **Payment gateway**: chốt **VNPAY** (theo SRS). Phần "Payos" trong Final Report là template
-  sót — xác nhận loại bỏ.
+- **Contact vs Contract**: SRS mô tả entity #9 là *Contact* (yêu cầu hỗ trợ), nhưng SDS + DB
+  schema chốt *Contract* (hồ sơ pháp lý). Code chưa có cả hai — khi hiện thực nên theo SDS
+  (Contract) hay cần thêm kênh hỗ trợ riêng?
+- **Admin approve/reject**: SRS/SDS đặc tả đầy đủ (AM-01, `AdminEventController`) nhưng backend
+  chưa có — ưu tiên làm sớm vì đang chặn sự kiện organizer lên public.
+- **API versioning**: SRS (MNT-03) yêu cầu `/api/v1/...`; code dùng `/api/...`. Có migrate không?
+- **Giữ chỗ khi đặt vé**: spec 10 phút, UI thanh toán FE đang đếm 15 phút — chốt một con số.
+- **2FA/Facebook login**: xuất hiện trong phần lẫn template của Final Report — xác nhận **ngoài
+  phạm vi** (SRS chính thức chỉ có email/password + Google).
+- **Payment gateway**: chốt **VNPAY** theo SRS/SDS (phần "Payos" trong Final Report là template sót).

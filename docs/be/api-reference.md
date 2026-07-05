@@ -1,10 +1,10 @@
 # API Reference — Event Management (EventBox)
 
-> Cập nhật: 2026-07-02 · Branch: `develop`
+> Cập nhật: 2026-07-05 · Branch: `develop`
 > Tài liệu tham chiếu **từng endpoint** (method, path, auth, request, response, lỗi).
 > Đọc kèm [`backend-logic.md`](./backend-logic.md) để hiểu luồng nghiệp vụ phía sau.
 
-Base URL (dev): `http://localhost:3000`
+Base URL (dev): `http://localhost:5000`
 Tất cả endpoint nghiệp vụ có prefix `/api`. Tất cả response bọc trong format chuẩn:
 
 ```jsonc
@@ -212,12 +212,11 @@ Xóa tài khoản. **Chặn admin tự xóa chính mình**.
 
 ## 4. Event (`/api/events`)
 
-> ⚠️ **`POST/PUT/DELETE` hiện đang PUBLIC** — chưa gắn `isAuthenticated`/`authorize`. Nghĩa là
-> bất kỳ ai (kể cả chưa đăng nhập) đều có thể tạo/sửa/xóa event. Đây là điểm cần bổ sung
-> `authorize('ORGANIZER','ADMIN')` trước khi đưa lên production (xem `backend-logic.md` §7).
+> **`GET /` và `GET /:id` cố ý public** (đọc) để phục vụ trang chủ/trang chi tiết cho khách chưa
+> đăng nhập. `GET /search` và `GET /:id/detail` (EM-68, EM-72) cũng public.
+> **`POST/PUT/DELETE` gắn** `isAuthenticated + authorize('ORGANIZER','ADMIN')`.
 > Module `event` **không có nhánh offline mock** — bắt buộc phải kết nối MongoDB mới hoạt động.
-> `GET /` và `GET /:id` **cố ý public** (đọc) để phục vụ trang chủ/trang chi tiết cho khách chưa
-> đăng nhập — chi tiết field & use-case xem [`homepage-api.md`](./homepage-api.md).
+> Chi tiết field & use-case xem [`homepage-api.md`](./homepage-api.md).
 
 ### `GET /api/events`
 Danh sách sự kiện, hỗ trợ lọc + sort + phân trang. **Mặc định chỉ trả `status=published`** kể cả
@@ -243,11 +242,10 @@ sort mặc định theo `date asc`).
 }
 ```
 
-### `GET /api/events/search`
+### `GET /api/events/search` (EM-68)
 Full-text search cho thanh tìm kiếm (header) — khác `search` param của `GET /` ở chỗ khớp
 **nhiều field** (`title`, `description`, `location`, `organizer`, `category`) qua `$or` thay vì chỉ
-`title`. Cùng cơ chế phân trang/sort + mặc định `status=published` như `GET /`. **Lưu ý thứ tự
-route**: khai báo trước `GET /:id` để `"search"` không bị nuốt làm `:id`.
+`title`. Cùng cơ chế phân trang/sort + mặc định `status=published` như `GET /`.
 
 **Query params** (optional): `q` (từ khoá tìm kiếm, regex không phân biệt hoa/thường), `page`, `limit`,
 `sort`, `order`, `category`, `categorySlug` (1 hoặc nhiều slug cách nhau bởi dấu phẩy), `city`,
@@ -261,10 +259,10 @@ Chỉ trả event có `status='published'` (khác 404 nếu chưa publish, trán
 **Lỗi**: `404` không tìm thấy, chưa published, hoặc `id` không phải ObjectId hợp lệ (validate trước khi
 query Mongoose nên không còn lỗi 500 do CastError).
 
-### `GET /api/events/:id/detail`
+### `GET /api/events/:id/detail` (EM-72)
 Payload đầy đủ cho trang chi tiết sự kiện (`/su-kien/:id`) trong 1 lần gọi: event (chỉ
-`status='published'`, cùng điều kiện 404 như `GET /:id`) + danh sách loại vé đang mở bán + sự
-kiện liên quan (cùng `categorySlug`, tối đa 4, sắp xếp theo `date` gần nhất).
+`status='published'`, cùng điều kiện 404 như `GET /:id`) + danh sách loại vé đang mở bán (exclude HIDDEN) + sự
+kiện liên quan (cùng `categorySlug`, tối đa 4, sắp xếp theo `date`).
 
 **Response 200**
 ```json
@@ -282,6 +280,7 @@ kiện liên quan (cùng `categorySlug`, tối đa 4, sắp xếp theo `date` g�
 `status='HIDDEN'` (chỉ organizer thấy qua module `organizer`).
 
 ### `POST /api/events`
+**Auth**: `isAuthenticated + authorize('ORGANIZER','ADMIN')`
 **Body**
 ```json
 {
@@ -290,27 +289,105 @@ kiện liên quan (cùng `categorySlug`, tối đa 4, sắp xếp theo `date` g�
   "date": "ISODate, required",
   "location": "string, required",
   "maxAttendees": "number >= 1, required",
-  "organizer": "string, required (hiện là free-text, KHÔNG ref User._id)",
+  "organizer": "string, required (free-text)",
   "category": "string, required",
   "status": "draft|published|cancelled|completed, optional (mặc định draft)",
   "imageUrl": "string, optional"
 }
 ```
 **Response 201**: `{ success: true, message: "Created successfully", data: event }`
-**Lỗi**: `400` (500 hiện tại — lỗi validate Mongoose chưa được map sang `AppError`/400) thiếu field bắt buộc.
+**Lỗi**: `400` thiếu field bắt buộc · `401` chưa đăng nhập · `403` sai role.
 
 ### `PUT /api/events/:id`
+**Auth**: `isAuthenticated + authorize('ORGANIZER','ADMIN')`
 Body: bất kỳ tập con field nào ở trên (partial update), chạy `runValidators: true`.
 **Response 200**: `{ success, message: "Event updated successfully", data: event }`
-**Lỗi**: `404` không tìm thấy.
+**Lỗi**: `400` dữ liệu sai · `401` chưa đăng nhập · `403` sai role · `404` không tìm thấy.
 
 ### `DELETE /api/events/:id`
+**Auth**: `isAuthenticated + authorize('ORGANIZER','ADMIN')`
 **Response 200**: `{ success, message: "Event deleted successfully", data: null }`
-**Lỗi**: `404` không tìm thấy.
+**Lỗi**: `401` chưa đăng nhập · `403` sai role · `404` không tìm thấy.
 
 ---
 
-## 5. Category / Star / Banner (dữ liệu trang chủ)
+## 5. Organizer — Event & Ticket Management (EM-23, EM-24, EM-128)
+
+> **Tất cả route gắn** `isAuthenticated + authorize('ORGANIZER','ADMIN')`.
+> Tạo + quản lý DRAFT event + loại vé. Event khi submit chuyển PENDING_REVIEW (chờ admin duyệt).
+
+### `POST /api/organizer/events` (EM-23)
+Tạo DRAFT event + ticket mặc định (1 loại vé free).
+**Body**
+```json
+{
+  "title": "string, required",
+  "description": "string, required",
+  "startDate": "ISODate, required",
+  "endDate": "ISODate, optional",
+  "location": "string, required",
+  "capacity": "number >= 1, optional",
+  "categoryId": "ObjectId, required (ref Category)",
+  "banner": "string, optional (image URL)"
+}
+```
+**Response 201**: `{ success, message: "Event created", data: { event, ticket } }`
+**Lỗi**: `400` thiếu field · `401` chưa đăng nhập · `403` sai role.
+
+### `GET /api/organizer/events`
+Danh sách event của tôi (dùng `creatorId`). Hỗ trợ filter `reviewStatus` (DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED).
+**Query params** (optional): `page`, `limit`, `reviewStatus`.
+**Response 200**: `{ success, message: "…", data: [ event ], meta: { … } }`
+**Lỗi**: `401`, `403`.
+
+### `GET /api/organizer/events/:id`
+Chi tiết event của tôi (chưa publish, cho phép xem cả DRAFT/REJECTED).
+**Response 200**: `{ success, data: event }`
+**Lỗi**: `401`, `403`, `404`.
+
+### `PUT /api/organizer/events/:id` (EM-24)
+Sửa DRAFT event (chỉ DRAFT, không sửa được PENDING_REVIEW hoặc PUBLISHED).
+**Body**: tập con của POST (partial update).
+**Response 200**: `{ success, message: "Event updated", data: event }`
+**Lỗi**: `400` event không phải DRAFT · `401`, `403`, `404`.
+
+### `POST /api/organizer/events/:id/submit`
+Submit event for review: DRAFT → PENDING_REVIEW.
+**Response 200**: `{ success, message: "Event submitted for review", data: event }`
+**Lỗi**: `400` event không phải DRAFT · `401`, `403`, `404`.
+
+### `GET /api/organizer/events/:id/tickets`
+Danh sách loại vé của event (kể cả HIDDEN).
+**Response 200**: `{ success, data: [ ticket ] }`
+**Lỗi**: `401`, `403`, `404`.
+
+### `POST /api/organizer/events/:id/tickets`
+Thêm loại vé mới.
+**Body**: `{ ticketName, description?, price, quantity, saleStart?, saleEnd? }`
+**Response 201**: `{ success, data: ticket }`
+**Lỗi**: `400` dữ liệu sai · `401`, `403`, `404`.
+
+### `PUT /api/organizer/events/:id/tickets` (EM-128)
+Bulk update/create ticket (partial replacement). Rows với `_id` update, không có `_id` create,
+omitted rows delete (trừ khi `soldQuantity > 0`).
+**Body**: `{ tickets: [ { _id?, ticketName, price, quantity, saleStart?, saleEnd? } ] }`
+**Response 200**: `{ success, message: "Tickets configured", data: [ ticket ] }`
+**Lỗi**: `400` event không phải DRAFT · `401`, `403`, `404`.
+
+### `PUT /api/organizer/events/:id/tickets/:ticketId`
+Cập nhật 1 loại vé (chỉ event DRAFT).
+**Body**: tập con của POST (partial update).
+**Response 200**: `{ success, data: ticket }`
+**Lỗi**: `400` event không phải DRAFT · `401`, `403`, `404`.
+
+### `DELETE /api/organizer/events/:id/tickets/:ticketId`
+Xóa loại vé (chỉ event DRAFT; chặn nếu `soldQuantity > 0` hoặc là loại vé cuối cùng).
+**Response 200**: `{ success, message: "Ticket deleted", data: null }`
+**Lỗi**: `400` event không phải DRAFT / vé đã có người mua / vé cuối cùng · `401`, `403`, `404`.
+
+---
+
+## 6. Category / Star / Banner (dữ liệu trang chủ)
 
 > Chi tiết field & lý do thiết kế: [`homepage-api.md`](./homepage-api.md).
 
@@ -337,7 +414,7 @@ Body tạo: `{ title, subtitle?, imageUrl, ctaLabel?, linkUrl?, eventId?, order?
 
 ---
 
-## 6. Bảng tổng hợp nhanh
+## 7. Bảng tổng hợp nhanh
 
 | Method | Path | Auth | Role |
 |---|---|---|---|
@@ -356,10 +433,12 @@ Body tạo: `{ title, subtitle?, imageUrl, ctaLabel?, linkUrl?, eventId?, order?
 | POST | `/api/users/admin/:id/status` | Có | ADMIN |
 | DELETE | `/api/users/admin/:id` | Có | ADMIN |
 | GET | `/api/events` | Không (cố ý public, mặc định `status=published`) | — |
+| GET | `/api/events/search` | Không (public) | — |
 | GET | `/api/events/:id` | Không (cố ý public, chỉ `published`) | — |
-| POST | `/api/events` | ⚠️ Không (chưa gắn) | — |
-| PUT | `/api/events/:id` | ⚠️ Không (chưa gắn) | — |
-| DELETE | `/api/events/:id` | ⚠️ Không (chưa gắn) | — |
+| GET | `/api/events/:id/detail` | Không (public) | — |
+| POST | `/api/events` | Có | ORGANIZER\|ADMIN |
+| PUT | `/api/events/:id` | Có | ORGANIZER\|ADMIN |
+| DELETE | `/api/events/:id` | Có | ORGANIZER\|ADMIN |
 | GET | `/api/categories` | Không | — |
 | POST/PUT/DELETE | `/api/categories...` | Có | ADMIN |
 | GET | `/api/stars` | Không | — |
@@ -370,7 +449,7 @@ Body tạo: `{ title, subtitle?, imageUrl, ctaLabel?, linkUrl?, eventId?, order?
 
 ---
 
-## 7. Ghi chú cho FE khi kick-off
+## 8. Ghi chú cho FE khi kick-off
 
 1. Luôn gửi request với `credentials: 'include'` (fetch) hoặc `withCredentials: true` (axios) để cookie `token` được đính kèm.
 2. Không cần tự quản lý header `Authorization` trừ khi test qua Postman/curl (khi đó dùng `Bearer <token>` lấy từ `data.token` sau login/register).

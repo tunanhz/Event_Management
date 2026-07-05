@@ -94,3 +94,6 @@ tmp/
 uploads/
 
 .claude/
+
+repomix-output.xml
+plans/

@@ -1,6 +1,6 @@
 # Frontend Logic — Event Management (EventBox)
 
-> Cập nhật: 2026-06-30 · Branch: `develop`
+> Cập nhật: 2026-07-05 · Branch: `develop`
 > Tài liệu mô tả **chi tiết logic** của frontend (`frontend/src`). Đọc kèm
 > [`../system-architecture.md`](../system-architecture.md), [`../convention.md`](../convention.md).
 
@@ -13,16 +13,56 @@ lucide-react · recharts**.
 
 ```
 app/
-├── layout.tsx            # RootLayout: <html lang="vi"> + font Inter + <AuthProvider>
-├── page.tsx              # Trang chủ (RSC)
-├── login/page.tsx        # Client — đăng nhập + Google
-├── register/page.tsx     # Client — đăng ký (OTP)
-└── dashboard/
-    ├── layout.tsx        # Shell: <Sidebar/> + <Header/> + <main>{children}</main>
-    ├── page.tsx          # Tổng quan (KPI + charts)
-    ├── events/page.tsx   # Quản lý sự kiện
-    └── accounts/page.tsx # Quản lý tài khoản (chỉ ADMIN)
+├── layout.tsx                  # RootLayout: <html lang="vi"> + font Inter + <AuthProvider>
+├── page.tsx                    # Trang chủ (RSC)
+├── (public)/
+│   ├── su-kien/page.tsx        # Event explorer (list + filter)
+│   ├── su-kien/[id]/page.tsx   # Event detail
+│   ├── su-kien/[id]/dat-ve/page.tsx    # Booking
+│   ├── su-kien/[id]/thanh-toan/page.tsx # Payment
+│   ├── ve-cua-toi/page.tsx     # My tickets
+│   └── su-kien-da-luu/page.tsx # Saved events
+├── login/page.tsx              # Client — đăng nhập + Google
+├── register/page.tsx           # Client — đăng ký (OTP)
+├── activate/page.tsx           # Client — activate STAFF
+├── dashboard/                  # Admin (RoleGuard: ADMIN)
+│   ├── layout.tsx              # Shell: <Sidebar/> + <Header/>
+│   ├── page.tsx                # Tổng quan (KPI + charts)
+│   ├── moderation/page.tsx     # Review events
+│   ├── accounts/page.tsx       # Quản lý tài khoản (API thật)
+│   ├── reports/page.tsx        # Reports
+│   └── settings/page.tsx       # Settings
+├── organizer/                  # Organizer center (RoleGuard: ORGANIZER)
+│   ├── layout.tsx              # Organizer shell
+│   ├── page.tsx                # Overview
+│   ├── create-event/page.tsx   # Create event wizard (EM-23)
+│   ├── events/[id]/
+│   │   ├── page.tsx            # Event summary
+│   │   ├── edit/page.tsx       # Edit event (EM-24, DRAFT only)
+│   │   ├── analytics/page.tsx  # Analytics
+│   │   ├── orders/page.tsx     # Orders
+│   │   ├── check-in/page.tsx   # Check-in
+│   │   ├── members/page.tsx    # Members
+│   │   ├── seatmap/page.tsx    # Seatmap
+│   │   └── summary/page.tsx    # Summary
+│   ├── profile/page.tsx        # Profile
+│   ├── reports/page.tsx        # Reports
+│   ├── terms/page.tsx          # Terms
+│   └── terms/[slug]/page.tsx   # Terms detail
+├── staff/                      # Staff workspace (RoleGuard: STAFF|ADMIN)
+│   ├── layout.tsx              # Staff shell
+│   ├── page.tsx                # Dashboard
+│   ├── incidents/page.tsx      # Incidents
+│   ├── profile/page.tsx        # Profile
+│   └── check-in/[eventId]/
+│       ├── page.tsx            # Check-in main
+│       ├── attendees/page.tsx  # Attendees list
+│       ├── history/page.tsx    # Check-in history
+│       └── summary/page.tsx    # Summary
+└── tai-khoan/page.tsx          # My account
 ```
+
+> ⚠️ Từ organizer/create-event đến staff/check-in: chủ yếu mock components, chưa nối API hết.
 
 - **RootLayout** bọc toàn app bằng `AuthProvider` → mọi trang truy cập được `useAuth()`.
 - **DashboardLayout** là khung cố định (sidebar trái + header trên + vùng nội dung cuộn).

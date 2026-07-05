@@ -1,6 +1,6 @@
 # Backend Logic — Event Management (EventBox)
 
-> Cập nhật: 2026-06-30 · Branch: `develop`
+> Cập nhật: 2026-07-05 · Branch: `develop`
 > Tài liệu mô tả **chi tiết logic** của backend (`backend/src`). Đọc kèm
 > [`../system-architecture.md`](../system-architecture.md), [`../convention.md`](../convention.md).
 
@@ -25,8 +25,12 @@ cookieParser()                            # đọc cookie 'token'
 morgan('dev')                             # log request
 express.json() / urlencoded()             # parse body
 GET /api/health                           # health check
-/api/events  → eventRoutes
-/api/users   → userRoutes
+/api/events       → eventRoutes           # public read + protected write
+/api/users        → userRoutes            # auth + admin
+/api/categories   → categoryRoutes        # public read + ADMIN write
+/api/stars        → starRoutes            # public read + ADMIN write
+/api/banners      → bannerRoutes          # public read + ADMIN write
+/api/organizer    → organizerRoutes       # ORGANIZER|ADMIN only
 notFoundHandler                           # 404 cho route không khớp
 errorHandler                              # bắt mọi lỗi → JSON
 ```
@@ -62,7 +66,7 @@ File: `modules/user/{user.model, otp.model, user.repository, user.service, user.
 - **`IUser`**: `fullName, email (unique, lowercase), passwordHash (select:false, optional),
   phone, role, accountStatus, avatar` + `timestamps`.
   - `role`: `ADMIN | ORGANIZER | PARTICIPANT(mặc định) | STAFF`.
-  - `accountStatus`: `ACTIVE(mặc định) | BANNED`.
+  - `accountStatus`: `ACTIVE(mặc định) | PENDING(STAFF chờ kích hoạt) | BANNED`.
   - **pre-save hook**: nếu `passwordHash` thay đổi và có giá trị → hash bcrypt (salt 10).
   - **method `comparePassword`**: so khớp bcrypt; trả `false` nếu không có hash (vd user Google).
 - **`IOTP`**: `email, otp, createdAt` + **TTL index 300s** (Mongo tự xóa sau 5 phút) + index `email`.

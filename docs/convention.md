@@ -1,6 +1,6 @@
 # Convention — Event Management (EventBox)
 
-> Cập nhật: 2026-06-30 · Branch: `develop`
+> Cập nhật: 2026-07-05 · Branch: `develop`
 > Quy ước **thực hành** cho cả team, dùng làm checklist khi viết code mới. Phần giải thích sâu
 > xem [`be/backend-logic.md`](./be/backend-logic.md), [`fe/frontend-logic.md`](./fe/frontend-logic.md),
 > [`code-standards.md`](./code-standards.md).
@@ -15,17 +15,26 @@ thích **"tại sao"**, không nhắc số phase/mã kế hoạch trong code.
 
 ```
 docs/
-├── codebase-summary.md        # tổng quan codebase
-├── system-architecture.md     # kiến trúc + sơ đồ + API contract
-├── code-standards.md          # chuẩn code chi tiết
-├── convention.md              # ← file này (quy ước thực hành)
+├── README.md                       # Tổng quan dự án + API endpoints
+├── SETUP_GUIDE.md                  # Hướng dẫn cấu hình thực tế
+├── project-overview-pdr.md         # PDR & project overview
+├── codebase-summary.md             # Tổng quan codebase
+├── system-architecture.md          # Kiến trúc + sơ đồ + API contract
+├── code-standards.md               # Chuẩn code chi tiết
+├── convention.md                   # ← file này (quy ước thực hành)
+├── business.md                     # Quy tắc nghiệp vụ & tính toán
+├── code-review-tool-guide.md       # Hướng dẫn dùng tools review code
 ├── be/
-│   └── backend-logic.md       # logic backend chi tiết
-└── fe/
-    └── frontend-logic.md      # logic frontend chi tiết
+│   ├── api-reference.md            # Chi tiết endpoint (request/response)
+│   ├── backend-logic.md            # Logic backend chi tiết
+│   └── homepage-api.md             # Homepage API mapping
+├── fe/
+│   ├── frontend-logic.md           # Logic frontend chi tiết
+│   └── frontend-api-contract.md    # Contract FE với BE (phía FE)
+└── plans/reports/                  # Reports từ planning & review
 ```
 
-> Tài liệu logic mới của **backend** đặt trong `docs/be/`, của **frontend** trong `docs/fe/`.
+> Tài liệu logic của **backend** đặt trong `docs/be/`, của **frontend** trong `docs/fe/`.
 
 ---
 
