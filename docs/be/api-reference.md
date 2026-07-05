@@ -243,10 +243,43 @@ sort mặc định theo `date asc`).
 }
 ```
 
+### `GET /api/events/search`
+Full-text search cho thanh tìm kiếm (header) — khác `search` param của `GET /` ở chỗ khớp
+**nhiều field** (`title`, `description`, `location`, `organizer`, `category`) qua `$or` thay vì chỉ
+`title`. Cùng cơ chế phân trang/sort + mặc định `status=published` như `GET /`. **Lưu ý thứ tự
+route**: khai báo trước `GET /:id` để `"search"` không bị nuốt làm `:id`.
+
+**Query params** (optional): `q` (từ khoá tìm kiếm, regex không phân biệt hoa/thường), `page`, `limit`,
+`sort`, `order`, `category`, `categorySlug` (1 hoặc nhiều slug cách nhau bởi dấu phẩy), `city`,
+`isFree`, `dateFrom`/`dateTo`.
+
+**Response 200**: cùng shape với `GET /api/events` (`data` + `meta` phân trang).
+
 ### `GET /api/events/:id`
 Chỉ trả event có `status='published'` (khác 404 nếu chưa publish, tránh lộ draft qua đoán ID).
 **Response 200**: `{ success, message: "Event retrieved successfully", data: event }`
-**Lỗi**: `404` không tìm thấy hoặc chưa published (id sai hoặc không phải ObjectId hợp lệ → lỗi cast Mongoose, hiện trả 500 vì chưa bắt riêng CastError).
+**Lỗi**: `404` không tìm thấy, chưa published, hoặc `id` không phải ObjectId hợp lệ (validate trước khi
+query Mongoose nên không còn lỗi 500 do CastError).
+
+### `GET /api/events/:id/detail`
+Payload đầy đủ cho trang chi tiết sự kiện (`/su-kien/:id`) trong 1 lần gọi: event (chỉ
+`status='published'`, cùng điều kiện 404 như `GET /:id`) + danh sách loại vé đang mở bán + sự
+kiện liên quan (cùng `categorySlug`, tối đa 4, sắp xếp theo `date` gần nhất).
+
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Event detail retrieved successfully",
+  "data": {
+    "event": { "_id": "...", "title": "...", "categorySlug": "nhac-song", "...": "..." },
+    "tickets": [ { "_id": "...", "eventId": "...", "ticketName": "Vé thường", "price": 300000, "quantity": 100, "soldQuantity": 12, "status": "ACTIVE" } ],
+    "related": [ { "_id": "...", "title": "...", "categorySlug": "nhac-song", "...": "..." } ]
+  }
+}
+```
+**Lỗi**: `404` không tìm thấy hoặc chưa published (giống `GET /:id`). `tickets` loại trừ loại vé
+`status='HIDDEN'` (chỉ organizer thấy qua module `organizer`).
 
 ### `POST /api/events`
 **Body**

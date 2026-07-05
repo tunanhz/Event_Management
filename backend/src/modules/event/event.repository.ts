@@ -1,4 +1,5 @@
 import { Event, IEvent } from './event.model';
+import { Ticket, ITicket } from '../organizer/ticket.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
 
 export interface EventQuery extends PaginationQuery {
@@ -11,6 +12,17 @@ export interface EventQuery extends PaginationQuery {
   isTrending?: boolean;
   search?: string;
   excludeId?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+}
+
+export interface EventSearchQuery extends PaginationQuery {
+  q?: string;
+  status?: string;
+  category?: string;
+  categorySlug?: string | string[];
+  city?: string;
+  isFree?: boolean;
   dateFrom?: Date;
   dateTo?: Date;
 }
@@ -76,8 +88,94 @@ export class EventRepository {
     };
   }
 
+  // Free-text search across title/description/location/organizer/category, layered on
+  // top of the same structured filters as findAll (city/category/isFree/date range).
+  // Kept as its own method (rather than folded into findAll's single-field `search`)
+  // since it matches multiple fields via $or, which is a different query shape.
+  async search(query: EventSearchQuery): Promise<PaginatedResult<IEvent>> {
+    const {
+      page = 1,
+      limit = 10,
+      sort = 'date',
+      order = 'asc',
+      q,
+      status,
+      category,
+      categorySlug,
+      city,
+      isFree,
+      dateFrom,
+      dateTo,
+    } = query;
+    const filter: Record<string, any> = {};
+
+    if (status) filter.status = status;
+    if (category) filter.category = category;
+    if (categorySlug) {
+      filter.categorySlug = Array.isArray(categorySlug) ? { $in: categorySlug } : categorySlug;
+    }
+    if (city) filter.city = city;
+    if (typeof isFree === 'boolean') filter.isFree = isFree;
+    if (dateFrom || dateTo) {
+      filter.date = {};
+      if (dateFrom) filter.date.$gte = dateFrom;
+      if (dateTo) filter.date.$lte = dateTo;
+    }
+    if (q) {
+      const regex = { $regex: q, $options: 'i' };
+      filter.$or = [
+        { title: regex },
+        { description: regex },
+        { location: regex },
+        { organizer: regex },
+        { category: regex },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const sortOrder = order === 'asc' ? 1 : -1;
+
+    const [data, totalItems] = await Promise.all([
+      Event.find(filter)
+        .sort({ [sort]: sortOrder })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Event.countDocuments(filter),
+    ]);
+
+    return {
+      data: data as IEvent[],
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalItems / limit),
+        totalItems,
+        itemsPerPage: limit,
+      },
+    };
+  }
+
   async findById(id: string): Promise<IEvent | null> {
     return Event.findById(id).lean();
+  }
+
+  // Ticket tiers on sale for the detail page's booking widget. HIDDEN tiers are
+  // organizer-only (surfaced via the organizer module), so they're excluded here.
+  async findTicketsByEventId(eventId: string): Promise<ITicket[]> {
+    return Ticket.find({ eventId, status: { $ne: 'HIDDEN' } }).sort({ price: 1 }).lean();
+  }
+
+  // "You might also like" rail: other published events in the same category,
+  // soonest first, capped to a small carousel-sized page.
+  async findRelated(event: IEvent, limit = 4): Promise<IEvent[]> {
+    return Event.find({
+      _id: { $ne: event._id },
+      status: 'published',
+      categorySlug: event.categorySlug,
+    })
+      .sort({ date: 1 })
+      .limit(limit)
+      .lean();
   }
 
   async create(data: Partial<IEvent>): Promise<IEvent> {

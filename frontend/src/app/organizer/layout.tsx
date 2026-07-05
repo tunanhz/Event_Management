@@ -6,6 +6,7 @@ import { OrganizerTopbar } from "@/components/organizer/OrganizerTopbar"
 import { OrganizerSidebar } from "@/components/organizer/OrganizerSidebar"
 import { EventWorkspaceSidebar } from "@/components/organizer/EventWorkspaceSidebar"
 import { OrganizerShellProvider } from "@/components/organizer/OrganizerShellContext"
+import { RoleGuard } from "@/components/auth/RoleGuard"
 import styles from "@/components/organizer/organizer-shell.module.css"
 
 /** Organizer Center shell: full-width top bar + left sidebar + scrollable content. */
@@ -25,28 +26,33 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
     )
 
   return (
-    <OrganizerShellProvider>
-      <div className={styles.shell}>
-        <OrganizerTopbar onMenuClick={() => setDrawerOpen(true)} />
+    <RoleGuard
+      allow={["ORGANIZER"]}
+      message="Khu vực Nhà tổ chức chỉ dành cho tài khoản Nhà tổ chức (Organizer)."
+    >
+      <OrganizerShellProvider>
+        <div className={styles.shell}>
+          <OrganizerTopbar onMenuClick={() => setDrawerOpen(true)} />
 
-        {drawerOpen && (
-          <>
-            <div
-              className={styles.overlay}
-              onClick={() => setDrawerOpen(false)}
-              aria-hidden="true"
-            />
-            <div className={styles.drawer}>
-              {renderSidebar(() => setDrawerOpen(false))}
-            </div>
-          </>
-        )}
+          {drawerOpen && (
+            <>
+              <div
+                className={styles.overlay}
+                onClick={() => setDrawerOpen(false)}
+                aria-hidden="true"
+              />
+              <div className={styles.drawer}>
+                {renderSidebar(() => setDrawerOpen(false))}
+              </div>
+            </>
+          )}
 
-        <div className={styles.body}>
-          {renderSidebar()}
-          <main className={styles.content}>{children}</main>
+          <div className={styles.body}>
+            {renderSidebar()}
+            <main className={styles.content}>{children}</main>
+          </div>
         </div>
-      </div>
-    </OrganizerShellProvider>
+      </OrganizerShellProvider>
+    </RoleGuard>
   )
 }

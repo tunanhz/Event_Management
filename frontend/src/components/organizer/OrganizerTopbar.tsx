@@ -3,8 +3,8 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Ticket, ChevronDown, Plus, Menu } from "lucide-react"
-import { useAuth } from "@/context/AuthContext"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { OrganizerAccountMenu } from "./OrganizerAccountMenu"
 import { useOrganizerShell } from "./OrganizerShellContext"
 import styles from "./organizer-shell.module.css"
 
@@ -14,9 +14,7 @@ import styles from "./organizer-shell.module.css"
  */
 export function OrganizerTopbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter()
-  const { user } = useAuth()
   const { title } = useOrganizerShell()
-  const initial = user?.fullName?.charAt(0).toUpperCase() ?? "T"
 
   return (
     <header className={styles.topbar}>
@@ -51,16 +49,7 @@ export function OrganizerTopbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
         <ThemeToggle className={styles.iconBtn} />
 
-        <button type="button" className={styles.account} aria-label="Tài khoản">
-          {user?.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatar} alt={user.fullName} className={styles.avatar} />
-          ) : (
-            <span className={styles.avatar} aria-hidden="true">{initial}</span>
-          )}
-          <span className={styles.accountName}>{user?.fullName ?? "Tài khoản"}</span>
-          <ChevronDown size={16} aria-hidden="true" />
-        </button>
+        <OrganizerAccountMenu />
       </div>
     </header>
   )

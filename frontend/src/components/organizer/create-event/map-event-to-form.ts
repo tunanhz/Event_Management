@@ -1,4 +1,9 @@
-import { DEFAULT_DESCRIPTION_HTML, type CreateEventForm } from "./create-event-data"
+import {
+  DEFAULT_DESCRIPTION_HTML,
+  createEmptyShow,
+  slugify,
+  type CreateEventForm,
+} from "./create-event-data"
 import type { OrganizerEvent } from "../my-events-data"
 
 /**
@@ -20,5 +25,12 @@ export function mapEventToForm(event: OrganizerEvent): CreateEventForm {
     orgLogo: null,
     orgName: "",
     orgInfo: "",
+    shows: [createEmptyShow()],
+    slug: slugify(event.title),
+    privacy: "public",
+    confirmationMessage: "",
+    enableQuestions: false,
+    contractRepName: "",
+    contractAgreed: false,
   }
 }

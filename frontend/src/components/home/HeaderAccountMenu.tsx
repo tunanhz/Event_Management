@@ -7,6 +7,7 @@ import {
   Megaphone,
   ShieldCheck,
   LayoutDashboard,
+  ScanLine,
   Bookmark,
   LogOut,
 } from "lucide-react";
@@ -24,10 +25,10 @@ const ROLE_UI: Record<
   Role,
   { label: string; href: string; actionLabel: string; accent: string; Icon: typeof UserIcon }
 > = {
-  PARTICIPANT: { label: "Người tham gia", href: "/ve-cua-toi", actionLabel: "Tài khoản", accent: "#22d3ee", Icon: UserIcon },
+  PARTICIPANT: { label: "Người tham gia", href: "/tai-khoan", actionLabel: "Tài khoản", accent: "#22d3ee", Icon: UserIcon },
   ORGANIZER: { label: "Nhà tổ chức", href: "/organizer", actionLabel: "Trang tổ chức", accent: "#a78bfa", Icon: Megaphone },
   ADMIN: { label: "Quản trị viên", href: "/dashboard", actionLabel: "Bảng điều khiển", accent: "#fbbf24", Icon: ShieldCheck },
-  STAFF: { label: "Nhân viên", href: "/dashboard", actionLabel: "Bảng điều khiển", accent: "#34d399", Icon: ShieldCheck },
+  STAFF: { label: "Nhân viên", href: "/staff", actionLabel: "Soát vé", accent: "#34d399", Icon: ScanLine },
 };
 
 /**
@@ -112,7 +113,13 @@ export function HeaderAccountMenu({ variant = "desktop" }: { variant?: "desktop"
           <div className={styles.menuDivider} />
 
           <Link href={roleUi.href} className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
-            {user.role === "PARTICIPANT" ? <UserIcon size={16} aria-hidden="true" /> : <LayoutDashboard size={16} aria-hidden="true" />}
+            {user.role === "PARTICIPANT" ? (
+              <UserIcon size={16} aria-hidden="true" />
+            ) : user.role === "STAFF" ? (
+              <ScanLine size={16} aria-hidden="true" />
+            ) : (
+              <LayoutDashboard size={16} aria-hidden="true" />
+            )}
             {roleUi.actionLabel}
           </Link>
 

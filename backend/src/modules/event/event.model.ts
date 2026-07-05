@@ -38,6 +38,22 @@ export interface IEvent extends Document {
   isTrending: boolean;
   createdAt: Date;
   updatedAt: Date;
+
+  // ── ERD-aligned fields (EM-23 Event Creation / organizer module) ──
+  // Additive only, kept alongside the fields above so existing homepage/listing/
+  // detail queries keep working unchanged. Written in parallel with their legacy
+  // counterpart (date/maxAttendees/imageUrl/organizer/category/categorySlug) by
+  // the organizer module at creation time — see modules/organizer/organizer.service.ts.
+  categoryId?: mongoose.Types.ObjectId;
+  creatorId?: mongoose.Types.ObjectId;
+  approvedById?: mongoose.Types.ObjectId;
+  banner?: string;
+  startDate?: Date;
+  endDate?: Date;
+  capacity?: number;
+  // Organizer approval workflow state (separate from the legacy public-listing
+  // `status` field above, which controls homepage visibility).
+  reviewStatus: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
 }
 
 const contentBlockSchema = new Schema<IContentBlock>(
@@ -85,6 +101,20 @@ const eventSchema = new Schema<IEvent>(
     isFree: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
     isTrending: { type: Boolean, default: false },
+
+    // ── ERD-aligned fields (EM-23 Event Creation / organizer module) ──
+    categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
+    creatorId: { type: Schema.Types.ObjectId, ref: 'User' },
+    approvedById: { type: Schema.Types.ObjectId, ref: 'User' },
+    banner: { type: String },
+    startDate: { type: Date },
+    endDate: { type: Date },
+    capacity: { type: Number, min: 1 },
+    reviewStatus: {
+      type: String,
+      enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED'],
+      default: 'DRAFT',
+    },
   },
   {
     timestamps: true,
@@ -98,5 +128,8 @@ eventSchema.index({ organizer: 1 });
 eventSchema.index({ city: 1 });
 eventSchema.index({ isFeatured: 1 });
 eventSchema.index({ isTrending: 1 });
+eventSchema.index({ categoryId: 1 });
+eventSchema.index({ creatorId: 1 });
+eventSchema.index({ reviewStatus: 1 });
 
 export const Event = mongoose.model<IEvent>('Event', eventSchema);

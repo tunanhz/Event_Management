@@ -20,6 +20,12 @@
   color: var(--foreground);
 }
 
+.sectionIcon {
+  color: var(--foreground);
+  flex-shrink: 0;
+  margin-right: -0.25rem;
+}
+
 .required {
   color: var(--destructive);
   margin-right: 0.25rem;
