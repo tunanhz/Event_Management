@@ -3,6 +3,7 @@ import Header from "@/components/home/Header";
 import Footer from "@/components/home/Footer";
 import MobileBottomNav from "@/components/home/MobileBottomNav";
 import EventsExplorer from "@/components/events/EventsExplorer";
+import { fetchExploreEvents } from "@/lib/discovery-api";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default async function EventsPage({
   searchParams: Promise<{ category?: string; collection?: string }>;
 }) {
   const { category, collection } = await searchParams;
+  const events = await fetchExploreEvents();
   return (
     <>
       <Header />
@@ -29,6 +31,7 @@ export default async function EventsPage({
         {/* key remounts the explorer so a new ?category/?collection fully reseeds state */}
         <EventsExplorer
           key={`${collection ?? ""}|${category ?? ""}`}
+          events={events}
           initialCategory={category}
           initialCollection={collection}
         />

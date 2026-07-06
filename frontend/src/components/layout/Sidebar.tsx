@@ -13,6 +13,9 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
+  Tag,
+  Star,
+  Image as ImageIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
@@ -24,6 +27,9 @@ const navigation = [
   { name: "Quản lý người dùng", href: "/dashboard/accounts", icon: Users },
   { name: "Phân công staff", href: "/dashboard/staff-assignment", icon: UserCog },
   { name: "Quản lý bán vé", href: "/dashboard/ticket-sales", icon: Ticket },
+  { name: "Danh mục sự kiện", href: "/dashboard/categories", icon: Tag },
+  { name: "Nghệ sĩ nổi bật", href: "/dashboard/stars", icon: Star },
+  { name: "Hero banner", href: "/dashboard/banners", icon: ImageIcon },
   { name: "Tài chính", href: "/dashboard/finance", icon: Wallet },
   { name: "Báo cáo", href: "/dashboard/reports", icon: BarChart3 },
   { name: "Cài đặt", href: "/dashboard/settings", icon: Settings },

@@ -1,12 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { banners } from '@/lib/mockData';
 import styles from './HeroBanner.module.css';
 
 const INTERVAL_MS = 5000;
 
-export default function HeroBanner() {
+export interface HeroBannerItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  cta: string;
+  link: string;
+}
+
+export default function HeroBanner({ banners }: { banners: HeroBannerItem[] }) {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -39,6 +47,8 @@ export default function HeroBanner() {
     const timer = setInterval(goNext, INTERVAL_MS);
     return () => clearInterval(timer);
   }, [goNext, isPaused, reducedMotion, total]);
+
+  if (total === 0) return null;
 
   return (
     <section

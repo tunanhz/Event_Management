@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Calendar, MapPin, CreditCard, QrCode, Wallet, Smartphone, Tag } from "lucide-react";
 import type { EventItem, TicketType } from "@/lib/mockData";
 import { useAuth } from "@/context/AuthContext";
 import { formatVnd } from "@/lib/utils";
 import { buildLines, totalAmount, type Quantities } from "@/lib/booking-selection";
+import { purchaseSelection } from "@/lib/booking-api";
 import { formatBookingDate } from "./format-booking-date";
 import styles from "./payment-view.module.css";
 
@@ -16,7 +18,7 @@ interface Props {
   quantities: Quantities;
 }
 
-const HOLD_SECONDS = 15 * 60; // 15-minute reservation window
+const HOLD_SECONDS = 10 * 60; // 10-minute reservation window (matches backend hold)
 
 const PAYMENT_METHODS = [
   { id: "vnpay", label: "VNPAY/Ứng dụng ngân hàng", Icon: Smartphone, tint: "#0d5cab" },
@@ -33,11 +35,14 @@ function pad(n: number) {
 /** Step 2 of booking — payment. */
 export function PaymentView({ event, tickets, quantities }: Props) {
   const { user } = useAuth();
+  const router = useRouter();
   const lines = buildLines(tickets, quantities);
   const total = totalAmount(lines);
 
   const [remaining, setRemaining] = useState(HOLD_SECONDS);
   const [method, setMethod] = useState<string>(PAYMENT_METHODS[0].id);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -49,6 +54,26 @@ export function PaymentView({ event, tickets, quantities }: Props) {
   const expired = remaining <= 0;
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
+
+  // Hold + confirm (mock payment) one registration per selected tier, then
+  // send the buyer to their tickets. Requires a signed-in PARTICIPANT.
+  const pay = async () => {
+    if (paying || expired || total === 0) return;
+    setPaying(true);
+    setPayError(null);
+    try {
+      await purchaseSelection(
+        event.id,
+        lines.map((l) => ({ ticketId: l.ticket.id, quantity: l.qty }))
+      );
+      router.push("/ve-cua-toi");
+    } catch (err) {
+      setPayError(
+        err instanceof Error ? err.message : "Thanh toán thất bại — vui lòng thử lại."
+      );
+      setPaying(false);
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -166,8 +191,18 @@ export function PaymentView({ event, tickets, quantities }: Props) {
                 Bằng việc tiến hành đặt mua, bạn đã đồng ý với{" "}
                 <a href="#" className={styles.termsLink}>Điều Kiện Giao Dịch Chung</a>
               </p>
-              <button type="button" className={styles.payBtn} disabled={expired || total === 0}>
-                {expired ? "Hết thời gian giữ vé" : "Thanh toán"}
+              {payError && (
+                <p role="alert" className={styles.terms} style={{ color: "#ef4444" }}>
+                  {payError}
+                </p>
+              )}
+              <button
+                type="button"
+                className={styles.payBtn}
+                disabled={expired || total === 0 || paying}
+                onClick={pay}
+              >
+                {expired ? "Hết thời gian giữ vé" : paying ? "Đang xử lý…" : "Thanh toán"}
               </button>
             </section>
           </aside>

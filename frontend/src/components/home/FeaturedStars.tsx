@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { featuredStars } from '@/lib/mockData';
+import type { FeaturedStar } from '@/lib/mockData';
 import styles from './FeaturedStars.module.css';
 
 /* Cyan "verified" badge — filled circle + white check (≥3:1 contrast) */
@@ -14,7 +14,8 @@ function VerifiedBadge() {
   );
 }
 
-export default function FeaturedStars() {
+export default function FeaturedStars({ stars }: { stars: FeaturedStar[] }) {
+  if (stars.length === 0) return null;
   return (
     <section className={styles.section} aria-labelledby="featured-stars-title">
       {/* Cyan aurora ambiance (decorative, gated by reduced-motion globally) */}
@@ -37,7 +38,7 @@ export default function FeaturedStars() {
         </div>
 
         <ul className={styles.list}>
-          {featuredStars.map((star) => (
+          {stars.map((star) => (
             <li key={star.id} className={styles.item}>
               <Link href={`/nghe-si/${star.slug}`} className={styles.card}>
                 <span className={styles.avatarRing}>

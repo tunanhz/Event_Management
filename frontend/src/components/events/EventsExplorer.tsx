@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import EventCard from '@/components/home/EventCard';
 import { Spinner } from '@/components/ui/Spinner';
-import { categoryOptions, collectionLabels, exploreEvents } from '@/lib/mockData';
+import { categoryOptions, collectionLabels, type ExploreEvent } from '@/lib/mockData';
 import { applyFilters, startOfDay } from './filter-events';
 import { DEFAULT_DATE, DEFAULT_FILTERS, type DateFilter, type Filters } from './events-types';
 import EventsToolbar from './EventsToolbar';
@@ -12,13 +12,15 @@ import styles from './EventsExplorer.module.css';
 const PAGE_SIZE = 8;
 
 interface EventsExplorerProps {
+  /** Published events from the API (mapped to ExploreEvent). */
+  events: ExploreEvent[];
   /** Seed the category filter from the URL (e.g. /su-kien?category=the-thao). */
   initialCategory?: string;
   /** Pin a collection (featured | trending | upcoming) from the URL. */
   initialCollection?: string;
 }
 
-export default function EventsExplorer({ initialCategory, initialCollection }: EventsExplorerProps) {
+export default function EventsExplorer({ events, initialCategory, initialCollection }: EventsExplorerProps) {
   // A valid collection is fixed for this page mount (the URL key remounts on change).
   const collection = initialCollection && collectionLabels[initialCollection] ? initialCollection : null;
 
@@ -32,8 +34,8 @@ export default function EventsExplorer({ initialCategory, initialCollection }: E
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const filtered = useMemo(
-    () => applyFilters(exploreEvents, filters, dateFilter, today, collection),
-    [filters, dateFilter, today, collection],
+    () => applyFilters(events, filters, dateFilter, today, collection),
+    [events, filters, dateFilter, today, collection],
   );
 
   // Mutating filters/date always restarts paging at the first page.
