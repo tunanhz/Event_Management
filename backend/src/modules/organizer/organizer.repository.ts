@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Event, IEvent } from '../event/event.model';
 import { Ticket, ITicket } from './ticket.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
@@ -48,19 +49,54 @@ export class OrganizerRepository {
     };
   }
 
-  async updateEventReviewStatus(
-    id: string,
-    reviewStatus: IEvent['reviewStatus']
-  ): Promise<IEvent | null> {
-    return Event.findByIdAndUpdate(id, { reviewStatus }, { new: true, runValidators: true }).lean();
+  /**
+   * DRAFT/REJECTED → PENDING_REVIEW. Atomic on reviewStatus so a concurrent
+   * admin decision can't be overwritten; clears the previous rejection reason
+   * when an organizer resubmits a corrected event.
+   */
+  async submitEventForReview(id: string): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      { _id: id, reviewStatus: { $in: ['DRAFT', 'REJECTED'] } },
+      { $set: { reviewStatus: 'PENDING_REVIEW' }, $unset: { rejectionReason: '' } },
+      { new: true, runValidators: true }
+    ).lean();
   }
 
-  async updateEvent(id: string, data: Partial<IEvent>): Promise<IEvent | null> {
-    return Event.findByIdAndUpdate(id, data, { new: true, runValidators: true }).lean();
+  /**
+   * Apply organizer edits only while the event is still organizer-editable
+   * (DRAFT/REJECTED). Atomic on reviewStatus so an edit racing a concurrent
+   * submit or admin decision can't mutate an event already locked in review.
+   */
+  async updateEditableEvent(id: string, data: Partial<IEvent>): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      { _id: id, reviewStatus: { $in: ['DRAFT', 'REJECTED'] } },
+      data,
+      { new: true, runValidators: true }
+    ).lean();
   }
 
   async deleteEvent(id: string): Promise<void> {
     await Event.findByIdAndDelete(id);
+  }
+
+  /** Custom-slug uniqueness check; excludeEventId skips the event being edited. */
+  async slugExists(slug: string, excludeEventId?: string): Promise<boolean> {
+    const filter: Record<string, any> = { slug };
+    if (excludeEventId) filter._id = { $ne: excludeEventId };
+    return (await Event.exists(filter)) !== null;
+  }
+
+  /** How many ticket types still reference any of the given shows. */
+  async countTicketsByShowIds(
+    eventId: string,
+    showIds: mongoose.Types.ObjectId[]
+  ): Promise<number> {
+    return Ticket.countDocuments({ eventId, showId: { $in: showIds } });
+  }
+
+  /** Tiers created via the legacy flat payload (not attached to any show). */
+  async countTicketsWithoutShow(eventId: string): Promise<number> {
+    return Ticket.countDocuments({ eventId, showId: { $exists: false } });
   }
 
   async createTicket(data: Partial<ITicket>): Promise<ITicket> {
