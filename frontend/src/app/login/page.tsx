@@ -180,9 +180,12 @@ export default function LoginPage() {
                   Ghi nhớ đăng nhập
                 </label>
               </div>
-              <a href="#" className="font-medium text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300">
+              <Link
+                href="/forgot-password"
+                className="font-medium text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300"
+              >
                 Quên mật khẩu?
-              </a>
+              </Link>
             </div>
 
             <div>

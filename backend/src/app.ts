@@ -14,6 +14,7 @@ import { categoryRoutes } from './modules/category';
 import { starRoutes } from './modules/star';
 import { bannerRoutes } from './modules/banner';
 import { organizerRoutes } from './modules/organizer';
+import { registrationRoutes } from './modules/registration';
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/stars', starRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/organizer', organizerRoutes);
+app.use('/api/registrations', registrationRoutes);
 
 // ─── Error Handling ─────────────────────────────────────────────────
 app.use(notFoundHandler);

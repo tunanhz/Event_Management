@@ -125,10 +125,10 @@ GET /api/events?categorySlug=<category của event hiện tại>&excludeId=<id>&
 Trang `/su-kien/[id]` gọi endpoint này. Nếu event không tồn tại **hoặc chưa published** → `404
 Event not found` (tránh lộ draft qua việc đoán ID).
 
-> ⚠️ **Giới hạn đã biết**: vì route event chưa gắn `isAuthenticated`, organizer/admin hiện **không
-> có cách xem preview draft của chính họ** qua API này — cần bổ sung route riêng có auth
-> (`GET /api/events/:id?preview=true` hoặc `GET /api/organizer/events/:id`) khi làm dashboard
-> organizer. Ghi nhận trong `backend-logic.md` §8 (câu hỏi mở), chưa nằm trong phạm vi task này.
+> ✅ **Cập nhật 2026-07-05**: route ghi của event đã gắn `isAuthenticated` +
+> `authorize('ORGANIZER','ADMIN')`, và organizer đã xem được draft của chính họ qua
+> `GET /api/organizer/events/:id` (xem [`api-reference.md`](./api-reference.md)). Endpoint public
+> này vẫn chỉ trả event `published`.
 
 ---
 

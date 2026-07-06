@@ -11,6 +11,7 @@ import {
   User,
   Pencil,
   Armchair,
+  Wallet,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -31,6 +32,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { key: "analytics", name: "Phân tích", icon: Megaphone },
       { key: "orders", name: "Danh sách đơn hàng", icon: ClipboardList },
       { key: "check-in", name: "Check-in", icon: CircleCheck },
+      { key: "withdrawal", name: "Rút tiền", icon: Wallet },
     ],
   },
   {

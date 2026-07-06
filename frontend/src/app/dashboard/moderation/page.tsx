@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Check, X, Building2, MapPin, Inbox, RotateCcw } from "lucide-react"
+import Link from "next/link"
+import { Check, X, Building2, MapPin, Inbox, RotateCcw, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { mockModerationEvents } from "@/lib/mock-data"
@@ -76,7 +77,12 @@ export default function ModerationPage() {
                 </div>
 
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="font-semibold text-foreground">{event.title}</p>
+                  <Link
+                    href={`/dashboard/moderation/${event.id}`}
+                    className="font-semibold text-foreground transition-colors hover:text-cyan-500"
+                  >
+                    {event.title}
+                  </Link>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Building2 className="h-3 w-3" />
@@ -102,6 +108,14 @@ export default function ModerationPage() {
 
                 {/* Actions */}
                 <div className="flex flex-shrink-0 items-center gap-2">
+                  <Link
+                    href={`/dashboard/moderation/${event.id}`}
+                    title="Xem chi tiết hồ sơ"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Chi tiết
+                  </Link>
                   {event.status === "pending" ? (
                     <>
                       <button
