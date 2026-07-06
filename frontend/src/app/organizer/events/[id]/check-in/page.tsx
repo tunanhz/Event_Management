@@ -1,16 +1,10 @@
-import { notFound } from "next/navigation"
-import { getOrganizerEventById } from "@/components/organizer/my-events-data"
+"use client"
+
+import { useWorkspaceEvent } from "@/components/organizer/EventWorkspaceContext"
 import { CheckInView } from "@/components/organizer/checkin/CheckInView"
 
 /** Check-in: attendance overview + per-ticket-type check-in detail. */
-export default async function EventCheckInPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-  const event = getOrganizerEventById(id)
-  if (!event) notFound()
-
+export default function EventCheckInPage() {
+  const { event } = useWorkspaceEvent()
   return <CheckInView event={event} />
 }

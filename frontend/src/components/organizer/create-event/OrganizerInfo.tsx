@@ -2,18 +2,25 @@
 
 import { useRef } from "react"
 import { Inbox, X } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { SectionCard } from "./SectionCard"
+import { FieldError } from "./FieldError"
 import { LIMITS, type CreateEventForm } from "./create-event-data"
+import type { Step1FieldKey } from "./wizard-validation"
 import form from "./create-event-form.module.css"
 import styles from "./OrganizerInfo.module.css"
 
 interface OrganizerInfoProps {
   data: CreateEventForm
   update: (patch: Partial<CreateEventForm>) => void
+  /** Per-field validation messages to show inline (already filtered by touched). */
+  errors?: Partial<Record<Step1FieldKey, string>>
+  /** Marks a field as touched (blurred) so its error can surface. */
+  onBlur?: (key: Step1FieldKey) => void
 }
 
 /** Organizer identity card: logo, name and description. */
-export function OrganizerInfo({ data, update }: OrganizerInfoProps) {
+export function OrganizerInfo({ data, update, errors, onBlur }: OrganizerInfoProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const pick = () => inputRef.current?.click()
@@ -69,42 +76,52 @@ export function OrganizerInfo({ data, update }: OrganizerInfoProps) {
 
         <div className={styles.fields}>
           <div className={form.field}>
-            <label className={form.label}>
+            <label className={form.label} htmlFor="org-name">
               <span className={form.required} aria-hidden="true">*</span>
               Tên ban tổ chức
             </label>
             <div className={form.inputWrap}>
               <input
-                className={form.input}
+                id="org-name"
+                className={cn(form.input, errors?.orgName && form.inputError)}
                 type="text"
                 maxLength={LIMITS.orgName}
                 placeholder="Tên ban tổ chức"
-                aria-label="Tên ban tổ chức"
+                aria-required="true"
+                aria-invalid={!!errors?.orgName || undefined}
+                aria-describedby={errors?.orgName ? "err-org-name" : undefined}
                 value={data.orgName}
                 onChange={(e) => update({ orgName: e.target.value })}
+                onBlur={() => onBlur?.("orgName")}
               />
               <span className={form.counter}>
                 {data.orgName.length} / {LIMITS.orgName}
               </span>
             </div>
+            <FieldError id="err-org-name" msg={errors?.orgName} />
           </div>
 
           <div className={form.field}>
-            <label className={form.label}>
+            <label className={form.label} htmlFor="org-info">
               <span className={form.required} aria-hidden="true">*</span>
               Thông tin ban tổ chức
             </label>
             <textarea
-              className={form.textarea}
+              id="org-info"
+              className={cn(form.textarea, errors?.orgInfo && form.inputError)}
               maxLength={LIMITS.orgInfo}
               placeholder="Thông tin ban tổ chức"
-              aria-label="Thông tin ban tổ chức"
+              aria-required="true"
+              aria-invalid={!!errors?.orgInfo || undefined}
+              aria-describedby={errors?.orgInfo ? "err-org-info" : undefined}
               value={data.orgInfo}
               onChange={(e) => update({ orgInfo: e.target.value })}
+              onBlur={() => onBlur?.("orgInfo")}
             />
             <div className={form.counterBlock}>
               {data.orgInfo.length} / {LIMITS.orgInfo}
             </div>
+            <FieldError id="err-org-info" msg={errors?.orgInfo} />
           </div>
         </div>
       </div>

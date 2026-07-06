@@ -35,12 +35,87 @@
   padding-top: 0.1rem;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .title {
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--foreground);
   line-height: 1.35;
 }
+
+/* Review-status badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.badgeDraft {
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-color: var(--border);
+}
+.badgePending {
+  color: var(--warning-fg);
+  background: var(--warning-surface);
+  border-color: var(--warning-border);
+}
+.badgePublished {
+  color: var(--success-fg);
+  background: var(--success-surface);
+  border-color: var(--success-border);
+}
+.badgeRejected {
+  color: var(--danger-fg);
+  background: var(--danger-surface);
+  border-color: var(--danger-border);
+}
+
+/* Rejection reason inline banner */
+.rejectBanner {
+  margin-top: 0.15rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--danger-fg);
+  background: var(--danger-surface);
+  border: 1px solid var(--danger-border);
+}
+.rejectBanner strong { font-weight: 700; }
+
+/* Submit-for-review button (draft / rejected) */
+.submitBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  padding: 0.6rem 1.05rem;
+  border-radius: 10px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+.submitBtn:hover { opacity: 0.9; }
+.submitBtn:disabled { opacity: 0.55; cursor: default; }
+.spin { animation: mycard-spin 0.8s linear infinite; }
+@keyframes mycard-spin { to { transform: rotate(360deg); } }
 
 .metaRow {
   display: flex;

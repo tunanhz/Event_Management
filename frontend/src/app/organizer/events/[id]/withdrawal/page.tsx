@@ -1,5 +1,3 @@
-import { notFound } from "next/navigation"
-import { getOrganizerEventById } from "@/components/organizer/my-events-data"
 import {
   getAvailableBalance,
   getWithdrawalHistory,
@@ -13,8 +11,6 @@ export default async function EventWithdrawalPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const event = getOrganizerEventById(id)
-  if (!event) notFound()
 
   return (
     <WithdrawalRequestView

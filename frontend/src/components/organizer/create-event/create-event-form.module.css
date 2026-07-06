@@ -84,6 +84,23 @@
 .input::placeholder,
 .textarea::placeholder { color: var(--muted-foreground); }
 
+/* Inline field validation (per-field error state + message). */
+.inputError,
+.inputError:focus {
+  border-color: var(--danger-fg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-fg) 18%, transparent);
+}
+.fieldError {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--danger-fg);
+}
+.fieldError svg { flex-shrink: 0; }
+
 .input:focus,
 .textarea:focus,
 .select:focus {

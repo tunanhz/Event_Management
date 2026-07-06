@@ -67,13 +67,20 @@ export interface CreateEventForm {
   /** Step 5 — service contract. */
   contractRepName: string
   contractAgreed: boolean
+  /** Hand-drawn signature as PNG data URL; uploaded on save. */
+  signatureDataUrl: string | null
+  /** Step 6 — payout bank account (revenue settlement). */
+  bankName: string
+  bankAccountNumber: string
+  bankAccountHolder: string
 }
 
-/** Metadata of an uploaded permit/contract file (mock — file is not persisted). */
+/** An uploaded permit/contract file — `url` is returned by /api/uploads/permits. */
 export interface PermitDocument {
   id: string
   name: string
   sizeKb: number
+  url: string
 }
 
 /** Platform support services the organizer can request (per SRS wizard step 3). */
@@ -183,39 +190,8 @@ export const EVENT_CATEGORIES = [
   "Khác",
 ]
 
-export const PROVINCES = [
-  "Hà Nội",
-  "TP. Hồ Chí Minh",
-  "Đà Nẵng",
-  "Hải Phòng",
-  "Cần Thơ",
-  "An Giang",
-  "Bà Rịa - Vũng Tàu",
-  "Bình Dương",
-  "Bình Định",
-  "Đồng Nai",
-  "Khánh Hòa",
-  "Lâm Đồng",
-  "Nghệ An",
-  "Quảng Ninh",
-  "Thừa Thiên Huế",
-]
-
-/**
- * Sample wards for the most common cities; other provinces fall back to a
- * generic centre option. Enough for a realistic dependent-select without
- * bundling the full administrative dataset.
- */
-const WARDS_BY_PROVINCE: Record<string, string[]> = {
-  "Hà Nội": ["Phường Hàng Bạc", "Phường Cửa Nam", "Phường Kim Mã", "Phường Dịch Vọng"],
-  "TP. Hồ Chí Minh": ["Phường Bến Nghé", "Phường Bến Thành", "Phường Đa Kao", "Phường Tân Định"],
-  "Đà Nẵng": ["Phường Hải Châu 1", "Phường Thạch Thang", "Phường Thanh Bình"],
-}
-
-export function getWards(province: string): string[] {
-  if (!province) return []
-  return WARDS_BY_PROVINCE[province] ?? ["Phường trung tâm", "Phường lân cận"]
-}
+// Province/ward options come from the official 34-province dataset in
+// /public/data/vietnam-provinces-wards.json — see use-vietnam-address-data.ts.
 
 /** Pre-filled description template shown in the reference editor. */
 export const DEFAULT_DESCRIPTION_HTML = `<p><strong>Giới thiệu sự kiện:</strong></p>
@@ -255,4 +231,38 @@ export const INITIAL_FORM: CreateEventForm = {
   permitDocuments: [],
   contractRepName: "",
   contractAgreed: false,
+  signatureDataUrl: null,
+  bankName: "",
+  bankAccountNumber: "",
+  bankAccountHolder: "",
 }
+
+/** Common Vietnamese banks for the payout account select (step 6). */
+export const VN_BANKS = [
+  "Vietcombank (VCB)",
+  "VietinBank (CTG)",
+  "BIDV",
+  "Agribank",
+  "Techcombank (TCB)",
+  "MB Bank (MBB)",
+  "ACB",
+  "VPBank",
+  "Sacombank (STB)",
+  "TPBank",
+  "SHB",
+  "HDBank",
+  "VIB",
+  "MSB",
+  "OCB",
+  "SeABank",
+  "Eximbank",
+  "LPBank",
+  "Nam A Bank",
+  "SCB",
+] as const
+
+/** Value limits for the payment step. */
+export const PAYMENT_LIMITS = {
+  accountNumber: 30,
+  accountHolder: 100,
+} as const
