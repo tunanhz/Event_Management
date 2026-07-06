@@ -11,6 +11,7 @@
     "seed:admin": "tsx src/scripts/create-admin.ts",
     "seed:homepage": "tsx src/scripts/seed-homepage.ts",
     "seed:events": "tsx src/scripts/seed-organizer-events.ts",
+    "seed:registrations": "tsx src/scripts/seed-registrations.ts",
     "cleanup:qa": "tsx src/scripts/cleanup-qa-events.ts"
   },
   "keywords": [

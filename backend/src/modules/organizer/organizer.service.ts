@@ -22,6 +22,12 @@ import {
   validateTicketInput,
   validateWizardFields,
 } from './event-wizard-validation';
+import {
+  deriveCity,
+  derivePriceFields,
+  deriveSessions,
+  deriveTime,
+} from './event-discovery-derive';
 
 /** The authenticated user performing an organizer action. */
 interface OrganizerActor {
@@ -131,6 +137,13 @@ export class OrganizerService {
       organizerId: string;
     }
   ): Promise<IEvent> {
+    // Derive the public discovery fields the wizard doesn't ask for directly.
+    const allTickets =
+      ctx.schedule.shows.length > 0
+        ? ctx.schedule.shows.flatMap((s) => s.tickets)
+        : ctx.schedule.flatTickets;
+    const { priceFrom, isFree } = derivePriceFields(allTickets);
+    const sessions = deriveSessions(ctx.schedule.shows, ctx.schedule.startDate);
     try {
       return await this.organizerRepository.createEvent({
         title: data.title,
@@ -143,6 +156,15 @@ export class OrganizerService {
         endDate: ctx.schedule.endDate,
         capacity: data.capacity,
         reviewStatus: 'DRAFT',
+
+        // Denormalized public "discovery" fields derived from the wizard input
+        // (homepage/listing cards + detail). city from venue, time/sessions from
+        // show times, priceFrom/isFree from ticket tiers.
+        city: deriveCity(data.venue?.province),
+        time: deriveTime(ctx.schedule.startDate),
+        sessions,
+        priceFrom,
+        isFree,
 
         // ── Wizard fields ──
         posterImage: data.posterImage,
@@ -254,6 +276,11 @@ export class OrganizerService {
     }
     update.date = update.startDate; // legacy mirror
 
+    // Recompute denormalized discovery fields from the (possibly new) schedule.
+    const showsForSessions = update.shows ?? event.shows;
+    update.time = deriveTime(update.startDate as Date);
+    update.sessions = deriveSessions(showsForSessions, update.startDate as Date);
+
     if (data.title) update.title = data.title;
     if (data.description) update.description = data.description;
     if (data.banner) {
@@ -262,7 +289,10 @@ export class OrganizerService {
     }
     if (data.posterImage !== undefined) update.posterImage = data.posterImage;
     if (data.locationType !== undefined) update.locationType = data.locationType;
-    if (data.venue !== undefined) update.venue = data.venue;
+    if (data.venue !== undefined) {
+      update.venue = data.venue;
+      update.city = deriveCity(data.venue?.province);
+    }
     const composedLocation = composeLocation(data);
     if (composedLocation) update.location = composedLocation;
 
@@ -394,9 +424,20 @@ export class OrganizerService {
     validateTicketInput(input);
     const showId = this.resolveTicketShowId(event, input.showId);
 
-    return this.organizerRepository.createTicket(
+    const created = await this.organizerRepository.createTicket(
       this.buildTicketDoc(event._id as mongoose.Types.ObjectId, input, showId)
     );
+    await this.syncPriceFields(eventId);
+    return created;
+  }
+
+  // Keep the denormalized card price (priceFrom/isFree) in sync with the event's
+  // current ticket tiers after any ticket mutation, so public listings show the
+  // real lowest price instead of a stale/default value.
+  private async syncPriceFields(eventId: string): Promise<void> {
+    const tickets = await this.organizerRepository.findTicketsByEvent(eventId);
+    const { priceFrom, isFree } = derivePriceFields(tickets);
+    await this.organizerRepository.updateEditableEvent(eventId, { priceFrom, isFree });
   }
 
   // Events with shows require every tier to target one of them; legacy
@@ -467,6 +508,7 @@ export class OrganizerService {
     if (!updated) {
       throw new AppError('Ticket not found', 404);
     }
+    await this.syncPriceFields(eventId);
     return updated;
   }
 
@@ -484,6 +526,7 @@ export class OrganizerService {
     }
 
     await this.organizerRepository.deleteTicket(ticketId);
+    await this.syncPriceFields(eventId);
   }
 
   async listTickets(eventId: string, actor: OrganizerActor): Promise<ITicket[]> {
@@ -567,6 +610,7 @@ export class OrganizerService {
       }
     }
 
+    await this.syncPriceFields(eventId);
     return result;
   }
 

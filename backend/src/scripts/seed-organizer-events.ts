@@ -44,6 +44,8 @@ interface SeedEvent {
   endDate: Date;
   capacity: number;
   rejectionReason?: string;
+  featured?: boolean;
+  trending?: boolean;
   tickets: { ticketName: string; price: number; quantity: number }[];
 }
 
@@ -101,6 +103,7 @@ const SEED_EVENTS: SeedEvent[] = [
     banner: img('1493225457124-a3eb161ffa5f'),
     reviewStatus: 'PUBLISHED',
     startDate: future(20), endDate: future(20, 23), capacity: 8000,
+    featured: true, trending: true,
     tickets: [{ ticketName: 'Thường', price: 400000, quantity: 7000 }],
   },
   {
@@ -217,6 +220,11 @@ async function run(): Promise<void> {
       status: isPublished ? 'published' : 'draft',
       priceFrom: Math.min(...s.tickets.map((t) => t.price)),
       isFree: s.tickets.every((t) => t.price === 0),
+      // Public discovery fields so seeded events render on homepage/listing.
+      time: `${String(s.startDate.getHours()).padStart(2, '0')}:${String(s.startDate.getMinutes()).padStart(2, '0')}`,
+      sessions: [{ date: s.startDate, time: `${String(s.startDate.getHours()).padStart(2, '0')}:00` }],
+      isFeatured: s.featured === true,
+      isTrending: s.trending === true,
     });
     for (const t of s.tickets) {
       await Ticket.create({

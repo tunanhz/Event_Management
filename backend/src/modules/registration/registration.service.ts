@@ -135,8 +135,16 @@ export class RegistrationService {
     return this.registrationRepository.findByParticipant(participantId, query);
   }
 
+  // Read-only detail with event + ticket joined (payment page / ticket view).
   async getRegistrationById(id: string, participantId: string): Promise<IRegistration> {
-    return this.getOwnedRegistration(id, participantId);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError('Không tìm thấy đăng ký', 404);
+    }
+    const registration = await this.registrationRepository.findByIdPopulated(id);
+    if (!registration || registration.participantId.toString() !== participantId) {
+      throw new AppError('Không tìm thấy đăng ký', 404);
+    }
+    return registration;
   }
 
   // 404 (not 403) for a registration that exists but belongs to someone else — same
