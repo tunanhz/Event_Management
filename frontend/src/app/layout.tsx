@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Be_Vietnam_Pro } from "next/font/google";
+import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin", "latin-ext", "vietnamese"],
-  variable: "--font-outfit",
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
   display: "swap",
 });
 
@@ -18,14 +20,24 @@ export const metadata: Metadata = {
   keywords: ["event", "management", "sự kiện", "quản lý", "vé", "ticketbox"],
 };
 
+// Applies the theme before first paint to avoid a flash. Dark is the default:
+// only an explicit saved 'light' choice opts out — otherwise dark is applied.
+const themeInitScript = `(function(){try{if(localStorage.getItem('theme')!=='light'){document.documentElement.classList.add('dark');}}catch(e){document.documentElement.classList.add('dark');}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={inter.variable}>
-      <body>{children}</body>
+    <html lang="vi" className={beVietnamPro.variable} suppressHydrationWarning>
+      <body>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }
+

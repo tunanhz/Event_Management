@@ -1,0 +1,89 @@
+.content {
+  position: relative;
+  color: var(--color-text);
+}
+
+/* Collapsed: clip to a preview height with a fade at the bottom. */
+.clamped {
+  max-height: 360px;
+  overflow: hidden;
+}
+
+.fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--color-surface));
+  pointer-events: none;
+}
+
+.heading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 1.25rem 0 0.5rem;
+}
+
+.heading:first-child {
+  margin-top: 0;
+}
+
+.paragraph {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--color-text);
+  margin: 0 0 0.75rem;
+}
+
+.list {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.list li {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.list li::marker {
+  color: var(--color-primary);
+}
+
+/* ─── Toggle ─────────────────────────────────────────────── */
+.toggleRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-primary-light);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.toggle:hover {
+  border-color: var(--color-primary);
+  background: rgba(8, 145, 178, 0.06);
+}
+
+.toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.3);
+}

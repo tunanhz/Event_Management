@@ -1,0 +1,153 @@
+/* ─── Notification centre (/thong-bao) ─────────────────────────────── */
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.headRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.heading {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+.subheading {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+}
+.markAllBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.markAllBtn:hover { border-color: var(--primary); color: var(--primary); }
+
+.filterRow { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+.filterBtn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.filterBtn:hover { color: var(--foreground); }
+.filterBtnActive {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.list { display: flex; flex-direction: column; gap: 0.6rem; }
+.item {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  overflow: hidden;
+}
+.itemUnread { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+
+.itemMain {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 0.85rem;
+  padding: 1rem 0 1rem 1rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.itemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.iconGreen { background: rgba(16, 185, 129, 0.15); color: #059669; }
+.iconRed { background: rgba(239, 68, 68, 0.12); color: #e11d48; }
+.iconBlue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.iconAmber { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+.iconMuted { background: var(--muted); color: var(--muted-foreground); }
+
+.itemBody { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.itemTitleRow { display: flex; align-items: center; gap: 0.5rem; }
+.itemTitle { font-size: 0.95rem; font-weight: 700; color: var(--foreground); }
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--primary);
+  flex-shrink: 0;
+}
+.itemMessage {
+  font-size: 0.87rem;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.itemMessageFull { display: block; -webkit-line-clamp: unset; }
+.itemMeta { font-size: 0.76rem; color: var(--muted-foreground); }
+.itemLink {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+.itemLink:hover { text-decoration: underline; }
+
+.deleteBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+.deleteBtn:hover { color: #e11d48; background: rgba(239, 68, 68, 0.08); }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3.5rem 1rem;
+  color: var(--muted-foreground);
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+}

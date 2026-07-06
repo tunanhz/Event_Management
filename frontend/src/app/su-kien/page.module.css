@@ -1,0 +1,14 @@
+/* ─── /su-kien page shell ────────────────────────────────── */
+.main {
+  min-height: 100dvh;
+  background-color: var(--color-bg);
+  /* Clear the fixed header (no hero on this page to absorb the offset) */
+  padding-top: calc(var(--header-height) + 2rem);
+  padding-bottom: 3rem;
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding-bottom: calc(var(--mobile-nav-height) + 2rem);
+  }
+}

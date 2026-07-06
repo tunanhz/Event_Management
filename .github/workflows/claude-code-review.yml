@@ -1,0 +1,58 @@
+name: Claude AI Code Review
+
+# Claude tự động đọc diff của PR (nhắm develop) và comment review bằng tiếng Việt.
+# Đây là review THAM KHẢO cho PM — KHÔNG chặn merge (không nằm trong required checks).
+# Yêu cầu: repo secret ANTHROPIC_API_KEY (xem docs/code-review-tool-guide.md).
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+
+jobs:
+  claude-review:
+    name: Claude review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Bạn là senior reviewer cho dự án Event Management (backend Express+TS theo
+            kiến trúc Controller→Service→Repository; frontend Next.js 16 App Router + RSC).
+
+            Review Pull Request #${{ github.event.pull_request.number }} của repo
+            ${{ github.repository }} (nhắm nhánh develop).
+
+            Cách làm:
+            1. Chạy `gh pr diff ${{ github.event.pull_request.number }}` để đọc thay đổi.
+            2. Chỉ review CODE THAY ĐỔI trong PR, không review toàn bộ repo.
+            3. Đăng MỘT comment tổng hợp bằng `gh pr comment ${{ github.event.pull_request.number }} --body "..."`.
+
+            Comment viết bằng TIẾNG VIỆT, ngắn gọn, theo bố cục:
+            - **Tóm tắt**: 1-2 câu PR làm gì.
+            - **🔴 Bug / lỗi logic**: lỗi có thể gây sai/nứt runtime (nếu có).
+            - **🔒 Bảo mật**: lộ secret, thiếu validate input, authz/authn, injection (nếu có).
+            - **🟡 Chất lượng**: vi phạm kiến trúc layered, code trùng lặp, đặt tên, edge case bỏ sót.
+            - **✅ Điểm tốt**: 1-2 điểm.
+            - **Kết luận**: `Approve` / `Cần sửa` kèm lý do 1 dòng.
+
+            Nguyên tắc: nêu vấn đề THẬT, kèm `file:line`. Đừng bịa. Không có vấn đề mục nào thì ghi "Không phát hiện".
+          claude_args: |
+            --allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*)"
+            --max-turns 20

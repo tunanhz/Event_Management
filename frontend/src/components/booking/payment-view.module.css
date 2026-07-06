@@ -1,0 +1,233 @@
+/* Full-screen dark payment step — "Thanh toán". Fixed dark palette, brand cyan accent. */
+.page {
+  --bk-bg: #0b0b0d;
+  --bk-card: #2a2d34;
+  --bk-card-2: #ffffff;
+  --bk-line: rgba(255, 255, 255, 0.1);
+  --bk-text: #f5f6f7;
+  --bk-muted: #9aa0a8;
+  --bk-accent: #0891b2; /* cyan-600 — app brand primary */
+  --bk-accent-hover: #0e7490; /* cyan-700 */
+  --bk-danger: #ef4444;
+  min-height: 100dvh;
+  padding-top: var(--header-height); /* clear the fixed site header */
+  background: var(--bk-bg);
+  color: var(--bk-text);
+}
+
+/* ── Hero ── */
+.hero {
+  position: relative;
+  padding: 2rem 0;
+  background: linear-gradient(180deg, #1a1c22 0%, #0b0b0d 100%);
+  border-bottom: 1px solid var(--bk-line);
+}
+/* Inner container aligns hero content with the body below (same max-width + gutter) */
+.heroInner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2.5rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+.eventTitle {
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--bk-line);
+}
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+.metaIcon { color: var(--bk-text); flex-shrink: 0; }
+
+.countdown {
+  flex-shrink: 0;
+  background: #33363d;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  text-align: center;
+}
+.countdownLabel { display: block; font-size: 0.85rem; color: var(--bk-muted); margin-bottom: 0.6rem; }
+.countdownClock { display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
+/* Last minute — draw the eye to the timer */
+.countdownUrgent { animation: pulseUrgent 1s ease-in-out infinite; }
+@keyframes pulseUrgent {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.countdownBox {
+  background: var(--bk-danger);
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  padding: 0.4rem 0.85rem;
+  border-radius: 10px;
+  min-width: 56px;
+}
+.countdownColon { font-size: 1.6rem; font-weight: 800; color: var(--bk-danger); }
+
+/* ── Body ── */
+.bodyWrap { max-width: 1200px; margin: 0 auto; padding: 2rem 2.5rem 3rem; }
+.sectionHeading {
+  color: var(--bk-accent);
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 1.25rem;
+}
+.body {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 1.5rem;
+  align-items: start;
+}
+.left { display: flex; flex-direction: column; gap: 1.25rem; }
+.right { display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* ── Cards ── */
+.card {
+  background: var(--bk-card);
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  animation: cardIn 0.35s ease both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.right .card { background: var(--bk-card-2); color: #0f172a; }
+.cardTitle { color: var(--bk-accent); font-size: 1rem; font-weight: 700; }
+.right .cardTitle { color: #0f172a; }
+.cardHeadRow { display: flex; align-items: center; justify-content: space-between; }
+.linkBtn {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+}
+.linkBtn:hover { text-decoration: underline; }
+
+.receiveText { margin-top: 0.75rem; font-size: 0.9rem; color: #cbd5e1; line-height: 1.6; }
+.email { color: var(--bk-accent); }
+
+.promoAdd {
+  margin-top: 0.9rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bk-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.promoAdd:hover { border-color: var(--bk-accent); color: var(--bk-accent); }
+
+/* ── Payment methods ── */
+.methodList { list-style: none; margin: 0.9rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.method {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.method:hover { background: rgba(255, 255, 255, 0.05); }
+/* Selected method — accent ring + tint (radio alone is too subtle) */
+.methodActive {
+  border-color: var(--bk-accent);
+  background: rgba(8, 145, 178, 0.14);
+}
+.radio { width: 18px; height: 18px; accent-color: var(--bk-accent); cursor: pointer; flex-shrink: 0; }
+.methodIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.methodLabel { font-size: 0.9rem; font-weight: 500; }
+
+/* ── Order info (right, light cards) ── */
+.orderHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  margin-top: 1rem;
+  padding-bottom: 0.5rem;
+}
+.orderLine { display: flex; justify-content: space-between; align-items: flex-start; padding: 0.5rem 0; }
+.orderName { font-size: 0.9rem; font-weight: 600; color: #0f172a; }
+.orderPrice { font-size: 0.85rem; color: #64748b; margin-top: 0.15rem; }
+.orderQtyCol { text-align: right; }
+.orderQty { font-size: 0.9rem; font-weight: 600; color: #0f172a; }
+.orderSubtotal { font-size: 0.85rem; color: #64748b; margin-top: 0.15rem; }
+
+.summaryRow { display: flex; justify-content: space-between; font-size: 0.9rem; color: #334155; margin-top: 1rem; }
+.summaryDivider { border-top: 1px dashed #cbd5e1; margin: 0.85rem 0; }
+.totalRow { display: flex; justify-content: space-between; align-items: center; font-size: 1rem; font-weight: 700; color: #0f172a; }
+.totalValue { color: var(--bk-accent-hover); font-size: 1.35rem; font-weight: 800; }
+.terms { margin-top: 0.85rem; font-size: 0.75rem; color: #64748b; line-height: 1.5; }
+.termsLink { color: #3b82f6; }
+
+.payBtn {
+  margin-top: 1rem;
+  width: 100%;
+  min-height: 48px;
+  border: none;
+  border-radius: 10px;
+  background: var(--bk-accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.payBtn:hover:not(:disabled) { background: var(--bk-accent-hover); }
+.payBtn:active:not(:disabled) { transform: scale(0.99); }
+.payBtn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .hero { padding: 1.5rem 0; }
+  .heroInner { flex-direction: column; padding: 0 1.25rem; }
+  .countdown { align-self: stretch; }
+  .bodyWrap { padding: 1.5rem 1.25rem 2.5rem; }
+  .body { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card { animation: none; }
+  .countdownUrgent { animation: none; }
+  .method, .payBtn { transition: none; }
+}

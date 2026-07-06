@@ -23,20 +23,17 @@ Event_Management/
 │   │   │   ├── utils/
 │   │   │   └── types/
 │   │   ├── modules/          # Feature modules (domain-driven)
-│   │   │   ├── event/        # Event module
-│   │   │   │   ├── event.model.ts
-│   │   │   │   ├── event.repository.ts
-│   │   │   │   ├── event.service.ts
-│   │   │   │   ├── event.controller.ts
-│   │   │   │   ├── event.routes.ts
-│   │   │   │   └── index.ts
-│   │   │   └── user/         # User module
-│   │   │       ├── user.model.ts
-│   │   │       ├── user.repository.ts
-│   │   │       ├── user.service.ts
-│   │   │       ├── user.controller.ts
-│   │   │       ├── user.routes.ts
-│   │   │       └── index.ts
+│   │   │   ├── event/        # Event (public read + protected write)
+│   │   │   ├── user/         # User & Auth
+│   │   │   ├── category/     # Event categories
+│   │   │   ├── star/         # Featured stars (homepage)
+│   │   │   ├── banner/       # Marketing banners
+│   │   │   └── organizer/    # Organizer event + ticket management (EM-23, EM-24, EM-128)
+│   │   │       ├── ticket.model.ts
+│   │   │       └── ...
+│   │   └── scripts/
+│   │       ├── create-admin.ts       # npm run seed:admin
+│   │       └── seed-homepage.ts      # npm run seed:homepage
 │   │   ├── app.ts            # Express app setup
 │   │   └── server.ts         # Server entry point
 │   └── ...
@@ -93,21 +90,45 @@ npm run dev             # Starts on http://localhost:3000
 
 ## 📝 API Endpoints
 
-### Events
-| Method | Endpoint           | Description          |
-|--------|-------------------|----------------------|
-| GET    | /api/events        | List all events      |
-| GET    | /api/events/:id    | Get event by ID      |
-| POST   | /api/events        | Create new event     |
-| PUT    | /api/events/:id    | Update event         |
-| DELETE | /api/events/:id    | Delete event         |
+### User & Auth (`/api/users`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/otp/send` | Send OTP (register) |
+| POST | `/register` | Register with OTP |
+| POST | `/login` | Login email/password |
+| POST | `/google` | Login via Google |
+| POST | `/logout` | Logout (clear cookie) |
+| GET | `/me` | Current user (auth required) |
+| PUT | `/me` | Update profile (auth required) |
+| GET | `/admin` | List users (ADMIN only) |
+| POST | `/admin/staff` | Create STAFF (ADMIN only) |
 
-### Users
-| Method | Endpoint           | Description          |
-|--------|-------------------|----------------------|
-| GET    | /api/users/:id     | Get user profile     |
-| PUT    | /api/users/:id     | Update user profile  |
-| DELETE | /api/users/:id     | Delete user account  |
+### Events (`/api/events`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | — | List events (public, status=published) |
+| GET | `/search` | — | Full-text search (EM-68) |
+| GET | `/:id` | — | Get event by ID (published only) |
+| GET | `/:id/detail` | — | Event + tickets + related (EM-72) |
+| POST | `/` | ORGANIZER\|ADMIN | Create event |
+| PUT | `/:id` | ORGANIZER\|ADMIN | Update event |
+| DELETE | `/:id` | ORGANIZER\|ADMIN | Delete event |
+
+### Organizer (`/api/organizer`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/events` | ORGANIZER\|ADMIN | Create DRAFT event (EM-23) |
+| GET | `/events` | ORGANIZER\|ADMIN | My events |
+| PUT | `/events/:id` | ORGANIZER\|ADMIN | Update DRAFT (EM-24) |
+| POST | `/events/:id/submit` | ORGANIZER\|ADMIN | Submit for review |
+| GET/POST/PUT | `/events/:id/tickets` | ORGANIZER\|ADMIN | Ticket management (EM-128) |
+
+### Categories, Stars, Banners
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/categories` | — | List categories |
+| GET | `/api/stars` | — | List featured stars |
+| GET | `/api/banners` | — | List active banners |
 
 ### Health
 | Method | Endpoint           | Description          |

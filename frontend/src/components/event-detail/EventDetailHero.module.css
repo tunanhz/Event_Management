@@ -1,0 +1,203 @@
+.hero {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+}
+
+/* Ticket card: dark summary stub (left) + poster (right) */
+.card {
+  position: relative;
+  display: flex;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.18);
+}
+
+/* ─── Left summary (dark stub) ───────────────────────────── */
+.info {
+  flex: 0 0 42%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1.75rem;
+  background: #23262e; /* dark ticket stub */
+  color: #ffffff;
+  /* dashed seam between stub and poster */
+  border-right: 2px dashed rgba(255, 255, 255, 0.18);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.3;
+  margin: 0 0 1.25rem;
+}
+
+.metaRow,
+.locationRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.metaRow {
+  color: var(--color-primary-bright); /* cyan-400 reads well on dark */
+  font-weight: 600;
+}
+
+.locationRow {
+  margin-top: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.metaIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--color-primary-bright);
+}
+
+.venue {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.daysBadge {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 0.6rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--color-primary-bright);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.address {
+  margin: 0.35rem 0 0 1.6rem;
+  font-size: 0.85rem;
+  color: #94a3b8; /* slate-400 */
+}
+
+.divider {
+  border-top: 1px dashed rgba(255, 255, 255, 0.18);
+  margin: auto 0 1rem; /* push the price block to the bottom */
+}
+
+/* Price acts as a link to the schedule */
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  text-decoration: none;
+}
+
+.priceLabel {
+  font-size: 0.95rem;
+  color: #cbd5e1;
+}
+
+.priceValue {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-primary-bright);
+}
+
+.priceFree {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #34d399; /* emerald-400 */
+}
+
+.priceChevron {
+  align-self: center;
+  color: var(--color-primary-bright);
+}
+
+.buyBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.buyBtn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.buyBtn:active {
+  transform: translateY(0);
+}
+
+/* ─── Right poster ───────────────────────────────────────── */
+.posterWrap {
+  flex: 1;
+  min-height: 340px;
+  background: #1a1c22;
+}
+
+.poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─── Ticket notch cut-outs on the seam ──────────────────── */
+.notchTop,
+.notchBottom {
+  position: absolute;
+  left: 42%;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-bg); /* page bg shows through — punched hole */
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.notchTop {
+  top: -22px;
+}
+
+.notchBottom {
+  bottom: -22px;
+}
+
+/* ─── Mobile: stack poster over summary ──────────────────── */
+@media (max-width: 768px) {
+  .hero {
+    padding: 0 var(--space-md);
+  }
+  .card {
+    flex-direction: column-reverse; /* poster on top, summary below */
+  }
+  .info {
+    flex: 1 1 auto;
+    border-right: none;
+    border-top: 2px dashed rgba(255, 255, 255, 0.18);
+  }
+  .posterWrap {
+    min-height: 200px;
+  }
+  .divider {
+    margin-top: 1.5rem;
+  }
+  .notchTop,
+  .notchBottom {
+    display: none;
+  }
+}

@@ -1,0 +1,14 @@
+# Code owners — GitHub tự động request review từ người này cho MỌI Pull Request.
+# Kết hợp với branch protection ("Require review from Code Owners"),
+# PM sẽ luôn phải duyệt trước khi code được merge vào develop.
+#
+# Cú pháp: <đường dẫn>  <@github-username hoặc @team>
+# Đổi @tunanhz thành username GitHub của PM nếu khác.
+
+# Toàn bộ repo -> PM review
+*                 @tunanhz
+
+# (Tùy chọn) giao owner theo khu vực nếu sau này chia việc:
+# /backend/       @tunanhz
+# /frontend/      @tunanhz
+# /.github/       @tunanhz

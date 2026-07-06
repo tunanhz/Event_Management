@@ -1,0 +1,122 @@
+/* ─── Step 4: "Logistics & Giấy phép" ──────────────────────────────── */
+
+.intro {
+  font-size: 0.92rem;
+  color: var(--muted-foreground);
+  line-height: 1.7;
+  margin-bottom: 1.15rem;
+}
+
+/* Service option cards (checkbox list) */
+.serviceList {
+  display: grid;
+  gap: 0.6rem;
+}
+@media (min-width: 768px) {
+  .serviceList { grid-template-columns: 1fr 1fr; }
+}
+.serviceRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--muted);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+.serviceRow:hover { border-color: var(--primary); }
+.serviceRowActive {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+.serviceCheckbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.serviceLabel {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.serviceDesc {
+  font-size: 0.82rem;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+  margin-top: 0.15rem;
+}
+
+/* Upload dropzone */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.75rem 1rem;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.dropzone:hover { border-color: var(--primary); color: var(--primary); }
+.dropzoneHint { font-size: 0.82rem; }
+.uploadError {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: #e11d48;
+}
+
+/* Uploaded file rows */
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--muted);
+}
+.fileIcon { color: var(--primary); flex-shrink: 0; }
+.fileName {
+  min-width: 0;
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fileMeta {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.fileRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.fileRemove:hover { background: color-mix(in srgb, #e11d48 12%, transparent); color: #e11d48; }

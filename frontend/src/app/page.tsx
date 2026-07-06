@@ -2,15 +2,12 @@ import type { Metadata } from "next";
 import styles from "./page.module.css";
 import Header from "@/components/home/Header";
 import HeroBanner from "@/components/home/HeroBanner";
-import CategoryNav from "@/components/home/CategoryNav";
+import FeaturedStars from "@/components/home/FeaturedStars";
 import EventSection from "@/components/home/EventSection";
 import Footer from "@/components/home/Footer";
 import MobileBottomNav from "@/components/home/MobileBottomNav";
-import {
-  featuredEvents,
-  trendingEvents,
-  upcomingEvents,
-} from "@/lib/mockData";
+import { Flame, TrendingUp, CalendarClock } from "lucide-react";
+import { fetchHomeData } from "@/lib/discovery-api";
 
 export const metadata: Metadata = {
   title: "Trang chủ | EventBox - Mua vé sự kiện trực tuyến",
@@ -29,36 +26,43 @@ export const metadata: Metadata = {
  * Home Page - Ticketbox-style Homepage
  * Features: Header, Hero Banner, Category Nav, Event Sections, Footer
  */
-export default function HomePage() {
+export default async function HomePage() {
+  const { banners, stars, featured, trending, upcoming } = await fetchHomeData();
   return (
     <>
       <Header />
       <main className={styles.main}>
-        <HeroBanner />
-        <CategoryNav />
+        <HeroBanner banners={banners} />
+        <FeaturedStars stars={stars} />
 
         <div className={styles.sectionDivider} />
 
         <EventSection
-          title="🔥 Sự kiện nổi bật"
-          events={featuredEvents}
+          title="Sự kiện nổi bật"
+          icon={<Flame />}
+          events={featured}
           showViewAll={true}
+          viewAllHref="/su-kien?collection=featured"
         />
 
         <div className={styles.sectionDivider} />
 
         <EventSection
-          title="📈 Xu hướng"
-          events={trendingEvents}
+          title="Xu hướng"
+          icon={<TrendingUp />}
+          events={trending}
           showViewAll={true}
+          viewAllHref="/su-kien?collection=trending"
         />
 
         <div className={styles.sectionDivider} />
 
         <EventSection
-          title="📅 Sắp diễn ra"
-          events={upcomingEvents}
+          title="Sắp diễn ra"
+          icon={<CalendarClock />}
+          events={upcoming}
           showViewAll={true}
+          viewAllHref="/su-kien?collection=upcoming"
         />
       </main>
       <Footer />

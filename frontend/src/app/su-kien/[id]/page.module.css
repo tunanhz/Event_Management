@@ -1,0 +1,111 @@
+/* ─── Event detail page shell ────────────────────────────── */
+.main {
+  min-height: 100dvh;
+  background-color: var(--color-bg);
+  /* Clear the fixed header (no hero banner to absorb the offset) */
+  padding-top: calc(var(--header-height) + 2rem);
+  padding-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Two-column body: content + sticky sidebar */
+.content {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+/* ─── Sticky sidebar promo ───────────────────────────────── */
+.sidebar {
+  position: sticky;
+  top: calc(var(--header-height) + 1.5rem);
+}
+
+.promo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(150deg, #0891b2 0%, #0e7490 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 28px rgba(8, 145, 178, 0.25);
+}
+
+.promoBrand {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.promoTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.promoList {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.promoList li {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.promoCta {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: transform var(--transition-fast);
+}
+
+.promoCta:hover {
+  transform: translateY(-1px);
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+    order: -1; /* promo above the long content on narrow screens */
+  }
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 0 var(--space-md);
+  }
+  .main {
+    padding-bottom: calc(var(--mobile-nav-height) + 2rem);
+  }
+}

@@ -92,3 +92,8 @@ tmp/
 # Uploads (runtime)
 # ========================
 uploads/
+
+.claude/
+
+repomix-output.xml
+plans/
