@@ -260,9 +260,14 @@ flowchart LR
   phần Create Event của SDS gợi ý.
 - **Đặt tên field**: code theo `startDate/endDate` và `approvedById` (đúng DB schema; các biến
   thể `startDatetime/endDatetime`, `reviewedBy` trong text SDS không dùng).
-- **Logistics**: SDS mô tả subdocument `logisticsRequest` (`infrastructurePackages,
-  permitDocumentUrl, supportStatus`) nhúng trong Event; upload PDF/DOCX/PNG ≤ 15MB — chưa có
-  trong code.
+- **Logistics**: đã hiện thực dạng field nhúng trong Event — `logisticsServices[]`
+  (mã dịch vụ nền tảng) + `permitDocuments[{name,url,sizeKb}]`; upload thật qua
+  `POST /api/uploads/permits` (PDF/DOCX/PNG ≤ 15MB, tên file random server-side).
+- **Wizard mở rộng ngoài SDS** (theo FE 6 bước): Event thêm `posterImage, locationType,
+  venue{...}, shows[{startTime,endTime}], slug (unique), privacy, confirmationMessage,
+  enableQuestions, contract{repName,agreed}, paymentInfo{bank...}`; Ticket thêm
+  `showId, minPerOrder, maxPerOrder, image`. Vé gắn suất diễn qua `showId`;
+  `startDate/endDate` = min/max các show.
 
 ### 4.2 Sơ đồ ERD tổng
 
@@ -431,12 +436,16 @@ stateDiagram-v2
 - Khi `Rejected`: nhả slot/tài nguyên đã giữ; Organizer nhận log lý do để sửa & gửi lại.
 - Tồn kho vé & sơ đồ ghế gắn bất biến với `Event ID`.
 
-> **Hiện trạng code (verified `event.model.ts`, `organizer.routes.ts`):** đã dùng thiết kế
-> **2 field** — `reviewStatus[DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED]` (vòng duyệt, đúng SDS)
-> song song `status[draft|published|cancelled|completed]` (hiển thị public, legacy). Organizer đã
-> có `POST /api/organizer/events/:id/submit` chuyển `DRAFT → PENDING_REVIEW`; **chưa có** endpoint
-> Admin approve/reject (`PENDING_REVIEW → PUBLISHED/REJECTED`, ghi `approvedById`) — sự kiện do
-> organizer tạo hiện chưa thể lên public. Xem §9.
+> **Hiện trạng code (verified `event.model.ts`, `organizer.routes.ts`, `admin-event.routes.ts`):**
+> đã dùng thiết kế **2 field** — `reviewStatus[DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED]` (vòng
+> duyệt, đúng SDS) song song `status[draft|published|cancelled|completed]` (hiển thị public,
+> legacy). Vòng đời đã **thông end-to-end**: Organizer `POST /api/organizer/events/:id/submit`
+> (`DRAFT/REJECTED → PENDING_REVIEW`, resubmit xoá `rejectionReason`); Admin
+> `/api/admin/events` (queue + detail) và `POST /:id/approve|/:id/reject`
+> (`PENDING_REVIEW → PUBLISHED/REJECTED`, ghi `approvedById`, `reviewedAt`,
+> `rejectionReason`; transition atomic — xử lý song song trả 409 đúng AM-01).
+> Sự kiện REJECTED vẫn sửa được để gửi lại; approve đồng bộ `status='published'`
+> nên sự kiện lên public listing ngay.
 
 ---
 
@@ -457,6 +466,16 @@ stateDiagram-v2
    thiết bị, tuyển staff check-in, hỗ trợ giấy phép) + upload tài liệu (**PDF/DOCX/PNG, ≤ 15MB**).
 → **Submit for Verification** → khóa hồ sơ, `Pending_Review`, đẩy vào hàng đợi duyệt Admin.
 - UI **auto-save nháp mỗi 60 giây** chống mất mạng.
+
+> **Hiện trạng code — wizard FE 6 bước có step-gating (verified)**: Thông tin → Suất & vé →
+> Cài đặt → Logistics & Giấy phép → Hợp đồng (ký số) → Thanh toán. **Bắt buộc hoàn tất & validate
+> đủ field từng bước mới mở khoá bước sau** (`wizard-validation.ts`): tab sau bị disabled, nút
+> "Tiếp tục"/"Lưu" bị chặn kèm danh sách lỗi cho tới khi bước hiện tại hợp lệ. Field bắt buộc:
+> B1 poster+banner+tên+địa điểm(tỉnh/phường/đường hoặc link online)+category+mô tả≥10+tên/thông tin BTC;
+> B2 ≥1 suất diễn (giờ tương lai, end>start) mỗi suất ≥1 vé (giá≥0, SL≥1, max≥min);
+> B3 slug; B4 ≥1 giấy phép; B5 người đại diện+chữ ký+đồng ý; B6 ngân hàng+STK(6–30 số)+chủ TK.
+> BE validate song song mọi field present (format/enum/length/range, slug & url upload theo regex,
+> agreed⇒bắt buộc chữ ký, STK 6–30 chữ số); Mongoose ValidationError/CastError/E11000 → 400.
 
 ### 6.3 Admin duyệt sự kiện (AM-01)
 - Admin mở hàng đợi `Pending_Review` (lọc theo ngày nộp, rating organizer, độ phức tạp logistics)
@@ -542,7 +561,7 @@ stateDiagram-v2
 
 ---
 
-## 9. Đối chiếu hiện trạng code ↔ spec nghiệp vụ (2026-07-05)
+## 9. Đối chiếu hiện trạng code ↔ spec nghiệp vụ (2026-07-06)
 
 | Mảng nghiệp vụ | Spec | Backend | Frontend |
 |----------------|------|---------|----------|
@@ -550,9 +569,9 @@ stateDiagram-v2
 | Quản trị tài khoản (CRUD, role, ban, tạo staff) | ✅ | ✅ `/api/users/admin/*` | ✅ gọi API thật |
 | Quên mật khẩu | ✅ | ❌ | ❌ |
 | Khám phá sự kiện (list/search/detail + trang chủ) | ✅ | ✅ `/api/events` (+`/search`, `/:id/detail`), `/api/categories`, `/api/stars`, `/api/banners` (đã bảo vệ auth cho route ghi) | ⚠️ UI đầy đủ nhưng chạy **mock**, chưa nối API |
-| Tạo sự kiện wizard + cấu hình loại vé | ✅ | ✅ `/api/organizer/events*` (EM-23/24) + ticket CRUD & bulk config (EM-128), chỉ sửa khi `DRAFT` | ⚠️ Wizard UI có, `save()` chưa gọi API |
-| Gửi duyệt sự kiện (submit) | ✅ | ✅ `POST /organizer/events/:id/submit` → `PENDING_REVIEW` | ❌ chưa nối |
-| Admin duyệt/từ chối sự kiện | ✅ | ❌ chưa có endpoint approve/reject (`approvedById` chưa được ghi) | ⚠️ UI kiểm duyệt chạy mock |
+| Tạo sự kiện wizard + cấu hình loại vé | ✅ | ✅ **đủ 6 bước FE**: `/api/organizer/events*` nhận shows/venue/settings/logistics/contract/paymentInfo (+ legacy flat payload), ticket CRUD & bulk config (EM-128) theo `showId`, upload `/api/uploads/{permits,images,signatures}`; hợp đồng ký tay (signatureUrl + SHA-256 checksum, agreed ⇒ bắt buộc ký, không re-stamp khi chữ ký không đổi); sửa khi `DRAFT/REJECTED` | ✅ **đã nối API thật**: `save()` upload ảnh/giấy phép/chữ ký rồi POST/PUT; hợp đồng A4 in PDF + SignaturePad; tỉnh/phường theo dataset 34 tỉnh sau sáp nhập |
+| Gửi duyệt sự kiện (submit) | ✅ | ✅ `POST /organizer/events/:id/submit` → `PENDING_REVIEW` | ✅ **đã nối**: màn "Sự kiện của tôi" load `GET /organizer/events` theo tab (Sắp tới/Đã qua/Chờ duyệt/Nháp), nút "Gửi duyệt"/"Gửi duyệt lại" (DRAFT/REJECTED) + banner lý do từ chối |
+| Admin duyệt/từ chối sự kiện | ✅ | ✅ `/api/admin/events*` (queue/detail/approve/reject, atomic 409, ghi `approvedById`) | ✅ **đã nối**: `/dashboard/moderation` queue theo tab (đếm số thật), Chi tiết fetch `GET /:id`, Duyệt gọi approve, Từ chối mở modal bắt buộc lý do → reject |
 | Đặt vé + thanh toán VNPAY (Registration/Payment) | ✅ | ❌ | ⚠️ UI đặt vé/thanh toán chạy mock, đếm ngược 15' (spec: 10') |
 | Vé của tôi + QR động | ✅ | ❌ | ⚠️ UI mock, QR giả trang trí (không quét được) |
 | Check-in (QR động + mã 8 ký tự) | ✅ | ❌ | ⚠️ Staff workspace đầy đủ màn (quét, tra cứu, lịch sử, ca trực, sự cố) chạy mock |
@@ -563,11 +582,18 @@ stateDiagram-v2
 | AI gợi ý sự kiện | ✅ | ❌ | ❌ |
 | Dashboard thống kê | ✅ | ❌ | ⚠️ UI mock |
 
-> Kết luận: backend đã xong **Auth + quản trị tài khoản + nền sự kiện** (browse/search/detail,
-> organizer tạo sự kiện & cấu hình vé, submit duyệt, dữ liệu trang chủ). Frontend đã dựng gần đủ
-> **UI mọi vai trò** (participant, organizer, staff, admin) nhưng ngoài Auth/Accounts đều chạy
-> mock. Backlog lõi còn lại: **admin approve/reject → registration/payment (VNPAY) → e-ticket/QR
-> động → check-in/staff assignment → tài chính**.
+> Kết luận: **toàn bộ vòng đời sự kiện đã thông end-to-end trên UI thật** —
+> organizer tạo (wizard 6 bước) → gửi duyệt → admin duyệt/từ chối (kèm lý do) →
+> organizer sửa & gửi lại → published; cả FE lẫn BE đều gọi API thật, đã demo trên
+> trình duyệt. Ngoài Auth/Accounts và cụm sự kiện/kiểm duyệt này, các mảng còn lại của FE
+> vẫn chạy mock. Backlog lõi còn lại: **registration/payment (VNPAY) → e-ticket/QR động →
+> check-in/staff assignment → tài chính**; khám phá sự kiện (trang chủ/list/detail) FE vẫn mock
+> dù BE sẵn sàng.
+>
+> **Seed dữ liệu demo** (`backend`): `npm run seed:homepage` (categories/stars/banners + 5 sự kiện
+> public) · `npm run seed:events` (7 sự kiện đủ trạng thái DRAFT/PENDING_REVIEW/PUBLISHED/REJECTED
+> thuộc organizer demo `organizer@eventbox.vn` / `Organizer@123`) · `npm run seed:admin`
+> (`admin@eventbox.vn` / `Admin@123456`) · `npm run cleanup:qa` (xoá sự kiện test "QA ...").
 
 ---
 
@@ -578,10 +604,8 @@ stateDiagram-v2
 - **Contact vs Contract**: SRS mô tả entity #9 là *Contact* (yêu cầu hỗ trợ), nhưng SDS + DB
   schema chốt *Contract* (hồ sơ pháp lý). Code chưa có cả hai — khi hiện thực nên theo SDS
   (Contract) hay cần thêm kênh hỗ trợ riêng?
-- **Admin approve/reject**: SRS/SDS đặc tả đầy đủ (AM-01, `AdminEventController`) nhưng backend
-  chưa có — ưu tiên làm sớm vì đang chặn sự kiện organizer lên public.
 - **API versioning**: SRS (MNT-03) yêu cầu `/api/v1/...`; code dùng `/api/...`. Có migrate không?
-- **Giữ chỗ khi đặt vé**: spec 10 phút, UI thanh toán FE đang đếm 15 phút — chốt một con số.
+- **Giữ chỗ khi đặt vé**: spec 10 phút, UI thanh toán FE đang đếm 15 phút — chốt một con số để 10p cho tôi
 - **2FA/Facebook login**: xuất hiện trong phần lẫn template của Final Report — xác nhận **ngoài
   phạm vi** (SRS chính thức chỉ có email/password + Google).
 - **Payment gateway**: chốt **VNPAY** theo SRS/SDS (phần "Payos" trong Final Report là template sót).
