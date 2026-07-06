@@ -568,12 +568,13 @@ stateDiagram-v2
 | Auth (login/register/google/OTP/staff activation) | ✅ | ✅ module `user` | ✅ gọi API thật |
 | Quản trị tài khoản (CRUD, role, ban, tạo staff) | ✅ | ✅ `/api/users/admin/*` | ✅ gọi API thật |
 | Quên mật khẩu | ✅ | ❌ | ❌ |
-| Khám phá sự kiện (list/search/detail + trang chủ) | ✅ | ✅ `/api/events` (+`/search`, `/:id/detail`), `/api/categories`, `/api/stars`, `/api/banners` (đã bảo vệ auth cho route ghi) | ⚠️ UI đầy đủ nhưng chạy **mock**, chưa nối API |
+| Khám phá sự kiện (list/search/detail + trang chủ) | ✅ | ✅ `/api/events` (+`/search`, `/:id/detail`), `/api/categories`, `/api/stars`, `/api/banners`; event wizard tự suy `priceFrom/city/time/sessions` cho hiển thị public | ✅ **đã nối**: trang chủ (banner/stars/3 collection), `/su-kien` (list+filter), `/su-kien/[id]` (detail, fallback render mô tả HTML) qua `discovery-api.ts` |
 | Tạo sự kiện wizard + cấu hình loại vé | ✅ | ✅ **đủ 6 bước FE**: `/api/organizer/events*` nhận shows/venue/settings/logistics/contract/paymentInfo (+ legacy flat payload), ticket CRUD & bulk config (EM-128) theo `showId`, upload `/api/uploads/{permits,images,signatures}`; hợp đồng ký tay (signatureUrl + SHA-256 checksum, agreed ⇒ bắt buộc ký, không re-stamp khi chữ ký không đổi); sửa khi `DRAFT/REJECTED` | ✅ **đã nối API thật**: `save()` upload ảnh/giấy phép/chữ ký rồi POST/PUT; hợp đồng A4 in PDF + SignaturePad; tỉnh/phường theo dataset 34 tỉnh sau sáp nhập |
 | Gửi duyệt sự kiện (submit) | ✅ | ✅ `POST /organizer/events/:id/submit` → `PENDING_REVIEW` | ✅ **đã nối**: màn "Sự kiện của tôi" load `GET /organizer/events` theo tab (Sắp tới/Đã qua/Chờ duyệt/Nháp), nút "Gửi duyệt"/"Gửi duyệt lại" (DRAFT/REJECTED) + banner lý do từ chối |
 | Admin duyệt/từ chối sự kiện | ✅ | ✅ `/api/admin/events*` (queue/detail/approve/reject, atomic 409, ghi `approvedById`) | ✅ **đã nối**: `/dashboard/moderation` queue theo tab (đếm số thật), Chi tiết fetch `GET /:id`, Duyệt gọi approve, Từ chối mở modal bắt buộc lý do → reject |
-| Đặt vé + thanh toán VNPAY (Registration/Payment) | ✅ | ❌ | ⚠️ UI đặt vé/thanh toán chạy mock, đếm ngược 15' (spec: 10') |
-| Vé của tôi + QR động | ✅ | ❌ | ⚠️ UI mock, QR giả trang trí (không quét được) |
+| Đặt vé + thanh toán (Registration/Payment) | ✅ | ✅ `/api/registrations` (hold 10' + reserve stock atomic, confirm-payment **MOCK** — chưa có VNPay, cancel, getMine/getById populate event+ticket) | ✅ **đã nối**: `dat-ve` (chọn vé từ API) → `thanh-toan` (create hold + confirm) → redirect vé của tôi. ⚠️ Cổng thanh toán vẫn **mock**, chưa tích hợp VNPay |
+| Vé của tôi + QR động | ✅ | ✅ `GET /api/registrations/me` (populate) | ✅ **đã nối**: `/ve-cua-toi` load vé thật theo tab (sắp tới/đã dùng/đã hủy). QR vẫn là ảnh trang trí (chưa QR động 30s) |
+| Quản trị nội dung trang chủ (category/star/banner) | ✅ | ✅ `/api/categories`, `/api/stars`, `/api/banners` (CRUD, ADMIN-only) | ✅ **đã nối**: `/dashboard/{categories,stars,banners}` bảng + modal tạo/sửa/xoá (generic `ResourceManager`) |
 | Check-in (QR động + mã 8 ký tự) | ✅ | ❌ | ⚠️ Staff workspace đầy đủ màn (quét, tra cứu, lịch sử, ca trực, sự cố) chạy mock |
 | Staff assignment | ✅ | ❌ | ⚠️ UI mock |
 | Tài chính (withdrawal/payout/refund/report) | ✅ | ❌ | ⚠️ UI analytics organizer + báo cáo admin chạy mock |
@@ -590,10 +591,12 @@ stateDiagram-v2
 > check-in/staff assignment → tài chính**; khám phá sự kiện (trang chủ/list/detail) FE vẫn mock
 > dù BE sẵn sàng.
 >
-> **Seed dữ liệu demo** (`backend`): `npm run seed:homepage` (categories/stars/banners + 5 sự kiện
-> public) · `npm run seed:events` (7 sự kiện đủ trạng thái DRAFT/PENDING_REVIEW/PUBLISHED/REJECTED
-> thuộc organizer demo `organizer@eventbox.vn` / `Organizer@123`) · `npm run seed:admin`
-> (`admin@eventbox.vn` / `Admin@123456`) · `npm run cleanup:qa` (xoá sự kiện test "QA ...").
+> **Seed dữ liệu demo** (`backend`): `npm run seed:homepage` (6 category, 10 star, 3 banner,
+> **25 sự kiện public + vé Standard mỗi sự kiện**) · `npm run seed:events` (7 sự kiện đủ trạng thái
+> thuộc organizer demo `organizer@eventbox.vn` / `Organizer@123`) · `npm run seed:registrations`
+> (participant demo `participant@eventbox.vn` / `Participant@123` + vài vé PAID/CANCELLED cho
+> "Vé của tôi") · `npm run seed:admin` (`admin@eventbox.vn` / `Admin@123456`) ·
+> `npm run cleanup:qa` (xoá sự kiện test "QA ...").
 
 ---
 
