@@ -36,6 +36,31 @@ interface OrganizerActor {
   role: string;
 }
 
+/** One ticket type's stock snapshot (EM-132 inventory management). */
+export interface TicketInventoryRow {
+  ticketId: string;
+  ticketName: string;
+  price: number;
+  quantity: number;
+  /** Held + paid combined — the atomic counter that guards against oversell. */
+  soldQuantity: number;
+  /** Breakdown of soldQuantity: confirmed-paid quantity. */
+  sold: number;
+  /** Breakdown of soldQuantity: quantity under an active (not-yet-expired) hold. */
+  held: number;
+  available: number;
+  status: 'ACTIVE' | 'SOLD_OUT' | 'HIDDEN';
+  soldPct: number;
+}
+
+/** Stock-only edit (EM-132): unlike configureTickets/updateTicket this is not
+ *  gated to DRAFT/REJECTED — organizers must be able to restock or pause a
+ *  ticket type while the event is already PUBLISHED and on sale. */
+export interface AdjustTicketInventoryInput {
+  quantity?: number;
+  status?: 'ACTIVE' | 'HIDDEN';
+}
+
 export class OrganizerService {
   private organizerRepository: OrganizerRepository;
   private categoryRepository: CategoryRepository;
@@ -613,6 +638,84 @@ export class OrganizerService {
 
     await this.syncPriceFields(eventId);
     return result;
+  }
+
+  /**
+   * Ticket inventory management (EM-132): per-ticket-type stock snapshot —
+   * how many are configured, currently held (pending checkout), confirmed
+   * sold, and still available. Available regardless of reviewStatus (the
+   * organizer must be able to check stock before and after publish).
+   */
+  async getTicketInventory(eventId: string, actor: OrganizerActor): Promise<TicketInventoryRow[]> {
+    await this.getOwnedEvent(eventId, actor);
+    const tickets = await this.organizerRepository.findTicketsByEvent(eventId);
+    const breakdown = await this.organizerRepository.sumRegistrationsByTicket(
+      tickets.map((t) => String(t._id))
+    );
+
+    return tickets.map((t) => {
+      const b = breakdown.get(String(t._id)) ?? { sold: 0, held: 0 };
+      return {
+        ticketId: String(t._id),
+        ticketName: t.ticketName,
+        price: t.price,
+        quantity: t.quantity,
+        soldQuantity: t.soldQuantity,
+        sold: b.sold,
+        held: b.held,
+        available: Math.max(0, t.quantity - t.soldQuantity),
+        status: t.status,
+        soldPct: t.quantity ? Math.round((t.soldQuantity / t.quantity) * 100) : 0,
+      };
+    });
+  }
+
+  /**
+   * Restock or pause/resume a single ticket type's sales — the "manage stock
+   * on a live event" counterpart to configureTickets' "set up types before
+   * publish". Deliberately does not call assertEditable: this must keep
+   * working once the event is PUBLISHED and selling. Only quantity/status
+   * are editable here; renaming, pricing, and schedule changes stay behind
+   * the DRAFT/REJECTED-only configuration endpoints.
+   */
+  async adjustTicketInventory(
+    eventId: string,
+    ticketId: string,
+    actor: OrganizerActor,
+    data: AdjustTicketInventoryInput
+  ): Promise<ITicket> {
+    await this.getOwnedEvent(eventId, actor);
+    const ticket = await this.getEventTicket(eventId, ticketId);
+
+    const update: Partial<ITicket> = {};
+    if (data.quantity !== undefined) {
+      if (typeof data.quantity !== 'number' || !Number.isInteger(data.quantity) || data.quantity < 1) {
+        throw new AppError('quantity phải là số nguyên >= 1', 400);
+      }
+      if (data.quantity < ticket.soldQuantity) {
+        throw new AppError(
+          `Không thể đặt quantity (${data.quantity}) thấp hơn số vé đã bán/đang giữ (${ticket.soldQuantity})`,
+          400
+        );
+      }
+      update.quantity = data.quantity;
+    }
+    if (data.status !== undefined) {
+      if (data.status !== 'ACTIVE' && data.status !== 'HIDDEN') {
+        throw new AppError('status chỉ có thể là ACTIVE hoặc HIDDEN', 400);
+      }
+      update.status = data.status;
+    }
+    if (Object.keys(update).length === 0) {
+      throw new AppError('Cần cung cấp quantity hoặc status để cập nhật tồn kho', 400);
+    }
+
+    const updated = await this.organizerRepository.updateTicket(ticketId, update);
+    if (!updated) {
+      throw new AppError('Ticket not found', 404);
+    }
+    await this.syncPriceFields(eventId);
+    return updated;
   }
 
   async listShows(eventId: string, actor: OrganizerActor): Promise<IEvent['shows']> {
