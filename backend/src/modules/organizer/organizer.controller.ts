@@ -140,4 +140,22 @@ export class OrganizerController {
     );
     res.json(ApiResponse.ok(result, 'Cấu hình lịch trình thành công'));
   });
+
+  listPermits = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const permits = await this.organizerService.listPermits(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(permits, 'Lấy hồ sơ giấy phép thành công'));
+  });
+
+  configurePermits = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { permitDocuments } = req.body ?? {};
+    const result = await this.organizerService.configurePermits(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      permitDocuments
+    );
+    res.json(ApiResponse.ok(result, 'Cập nhật hồ sơ giấy phép thành công'));
+  });
 }
