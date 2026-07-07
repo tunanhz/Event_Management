@@ -10,6 +10,7 @@ import {
   ConfigureTicketInput,
   CreateEventInput,
   CreateTicketInput,
+  PermitDocumentInput,
   ShowInput,
   UpdateEventInput,
   UpdateTicketInput,
@@ -20,6 +21,7 @@ import {
   resolveCreateSchedule,
   resolveShowTimes,
   ResolvedCreateSchedule,
+  validatePermitDocuments,
   validateTicketInput,
   validateWizardFields,
 } from './event-wizard-validation';
@@ -760,6 +762,50 @@ export class OrganizerService {
       );
     }
     return updated.shows;
+  }
+
+  async listPermits(eventId: string, actor: OrganizerActor): Promise<IEvent['permitDocuments']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    return event.permitDocuments;
+  }
+
+  /**
+   * Permit submission (EM-136/EM-28): replace an event's whole legal permit
+   * document list in one call — same "submit the whole table" shape as
+   * configureTickets/configureShows. DRAFT/REJECTED-only: these are the
+   * documents admin moderation reviews as part of approval, so they stay
+   * locked once the event enters the review queue, same as everything else
+   * assertEditable guards. An empty list is valid — permits are optional
+   * (only events that requested the platform's permit-support logistics
+   * service need them).
+   */
+  async configurePermits(
+    eventId: string,
+    actor: OrganizerActor,
+    permitDocuments: PermitDocumentInput[]
+  ): Promise<IEvent['permitDocuments']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    this.assertEditable(event, 'cập nhật hồ sơ giấy phép');
+    validatePermitDocuments(permitDocuments);
+
+    const mapped = permitDocuments.map((d) => ({
+      name: d.name,
+      url: d.url,
+      sizeKb: d.sizeKb,
+    }));
+
+    const updated = await this.organizerRepository.updateEditableEvent(eventId, {
+      permitDocuments: mapped,
+    });
+    if (!updated) {
+      // reviewStatus changed between assertEditable and the atomic write
+      // (e.g. a concurrent submit locked the event into the review queue).
+      throw new AppError(
+        'Chỉ có thể cập nhật hồ sơ giấy phép khi sự kiện đang ở trạng thái nháp hoặc bị từ chối',
+        400
+      );
+    }
+    return updated.permitDocuments;
   }
 
   async submitForReview(eventId: string, actor: OrganizerActor): Promise<IEvent> {

@@ -5,6 +5,7 @@ import {
   ContractInput,
   CreateEventInput,
   CreateTicketInput,
+  PermitDocumentInput,
   ShowInput,
   UpdateEventInput,
 } from './event-wizard-types';
@@ -45,6 +46,32 @@ export function validateTicketInput(ticket: CreateTicketInput): void {
   }
   if (ticket.status && ticket.status !== 'ACTIVE' && ticket.status !== 'HIDDEN') {
     throw new AppError('status của vé chỉ có thể là ACTIVE hoặc HIDDEN', 400);
+  }
+}
+
+/** Shared by validateWizardFields (full wizard payload) and the dedicated
+ *  permit submission endpoint (EM-136) so both enforce identical rules. */
+export function validatePermitDocuments(docs: PermitDocumentInput[]): void {
+  if (!Array.isArray(docs)) {
+    throw new AppError('permitDocuments phải là mảng tài liệu', 400);
+  }
+  for (const doc of docs) {
+    if (!doc || typeof doc.name !== 'string' || !doc.name.trim() || typeof doc.url !== 'string' || !doc.url.trim()) {
+      throw new AppError('Mỗi tài liệu giấy phép cần name và url', 400);
+    }
+    const ext = (doc.name.split('.').pop() || '').toLowerCase();
+    if (!PERMIT_EXTENSIONS.includes(ext)) {
+      throw new AppError('Tài liệu giấy phép chỉ chấp nhận PDF/DOCX/PNG', 400);
+    }
+    if (!PERMIT_URL_REGEX.test(doc.url)) {
+      throw new AppError(
+        'url tài liệu phải là đường dẫn trả về từ API upload (/uploads/permits/...)',
+        400
+      );
+    }
+    if (doc.sizeKb !== undefined && (typeof doc.sizeKb !== 'number' || doc.sizeKb > PERMIT_MAX_KB)) {
+      throw new AppError('Tài liệu giấy phép tối đa 15MB', 400);
+    }
   }
 }
 
@@ -192,27 +219,7 @@ export function validateWizardFields(input: UpdateEventInput): void {
     if (!ok) throw new AppError('logisticsServices phải là mảng mã dịch vụ (chuỗi)', 400);
   }
   if (input.permitDocuments !== undefined) {
-    if (!Array.isArray(input.permitDocuments)) {
-      throw new AppError('permitDocuments phải là mảng tài liệu', 400);
-    }
-    for (const doc of input.permitDocuments) {
-      if (!doc || typeof doc.name !== 'string' || !doc.name.trim() || typeof doc.url !== 'string' || !doc.url.trim()) {
-        throw new AppError('Mỗi tài liệu giấy phép cần name và url', 400);
-      }
-      const ext = (doc.name.split('.').pop() || '').toLowerCase();
-      if (!PERMIT_EXTENSIONS.includes(ext)) {
-        throw new AppError('Tài liệu giấy phép chỉ chấp nhận PDF/DOCX/PNG', 400);
-      }
-      if (!PERMIT_URL_REGEX.test(doc.url)) {
-        throw new AppError(
-          'url tài liệu phải là đường dẫn trả về từ API upload (/uploads/permits/...)',
-          400
-        );
-      }
-      if (doc.sizeKb !== undefined && (typeof doc.sizeKb !== 'number' || doc.sizeKb > PERMIT_MAX_KB)) {
-        throw new AppError('Tài liệu giấy phép tối đa 15MB', 400);
-      }
-    }
+    validatePermitDocuments(input.permitDocuments);
   }
   if (input.contract !== undefined) {
     if (

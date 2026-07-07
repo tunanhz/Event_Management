@@ -31,4 +31,8 @@ router.patch('/events/:id/tickets/:ticketId/inventory', organizerController.adju
 router.get('/events/:id/shows', organizerController.listShows);
 router.put('/events/:id/shows', organizerController.configureShows); // bulk schedule (shows) configuration
 
+// ─── Permit submission (EM-28 / EM-136) ───────────────────────────────
+router.get('/events/:id/permits', organizerController.listPermits);
+router.put('/events/:id/permits', organizerController.configurePermits); // bulk permit-document submission
+
 export default router;
