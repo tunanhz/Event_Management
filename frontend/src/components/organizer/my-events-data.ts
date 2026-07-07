@@ -26,6 +26,10 @@ export interface OrganizerEvent {
   address: string
   status: OrgEventStatus
   ticketTypes?: TicketType[]
+  /** Raw backend review state (set for API-loaded events; absent for mocks). */
+  reviewStatus?: "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED"
+  /** Admin's correction note when reviewStatus is REJECTED. */
+  rejectionReason?: string
 }
 
 const img = (id: string) =>

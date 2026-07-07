@@ -3,6 +3,7 @@ import { OrganizerService } from './organizer.service';
 import { asyncHandler } from '../../common/utils/asyncHandler';
 import { ApiResponse } from '../../common/utils/ApiResponse';
 import { AuthRequest } from '../../common/types';
+import { asOptionalString, parsePagination } from '../../common/utils/query-params';
 
 export class OrganizerController {
   private organizerService: OrganizerService;
@@ -15,21 +16,21 @@ export class OrganizerController {
   // so req.user is always set.
 
   createEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { tickets, ...eventData } = req.body ?? {};
+    // Full wizard payload: shows[] with nested tiers, or legacy flat
+    // startDate/endDate + tickets[] — normalized inside the service.
     const result = await this.organizerService.createEventWithTickets(
-      eventData,
-      tickets,
+      req.body ?? {},
       req.user!.id
     );
     res.status(201).json(ApiResponse.created(result, 'Tạo sự kiện (nháp) thành công'));
   });
 
   getMyEvents = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { page, limit, reviewStatus } = req.query;
+    const { page, limit } = parsePagination(req.query);
     const result = await this.organizerService.getMyEvents(req.user!.id, {
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
-      reviewStatus: reviewStatus as string,
+      page,
+      limit,
+      reviewStatus: asOptionalString(req.query.reviewStatus),
     });
     res.json(ApiResponse.ok(result.data, 'Lấy danh sách sự kiện thành công', result.pagination));
   });
@@ -102,5 +103,59 @@ export class OrganizerController {
       role: req.user!.role,
     });
     res.json(ApiResponse.ok(null, 'Xoá loại vé thành công'));
+  });
+
+  getTicketInventory = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const inventory = await this.organizerService.getTicketInventory(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(inventory, 'Lấy tồn kho vé thành công'));
+  });
+
+  adjustTicketInventory = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const ticket = await this.organizerService.adjustTicketInventory(
+      req.params.id as string,
+      req.params.ticketId as string,
+      { id: req.user!.id, role: req.user!.role },
+      req.body ?? {}
+    );
+    res.json(ApiResponse.ok(ticket, 'Cập nhật tồn kho vé thành công'));
+  });
+
+  listShows = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const shows = await this.organizerService.listShows(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(shows, 'Lấy lịch trình sự kiện thành công'));
+  });
+
+  configureShows = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { shows } = req.body ?? {};
+    const result = await this.organizerService.configureShows(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      shows
+    );
+    res.json(ApiResponse.ok(result, 'Cấu hình lịch trình thành công'));
+  });
+
+  listPermits = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const permits = await this.organizerService.listPermits(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(permits, 'Lấy hồ sơ giấy phép thành công'));
+  });
+
+  configurePermits = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { permitDocuments } = req.body ?? {};
+    const result = await this.organizerService.configurePermits(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      permitDocuments
+    );
+    res.json(ApiResponse.ok(result, 'Cập nhật hồ sơ giấy phép thành công'));
   });
 }

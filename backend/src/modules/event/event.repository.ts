@@ -27,6 +27,11 @@ export interface EventSearchQuery extends PaginationQuery {
   dateTo?: Date;
 }
 
+// Organizer-private wizard fields must never leave the public API surface
+// (bank account, legal permits, contract). Admin/organizer modules read the
+// full document through their own repositories.
+const PUBLIC_EVENT_EXCLUDE = '-paymentInfo -permitDocuments -contract';
+
 export class EventRepository {
   async findAll(query: EventQuery): Promise<PaginatedResult<IEvent>> {
     const {
@@ -70,6 +75,7 @@ export class EventRepository {
 
     const [data, totalItems] = await Promise.all([
       Event.find(filter)
+        .select(PUBLIC_EVENT_EXCLUDE)
         .sort({ [sort]: sortOrder })
         .skip(skip)
         .limit(limit)
@@ -137,6 +143,7 @@ export class EventRepository {
 
     const [data, totalItems] = await Promise.all([
       Event.find(filter)
+        .select(PUBLIC_EVENT_EXCLUDE)
         .sort({ [sort]: sortOrder })
         .skip(skip)
         .limit(limit)
@@ -156,7 +163,7 @@ export class EventRepository {
   }
 
   async findById(id: string): Promise<IEvent | null> {
-    return Event.findById(id).lean();
+    return Event.findById(id).select(PUBLIC_EVENT_EXCLUDE).lean();
   }
 
   // Ticket tiers on sale for the detail page's booking widget. HIDDEN tiers are
@@ -173,6 +180,7 @@ export class EventRepository {
       status: 'published',
       categorySlug: event.categorySlug,
     })
+      .select(PUBLIC_EVENT_EXCLUDE)
       .sort({ date: 1 })
       .limit(limit)
       .lean();

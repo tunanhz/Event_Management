@@ -15,17 +15,21 @@ import pageStyles from "@/app/organizer/create-event/create-event.module.css"
 
 interface LogisticsPermitStepProps {
   form: CreateEventForm
-  update: (patch: Partial<CreateEventForm>) => void
+  update: (
+    patch: Partial<CreateEventForm> | ((prev: CreateEventForm) => Partial<CreateEventForm>)
+  ) => void
 }
 
 /**
  * Step 4 — logistics support services + legal permit upload.
- * Files are validated client-side (PDF/DOCX/PNG, ≤ 15MB) but only metadata is
- * kept in the form — upload to backend is out of scope for this screen.
+ * Files are validated client-side (PDF/DOCX/PNG, ≤ 15MB) then uploaded
+ * immediately to /api/uploads/permits; the form keeps the returned URL so the
+ * save call only ships metadata.
  */
 export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   const toggleService = (id: string) => {
     const next = form.logisticsServices.includes(id)
@@ -34,10 +38,11 @@ export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) 
     update({ logisticsServices: next })
   }
 
-  const addFiles = (files: FileList | null) => {
+  const addFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
     const errors: string[] = []
     const accepted: PermitDocument[] = []
+    setUploading(true)
 
     for (const file of Array.from(files)) {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
@@ -53,17 +58,39 @@ export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) 
         errors.push(`“${file.name}”: tệp đã được thêm trước đó.`)
         continue
       }
-      accepted.push({
-        id: `doc-${file.name}-${file.size}`,
-        name: file.name,
-        sizeKb: Math.max(1, Math.round(file.size / 1024)),
-      })
+      // Upload ngay khi chọn — form chỉ giữ metadata + URL đã lưu trên server.
+      try {
+        const formData = new FormData()
+        formData.append("file", file)
+        const res = await fetch("/api/uploads/permits", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        })
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok || !json?.data?.url) {
+          throw new Error(json?.message || "tải lên thất bại")
+        }
+        accepted.push({
+          id: `doc-${file.name}-${file.size}`,
+          name: file.name,
+          sizeKb: Math.max(1, Math.round(file.size / 1024)),
+          url: json.data.url,
+        })
+      } catch (err) {
+        errors.push(
+          `“${file.name}”: ${err instanceof Error ? err.message : "tải lên thất bại"}.`
+        )
+      }
     }
 
     if (accepted.length > 0) {
-      update({ permitDocuments: [...form.permitDocuments, ...accepted] })
+      // Functional update: a file removed while uploads were in flight must
+      // not be resurrected by a stale form snapshot.
+      update((prev) => ({ permitDocuments: [...prev.permitDocuments, ...accepted] }))
     }
     setUploadError(errors.length > 0 ? errors.join(" ") : null)
+    setUploading(false)
     if (inputRef.current) inputRef.current.value = ""
   }
 
@@ -114,10 +141,11 @@ export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) 
           type="button"
           className={styles.dropzone}
           onClick={() => inputRef.current?.click()}
+          disabled={uploading}
           style={{ width: "100%" }}
         >
           <UploadCloud size={28} aria-hidden="true" />
-          <span>Nhấn để chọn tệp từ máy của bạn</span>
+          <span>{uploading ? "Đang tải lên…" : "Nhấn để chọn tệp từ máy của bạn"}</span>
           <span className={styles.dropzoneHint}>PDF, DOCX, PNG · ≤ {PERMIT_FILE_RULES.maxSizeMb}MB</span>
         </button>
         <input

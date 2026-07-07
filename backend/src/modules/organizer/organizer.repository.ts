@@ -1,5 +1,7 @@
+import mongoose from 'mongoose';
 import { Event, IEvent } from '../event/event.model';
 import { Ticket, ITicket } from './ticket.model';
+import { Registration } from '../registration/registration.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
 
 export interface OrganizerEventQuery extends PaginationQuery {
@@ -48,19 +50,54 @@ export class OrganizerRepository {
     };
   }
 
-  async updateEventReviewStatus(
-    id: string,
-    reviewStatus: IEvent['reviewStatus']
-  ): Promise<IEvent | null> {
-    return Event.findByIdAndUpdate(id, { reviewStatus }, { new: true, runValidators: true }).lean();
+  /**
+   * DRAFT/REJECTED → PENDING_REVIEW. Atomic on reviewStatus so a concurrent
+   * admin decision can't be overwritten; clears the previous rejection reason
+   * when an organizer resubmits a corrected event.
+   */
+  async submitEventForReview(id: string): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      { _id: id, reviewStatus: { $in: ['DRAFT', 'REJECTED'] } },
+      { $set: { reviewStatus: 'PENDING_REVIEW' }, $unset: { rejectionReason: '' } },
+      { new: true, runValidators: true }
+    ).lean();
   }
 
-  async updateEvent(id: string, data: Partial<IEvent>): Promise<IEvent | null> {
-    return Event.findByIdAndUpdate(id, data, { new: true, runValidators: true }).lean();
+  /**
+   * Apply organizer edits only while the event is still organizer-editable
+   * (DRAFT/REJECTED). Atomic on reviewStatus so an edit racing a concurrent
+   * submit or admin decision can't mutate an event already locked in review.
+   */
+  async updateEditableEvent(id: string, data: Partial<IEvent>): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      { _id: id, reviewStatus: { $in: ['DRAFT', 'REJECTED'] } },
+      data,
+      { new: true, runValidators: true }
+    ).lean();
   }
 
   async deleteEvent(id: string): Promise<void> {
     await Event.findByIdAndDelete(id);
+  }
+
+  /** Custom-slug uniqueness check; excludeEventId skips the event being edited. */
+  async slugExists(slug: string, excludeEventId?: string): Promise<boolean> {
+    const filter: Record<string, any> = { slug };
+    if (excludeEventId) filter._id = { $ne: excludeEventId };
+    return (await Event.exists(filter)) !== null;
+  }
+
+  /** How many ticket types still reference any of the given shows. */
+  async countTicketsByShowIds(
+    eventId: string,
+    showIds: mongoose.Types.ObjectId[]
+  ): Promise<number> {
+    return Ticket.countDocuments({ eventId, showId: { $in: showIds } });
+  }
+
+  /** Tiers created via the legacy flat payload (not attached to any show). */
+  async countTicketsWithoutShow(eventId: string): Promise<number> {
+    return Ticket.countDocuments({ eventId, showId: { $exists: false } });
   }
 
   async createTicket(data: Partial<ITicket>): Promise<ITicket> {
@@ -86,5 +123,38 @@ export class OrganizerRepository {
 
   async deleteTicket(ticketId: string): Promise<void> {
     await Ticket.findByIdAndDelete(ticketId);
+  }
+
+  /**
+   * Sold (PAID) vs currently-held (PENDING, not-yet-expired) quantity per
+   * ticket — the breakdown behind Ticket.soldQuantity (which already counts
+   * both combined; see registration.repository.ts reserveTicketStock). Used
+   * for the organizer-facing inventory view (EM-132); stale expired-but-
+   * unswept holds are excluded from `held` since they're already back in the
+   * available pool from the buyer's perspective.
+   */
+  async sumRegistrationsByTicket(
+    ticketIds: string[]
+  ): Promise<Map<string, { sold: number; held: number }>> {
+    const ids = ticketIds.map((id) => new mongoose.Types.ObjectId(id));
+    const rows = await Registration.aggregate([
+      {
+        $match: {
+          ticketId: { $in: ids },
+          $or: [{ status: 'PAID' }, { status: 'PENDING', holdExpiresAt: { $gt: new Date() } }],
+        },
+      },
+      { $group: { _id: { ticketId: '$ticketId', status: '$status' }, qty: { $sum: '$quantity' } } },
+    ]);
+
+    const result = new Map<string, { sold: number; held: number }>();
+    for (const row of rows) {
+      const ticketId = String(row._id.ticketId);
+      const entry = result.get(ticketId) ?? { sold: 0, held: 0 };
+      if (row._id.status === 'PAID') entry.sold = row.qty;
+      else entry.held = row.qty;
+      result.set(ticketId, entry);
+    }
+    return result;
   }
 }

@@ -14,6 +14,8 @@
 import mongoose from 'mongoose';
 import { config } from '../../config';
 import { OTP } from '../user/otp.model';
+import { Event } from '../event/event.model';
+import { Ticket } from './ticket.model';
 
 const BASE_URL = process.env.QA_BASE_URL || `http://localhost:${config.port}`;
 const ORGANIZER_EMAIL = 'qa.organizer.em128@example.com';
@@ -173,6 +175,13 @@ async function main() {
     tickets: [{ ticketName: 'Late change', price: 1, quantity: 1 }],
   });
   check('Cannot configure tickets after submit (400)', afterSubmit.status === 400, afterSubmit.json);
+
+  // Cleanup: remove the QA event + its tickets so the DB and the admin
+  // moderation queue don't accumulate test data across runs.
+  if (eventId) {
+    await Ticket.deleteMany({ eventId });
+    await Event.findByIdAndDelete(eventId);
+  }
 
   console.log(`\n${passed} passed, ${failed} failed`);
   await mongoose.disconnect();

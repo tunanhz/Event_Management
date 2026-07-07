@@ -1,4 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import {
+  IShow,
+  IVenue,
+  IPermitDocument,
+  IEventContract,
+  IPaymentInfo,
+  showSchema,
+  venueSchema,
+  permitDocumentSchema,
+  eventContractSchema,
+  paymentInfoSchema,
+} from './event-wizard-fields.schema';
 
 export type EventCity = 'hcm' | 'hanoi' | 'dalat' | 'other';
 
@@ -54,6 +66,27 @@ export interface IEvent extends Document {
   // Organizer approval workflow state (separate from the legacy public-listing
   // `status` field above, which controls homepage visibility).
   reviewStatus: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
+  // Set by admin moderation: reason shown to the organizer on REJECTED,
+  // timestamp of the approve/reject decision.
+  rejectionReason?: string;
+  reviewedAt?: Date;
+
+  // ── Full 6-step wizard fields (organizer create-event form) ──
+  posterImage?: string;
+  locationType?: 'offline' | 'online';
+  venue?: IVenue;
+  /** Showings; startDate/endDate above are derived as min/max of these. */
+  shows: IShow[];
+  /** Custom public URL path segment (step 3). Unique when present. */
+  slug?: string;
+  privacy: 'public' | 'private';
+  confirmationMessage?: string;
+  enableQuestions: boolean;
+  /** Platform support services requested (step 4), e.g. "audio-lighting". */
+  logisticsServices: string[];
+  permitDocuments: IPermitDocument[];
+  contract?: IEventContract;
+  paymentInfo?: IPaymentInfo;
 }
 
 const contentBlockSchema = new Schema<IContentBlock>(
@@ -115,6 +148,28 @@ const eventSchema = new Schema<IEvent>(
       enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED'],
       default: 'DRAFT',
     },
+    rejectionReason: { type: String, trim: true, maxlength: 1000 },
+    reviewedAt: { type: Date },
+
+    // ── Full 6-step wizard fields (organizer create-event form) ──
+    posterImage: { type: String },
+    locationType: { type: String, enum: ['offline', 'online'] },
+    venue: { type: venueSchema },
+    shows: { type: [showSchema], default: [] },
+    slug: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 80,
+      match: /^[a-z0-9-]+$/,
+    },
+    privacy: { type: String, enum: ['public', 'private'], default: 'public' },
+    confirmationMessage: { type: String, maxlength: 500 },
+    enableQuestions: { type: Boolean, default: false },
+    logisticsServices: { type: [String], default: [] },
+    permitDocuments: { type: [permitDocumentSchema], default: [] },
+    contract: { type: eventContractSchema },
+    paymentInfo: { type: paymentInfoSchema },
   },
   {
     timestamps: true,
@@ -131,5 +186,7 @@ eventSchema.index({ isTrending: 1 });
 eventSchema.index({ categoryId: 1 });
 eventSchema.index({ creatorId: 1 });
 eventSchema.index({ reviewStatus: 1 });
+// sparse: legacy events without a custom slug are exempt from uniqueness
+eventSchema.index({ slug: 1 }, { unique: true, sparse: true });
 
 export const Event = mongoose.model<IEvent>('Event', eventSchema);

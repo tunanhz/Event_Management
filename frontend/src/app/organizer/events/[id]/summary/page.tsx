@@ -1,16 +1,10 @@
-import { notFound } from "next/navigation"
-import { getOrganizerEventById } from "@/components/organizer/my-events-data"
+"use client"
+
+import { useWorkspaceEvent } from "@/components/organizer/EventWorkspaceContext"
 import { EventSummaryView } from "@/components/organizer/summary/EventSummaryView"
 
 /** Summary ("Tổng kết"): revenue overview, sales chart and ticket detail. */
-export default async function EventSummaryPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-  const event = getOrganizerEventById(id)
-  if (!event) notFound()
-
+export default function EventSummaryPage() {
+  const { event } = useWorkspaceEvent()
   return <EventSummaryView event={event} />
 }

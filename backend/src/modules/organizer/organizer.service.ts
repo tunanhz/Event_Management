@@ -6,6 +6,31 @@ import { CategoryRepository } from '../category/category.repository';
 import { UserRepository } from '../user/user.repository';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
+import {
+  ConfigureTicketInput,
+  CreateEventInput,
+  CreateTicketInput,
+  PermitDocumentInput,
+  ShowInput,
+  UpdateEventInput,
+  UpdateTicketInput,
+} from './event-wizard-types';
+import {
+  buildContractSubdoc,
+  composeLocation,
+  resolveCreateSchedule,
+  resolveShowTimes,
+  ResolvedCreateSchedule,
+  validatePermitDocuments,
+  validateTicketInput,
+  validateWizardFields,
+} from './event-wizard-validation';
+import {
+  deriveCity,
+  derivePriceFields,
+  deriveSessions,
+  deriveTime,
+} from './event-discovery-derive';
 
 /** The authenticated user performing an organizer action. */
 interface OrganizerActor {
@@ -13,34 +38,30 @@ interface OrganizerActor {
   role: string;
 }
 
-export interface CreateEventInput {
-  title: string;
-  description: string;
-  location: string;
-  banner: string;
-  categoryId: string;
-  startDate: string | Date;
-  endDate: string | Date;
-  capacity: number;
-}
-
-export interface CreateTicketInput {
+/** One ticket type's stock snapshot (EM-132 inventory management). */
+export interface TicketInventoryRow {
+  ticketId: string;
   ticketName: string;
-  description?: string;
   price: number;
   quantity: number;
-  saleStart?: string | Date;
-  saleEnd?: string | Date;
-  status?: 'ACTIVE' | 'HIDDEN';
+  /** Held + paid combined — the atomic counter that guards against oversell. */
+  soldQuantity: number;
+  /** Breakdown of soldQuantity: confirmed-paid quantity. */
+  sold: number;
+  /** Breakdown of soldQuantity: quantity under an active (not-yet-expired) hold. */
+  held: number;
+  available: number;
+  status: 'ACTIVE' | 'SOLD_OUT' | 'HIDDEN';
+  soldPct: number;
 }
 
-export type UpdateEventInput = Partial<CreateEventInput>;
-export type UpdateTicketInput = Partial<CreateTicketInput>;
-
-/** One row of a full ticket-type configuration submit (EM-128).
- *  `_id` present ⇒ update an existing ticket type; absent ⇒ create a new one.
- *  Any existing ticket type not referenced by `_id` in the submitted set is removed. */
-export type ConfigureTicketInput = CreateTicketInput & { _id?: string };
+/** Stock-only edit (EM-132): unlike configureTickets/updateTicket this is not
+ *  gated to DRAFT/REJECTED — organizers must be able to restock or pause a
+ *  ticket type while the event is already PUBLISHED and on sale. */
+export interface AdjustTicketInventoryInput {
+  quantity?: number;
+  status?: 'ACTIVE' | 'HIDDEN';
+}
 
 export class OrganizerService {
   private organizerRepository: OrganizerRepository;
@@ -55,38 +76,23 @@ export class OrganizerService {
 
   async createEventWithTickets(
     data: CreateEventInput,
-    tickets: CreateTicketInput[],
     organizerId: string
   ): Promise<{ event: IEvent; tickets: ITicket[] }> {
-    const { title, description, location, banner, categoryId, capacity } = data;
+    const { title, description, banner, categoryId, capacity } = data ?? {};
+    const location = composeLocation(data ?? {});
     if (!title || !description || !location || !banner || !categoryId || !capacity) {
       throw new AppError(
-        'title, description, location, banner, categoryId và capacity là bắt buộc',
+        'title, description, location (hoặc venue), banner, categoryId và capacity là bắt buộc',
         400
       );
     }
-    if (!Array.isArray(tickets) || tickets.length === 0) {
-      throw new AppError('Cần cấu hình ít nhất 1 loại vé', 400);
-    }
-
-    const startDate = new Date(data.startDate);
-    const endDate = new Date(data.endDate);
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-      throw new AppError('startDate/endDate không hợp lệ', 400);
-    }
-    if (startDate.getTime() <= Date.now()) {
-      throw new AppError('Ngày bắt đầu sự kiện phải ở tương lai', 400);
-    }
-    if (endDate.getTime() < startDate.getTime()) {
-      throw new AppError('Ngày kết thúc phải sau ngày bắt đầu', 400);
-    }
-    if (capacity < 1) {
+    if (typeof capacity !== 'number' || capacity < 1) {
       throw new AppError('capacity phải >= 1', 400);
     }
-
-    for (const ticket of tickets) {
-      this.validateTicketInput(ticket);
-    }
+    validateWizardFields(data);
+    // Handles both payload shapes: shows[] with nested tiers, or legacy flat
+    // startDate/endDate + tickets[]. Guarantees ≥ 1 valid tier overall.
+    const schedule = resolveCreateSchedule(data);
 
     const category = await this.categoryRepository.findById(categoryId);
     if (!category) {
@@ -98,43 +104,42 @@ export class OrganizerService {
       throw new AppError('Không tìm thấy tài khoản tổ chức', 404);
     }
 
-    const event = await this.organizerRepository.createEvent({
-      title,
-      description,
-      location,
-      banner,
-      categoryId: new mongoose.Types.ObjectId(categoryId),
-      creatorId: new mongoose.Types.ObjectId(organizerId),
-      startDate,
-      endDate,
-      capacity,
-      reviewStatus: 'DRAFT',
+    const slug = data.slug ? data.slug.toLowerCase() : undefined;
+    if (slug && (await this.organizerRepository.slugExists(slug))) {
+      throw new AppError('Đường dẫn tuỳ chỉnh (slug) đã được sử dụng', 400);
+    }
 
-      // Legacy fields mirrored so existing public listing/detail (event module,
-      // untouched by this feature) keep working once this event is published.
-      date: startDate,
-      maxAttendees: capacity,
-      imageUrl: banner,
-      organizer: creator.fullName,
-      organizerId: new mongoose.Types.ObjectId(organizerId),
-      category: category.name,
-      categorySlug: category.slug,
-      status: 'draft',
+    const event = await this.createEventDoc(data, {
+      location,
+      slug,
+      orgName: data.orgName?.trim() || creator.fullName,
+      category: { name: category.name, slug: category.slug },
+      schedule,
+      organizerId,
     });
 
     const createdTickets: ITicket[] = [];
     try {
-      for (const ticket of tickets) {
-        const created = await this.organizerRepository.createTicket({
-          eventId: event._id as mongoose.Types.ObjectId,
-          ticketName: ticket.ticketName,
-          description: ticket.description,
-          price: ticket.price,
-          quantity: ticket.quantity,
-          saleStart: ticket.saleStart ? new Date(ticket.saleStart) : undefined,
-          saleEnd: ticket.saleEnd ? new Date(ticket.saleEnd) : undefined,
-        });
-        createdTickets.push(created);
+      if (schedule.shows.length > 0) {
+        // Saved shows keep input order, so index i maps to its embedded _id.
+        for (let i = 0; i < schedule.shows.length; i += 1) {
+          const showId = event.shows[i]._id as mongoose.Types.ObjectId;
+          for (const ticket of schedule.shows[i].tickets) {
+            createdTickets.push(
+              await this.organizerRepository.createTicket(
+                this.buildTicketDoc(event._id as mongoose.Types.ObjectId, ticket, showId)
+              )
+            );
+          }
+        }
+      } else {
+        for (const ticket of schedule.flatTickets) {
+          createdTickets.push(
+            await this.organizerRepository.createTicket(
+              this.buildTicketDoc(event._id as mongoose.Types.ObjectId, ticket)
+            )
+          );
+        }
       }
     } catch (err) {
       // Best-effort rollback: no multi-document transaction (local dev Mongo may
@@ -147,49 +152,217 @@ export class OrganizerService {
     return { event, tickets: createdTickets };
   }
 
+  // Assembles the full event document (wizard fields + legacy mirror fields) and
+  // translates a slug unique-index race into a friendly 400.
+  private async createEventDoc(
+    data: CreateEventInput,
+    ctx: {
+      location: string;
+      slug?: string;
+      orgName: string;
+      category: { name: string; slug: string };
+      schedule: ResolvedCreateSchedule;
+      organizerId: string;
+    }
+  ): Promise<IEvent> {
+    // Derive the public discovery fields the wizard doesn't ask for directly.
+    const allTickets =
+      ctx.schedule.shows.length > 0
+        ? ctx.schedule.shows.flatMap((s) => s.tickets)
+        : ctx.schedule.flatTickets;
+    const { priceFrom, isFree } = derivePriceFields(allTickets);
+    const sessions = deriveSessions(ctx.schedule.shows, ctx.schedule.startDate);
+    try {
+      return await this.organizerRepository.createEvent({
+        title: data.title,
+        description: data.description,
+        location: ctx.location,
+        banner: data.banner,
+        categoryId: new mongoose.Types.ObjectId(data.categoryId),
+        creatorId: new mongoose.Types.ObjectId(ctx.organizerId),
+        startDate: ctx.schedule.startDate,
+        endDate: ctx.schedule.endDate,
+        capacity: data.capacity,
+        reviewStatus: 'DRAFT',
+
+        // Denormalized public "discovery" fields derived from the wizard input
+        // (homepage/listing cards + detail). city from venue, time/sessions from
+        // show times, priceFrom/isFree from ticket tiers.
+        city: deriveCity(data.venue?.province),
+        time: deriveTime(ctx.schedule.startDate),
+        sessions,
+        priceFrom,
+        isFree,
+
+        // ── Wizard fields ──
+        posterImage: data.posterImage,
+        locationType: data.locationType,
+        venue: data.venue,
+        shows: ctx.schedule.shows.map((s) => ({ startTime: s.startTime, endTime: s.endTime })),
+        slug: ctx.slug,
+        privacy: data.privacy ?? 'public',
+        confirmationMessage: data.confirmationMessage,
+        enableQuestions: data.enableQuestions === true,
+        logisticsServices: data.logisticsServices ?? [],
+        permitDocuments: (data.permitDocuments ?? []).map((d) => ({
+          name: d.name,
+          url: d.url,
+          sizeKb: d.sizeKb,
+        })),
+        contract: data.contract ? buildContractSubdoc(data.contract) : undefined,
+        paymentInfo: data.paymentInfo,
+
+        // Legacy fields mirrored so existing public listing/detail (event module,
+        // untouched by this feature) keep working once this event is published.
+        date: ctx.schedule.startDate,
+        maxAttendees: data.capacity,
+        imageUrl: data.banner,
+        organizer: ctx.orgName,
+        organizerLogoUrl: data.orgLogo,
+        organizerDescription: data.orgInfo,
+        organizerId: new mongoose.Types.ObjectId(ctx.organizerId),
+        category: ctx.category.name,
+        categorySlug: ctx.category.slug,
+        status: 'draft',
+      });
+    } catch (err: any) {
+      if (err?.code === 11000 && err?.keyPattern?.slug) {
+        throw new AppError('Đường dẫn tuỳ chỉnh (slug) đã được sử dụng', 400);
+      }
+      throw err;
+    }
+  }
+
+  /** Maps one tier input to a Ticket document (defaults min/max per order). */
+  private buildTicketDoc(
+    eventId: mongoose.Types.ObjectId,
+    ticket: CreateTicketInput,
+    showId?: mongoose.Types.ObjectId
+  ): Partial<ITicket> {
+    const doc: Partial<ITicket> = {
+      eventId,
+      ticketName: ticket.ticketName,
+      description: ticket.description,
+      price: ticket.price,
+      quantity: ticket.quantity,
+      minPerOrder: ticket.minPerOrder ?? 1,
+      maxPerOrder: ticket.maxPerOrder ?? 10,
+      image: ticket.image,
+      saleStart: ticket.saleStart ? new Date(ticket.saleStart) : undefined,
+      saleEnd: ticket.saleEnd ? new Date(ticket.saleEnd) : undefined,
+      status: ticket.status,
+    };
+    if (showId) doc.showId = showId;
+    return doc;
+  }
+
   async updateEvent(
     eventId: string,
     actor: OrganizerActor,
     data: UpdateEventInput
   ): Promise<IEvent> {
     const event = await this.getOwnedEvent(eventId, actor);
-    if (event.reviewStatus !== 'DRAFT') {
-      throw new AppError('Chỉ có thể sửa sự kiện khi đang ở trạng thái DRAFT', 400);
-    }
+    this.assertEditable(event, 'sửa sự kiện');
+    validateWizardFields(data);
 
-    // Merge onto the existing event so partial updates (e.g. only `title`) still
-    // validate the full date range / capacity correctly.
-    const startDate = new Date(data.startDate ?? event.startDate ?? event.date);
-    const endDate = new Date(data.endDate ?? event.endDate ?? event.date);
     const capacity = data.capacity ?? event.capacity ?? event.maxAttendees;
-
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-      throw new AppError('startDate/endDate không hợp lệ', 400);
-    }
-    if (startDate.getTime() <= Date.now()) {
-      throw new AppError('Ngày bắt đầu sự kiện phải ở tương lai', 400);
-    }
-    if (endDate.getTime() < startDate.getTime()) {
-      throw new AppError('Ngày kết thúc phải sau ngày bắt đầu', 400);
-    }
     if (typeof capacity !== 'number' || capacity < 1) {
       throw new AppError('capacity phải >= 1', 400);
     }
 
-    const update: Partial<IEvent> = {
-      startDate,
-      endDate,
-      capacity,
-      date: startDate,
-      maxAttendees: capacity,
-    };
+    const update: Partial<IEvent> = { capacity, maxAttendees: capacity };
+
+    // Schedule: replacing the show list wins; else direct startDate/endDate;
+    // else merge with the existing dates so partial updates still validate.
+    if (data.shows !== undefined) {
+      update.shows = await this.resolveShowReplacement(event, data.shows);
+      const { startDate, endDate } = resolveShowTimes(data.shows);
+      update.startDate = startDate;
+      update.endDate = endDate;
+    } else {
+      // Shows own the schedule: direct date edits on a shows-based event would
+      // silently desync startDate/endDate from the show list.
+      if (event.shows.length > 0 && (data.startDate !== undefined || data.endDate !== undefined)) {
+        throw new AppError(
+          'Sự kiện có suất diễn — hãy cập nhật thời gian qua trường shows',
+          400
+        );
+      }
+      const startDate = new Date(data.startDate ?? event.startDate ?? event.date);
+      const endDate = new Date(data.endDate ?? event.endDate ?? event.date);
+      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+        throw new AppError('startDate/endDate không hợp lệ', 400);
+      }
+      if (startDate.getTime() <= Date.now()) {
+        throw new AppError('Ngày bắt đầu sự kiện phải ở tương lai', 400);
+      }
+      if (endDate.getTime() < startDate.getTime()) {
+        throw new AppError('Ngày kết thúc phải sau ngày bắt đầu', 400);
+      }
+      update.startDate = startDate;
+      update.endDate = endDate;
+    }
+    update.date = update.startDate; // legacy mirror
+
+    // Recompute denormalized discovery fields from the (possibly new) schedule.
+    const showsForSessions = update.shows ?? event.shows;
+    update.time = deriveTime(update.startDate as Date);
+    update.sessions = deriveSessions(showsForSessions, update.startDate as Date);
+
     if (data.title) update.title = data.title;
     if (data.description) update.description = data.description;
-    if (data.location) update.location = data.location;
     if (data.banner) {
       update.banner = data.banner;
       update.imageUrl = data.banner;
     }
+    if (data.posterImage !== undefined) update.posterImage = data.posterImage;
+    if (data.locationType !== undefined) update.locationType = data.locationType;
+    if (data.venue !== undefined) {
+      update.venue = data.venue;
+      update.city = deriveCity(data.venue?.province);
+    }
+    const composedLocation = composeLocation(data);
+    if (composedLocation) update.location = composedLocation;
+
+    // Organizer block maps onto the legacy display fields.
+    if (data.orgName) update.organizer = data.orgName.trim();
+    if (data.orgLogo !== undefined) update.organizerLogoUrl = data.orgLogo;
+    if (data.orgInfo !== undefined) update.organizerDescription = data.orgInfo;
+
+    if (data.slug) {
+      const slug = data.slug.toLowerCase();
+      if (slug !== event.slug && (await this.organizerRepository.slugExists(slug, eventId))) {
+        throw new AppError('Đường dẫn tuỳ chỉnh (slug) đã được sử dụng', 400);
+      }
+      update.slug = slug;
+    }
+    if (data.privacy !== undefined) update.privacy = data.privacy;
+    if (data.confirmationMessage !== undefined) {
+      update.confirmationMessage = data.confirmationMessage;
+    }
+    if (data.enableQuestions !== undefined) {
+      update.enableQuestions = data.enableQuestions === true;
+    }
+    if (data.logisticsServices !== undefined) update.logisticsServices = data.logisticsServices;
+    if (data.permitDocuments !== undefined) {
+      update.permitDocuments = data.permitDocuments.map((d) => ({
+        name: d.name,
+        url: d.url,
+        sizeKb: d.sizeKb,
+      }));
+    }
+    if (data.contract !== undefined) {
+      // Re-saving a draft with the same accepted signature must not re-stamp
+      // agreedAt/signedAt/signatureHash — the first acceptance is the record.
+      const existing = event.contract;
+      const sameAcceptance =
+        existing?.agreed === true &&
+        data.contract?.agreed === true &&
+        (data.contract?.signatureUrl || undefined) === existing?.signatureUrl;
+      update.contract = sameAcceptance ? existing : buildContractSubdoc(data.contract ?? {});
+    }
+    if (data.paymentInfo !== undefined) update.paymentInfo = data.paymentInfo;
+
     if (data.categoryId) {
       const category = await this.categoryRepository.findById(data.categoryId);
       if (!category) {
@@ -200,34 +373,121 @@ export class OrganizerService {
       update.categorySlug = category.slug;
     }
 
-    const updated = await this.organizerRepository.updateEvent(eventId, update);
+    const updated = await this.organizerRepository.updateEditableEvent(eventId, update);
     if (!updated) {
-      throw new AppError('Event not found', 404);
+      // reviewStatus changed between assertEditable and the atomic write
+      // (e.g. a concurrent submit locked the event into the review queue).
+      throw new AppError(
+        'Chỉ có thể sửa sự kiện khi đang ở trạng thái nháp hoặc bị từ chối',
+        400
+      );
     }
     return updated;
+  }
+
+  // Replace the show list wholesale: rows with _id keep/retime an existing show,
+  // rows without _id create new shows; existing shows left out are removed —
+  // blocked while any ticket type still references them.
+  private async resolveShowReplacement(
+    event: IEvent,
+    shows: NonNullable<UpdateEventInput['shows']>
+  ): Promise<IEvent['shows']> {
+    const { rows } = resolveShowTimes(shows);
+
+    // First transition from a legacy flat event to shows: existing tiers carry
+    // no showId and would become orphans — organizer must reconfigure them first.
+    if (event.shows.length === 0) {
+      const unattached = await this.organizerRepository.countTicketsWithoutShow(String(event._id));
+      if (unattached > 0) {
+        throw new AppError(
+          'Sự kiện đang có loại vé chưa gắn suất diễn — hãy xoá các vé cũ trước khi thêm suất diễn',
+          400
+        );
+      }
+    }
+
+    const submittedIds = rows.filter((r) => r._id).map((r) => String(r._id));
+    if (new Set(submittedIds).size !== submittedIds.length) {
+      throw new AppError('Danh sách suất diễn chứa _id trùng lặp', 400);
+    }
+
+    const existingIds = new Set(event.shows.map((s) => String(s._id)));
+    for (const row of rows) {
+      if (row._id && !existingIds.has(String(row._id))) {
+        throw new AppError(`Suất diễn ${row._id} không tồn tại trong sự kiện này`, 400);
+      }
+    }
+
+    const keptIds = new Set(rows.filter((r) => r._id).map((r) => String(r._id)));
+    const removedIds = event.shows
+      .filter((s) => !keptIds.has(String(s._id)))
+      .map((s) => s._id as mongoose.Types.ObjectId);
+    if (removedIds.length > 0) {
+      const attached = await this.organizerRepository.countTicketsByShowIds(
+        String(event._id),
+        removedIds
+      );
+      if (attached > 0) {
+        throw new AppError(
+          'Không thể xoá suất diễn đang có loại vé — hãy xoá hoặc chuyển vé sang suất khác trước',
+          400
+        );
+      }
+    }
+
+    return rows.map((r) => ({
+      _id: r._id ? new mongoose.Types.ObjectId(r._id) : new mongoose.Types.ObjectId(),
+      startTime: r.startTime,
+      endTime: r.endTime,
+    }));
   }
 
   async addTicket(
     eventId: string,
     actor: OrganizerActor,
-    input: CreateTicketInput
+    input: CreateTicketInput & { showId?: string }
   ): Promise<ITicket> {
     const event = await this.getOwnedEvent(eventId, actor);
-    if (event.reviewStatus !== 'DRAFT') {
-      throw new AppError('Chỉ có thể thêm loại vé khi sự kiện đang ở trạng thái DRAFT', 400);
-    }
-    this.validateTicketInput(input);
+    this.assertEditable(event, 'thêm loại vé');
+    validateTicketInput(input);
+    const showId = this.resolveTicketShowId(event, input.showId);
 
-    return this.organizerRepository.createTicket({
-      eventId: event._id as mongoose.Types.ObjectId,
-      ticketName: input.ticketName,
-      description: input.description,
-      price: input.price,
-      quantity: input.quantity,
-      saleStart: input.saleStart ? new Date(input.saleStart) : undefined,
-      saleEnd: input.saleEnd ? new Date(input.saleEnd) : undefined,
-      status: input.status,
-    });
+    const created = await this.organizerRepository.createTicket(
+      this.buildTicketDoc(event._id as mongoose.Types.ObjectId, input, showId)
+    );
+    await this.syncPriceFields(eventId);
+    return created;
+  }
+
+  // Keep the denormalized card price (priceFrom/isFree) in sync with the event's
+  // current ticket tiers after any ticket mutation, so public listings show the
+  // real lowest price instead of a stale/default value.
+  private async syncPriceFields(eventId: string): Promise<void> {
+    const tickets = await this.organizerRepository.findTicketsByEvent(eventId);
+    const { priceFrom, isFree } = derivePriceFields(tickets);
+    await this.organizerRepository.updateEditableEvent(eventId, { priceFrom, isFree });
+  }
+
+  // Events with shows require every tier to target one of them; legacy
+  // single-show events (empty shows list) must not send a showId at all.
+  private resolveTicketShowId(
+    event: IEvent,
+    showId?: string
+  ): mongoose.Types.ObjectId | undefined {
+    if (!event.shows || event.shows.length === 0) {
+      if (showId) {
+        throw new AppError('Sự kiện này không có suất diễn — không thể gán showId cho vé', 400);
+      }
+      return undefined;
+    }
+    if (!showId) {
+      throw new AppError('Cần chỉ định showId (suất diễn) cho loại vé', 400);
+    }
+    const show = event.shows.find((s) => String(s._id) === String(showId));
+    if (!show) {
+      throw new AppError(`Suất diễn ${showId} không tồn tại trong sự kiện này`, 400);
+    }
+    return show._id as mongoose.Types.ObjectId;
   }
 
   async updateTicket(
@@ -237,9 +497,7 @@ export class OrganizerService {
     data: UpdateTicketInput
   ): Promise<ITicket> {
     const event = await this.getOwnedEvent(eventId, actor);
-    if (event.reviewStatus !== 'DRAFT') {
-      throw new AppError('Chỉ có thể sửa loại vé khi sự kiện đang ở trạng thái DRAFT', 400);
-    }
+    this.assertEditable(event, 'sửa loại vé');
     const ticket = await this.getEventTicket(eventId, ticketId);
 
     const merged: CreateTicketInput = {
@@ -247,32 +505,44 @@ export class OrganizerService {
       description: data.description ?? ticket.description,
       price: data.price ?? ticket.price,
       quantity: data.quantity ?? ticket.quantity,
+      minPerOrder: data.minPerOrder ?? ticket.minPerOrder,
+      maxPerOrder: data.maxPerOrder ?? ticket.maxPerOrder,
+      image: data.image ?? ticket.image,
       saleStart: data.saleStart ?? ticket.saleStart,
       saleEnd: data.saleEnd ?? ticket.saleEnd,
       status: data.status ?? (ticket.status === 'SOLD_OUT' ? undefined : ticket.status),
     };
-    this.validateTicketInput(merged);
+    validateTicketInput(merged);
 
-    const updated = await this.organizerRepository.updateTicket(ticketId, {
+    const ticketUpdate: Partial<ITicket> = {
       ticketName: merged.ticketName,
       description: merged.description,
       price: merged.price,
       quantity: merged.quantity,
+      minPerOrder: merged.minPerOrder,
+      maxPerOrder: merged.maxPerOrder,
+      image: merged.image,
       saleStart: merged.saleStart ? new Date(merged.saleStart) : undefined,
       saleEnd: merged.saleEnd ? new Date(merged.saleEnd) : undefined,
       status: merged.status,
-    });
+    };
+    // Moving a tier between shows is validated against the event's show list.
+    if (data.showId !== undefined) {
+      const showId = this.resolveTicketShowId(event, data.showId);
+      if (showId) ticketUpdate.showId = showId;
+    }
+
+    const updated = await this.organizerRepository.updateTicket(ticketId, ticketUpdate);
     if (!updated) {
       throw new AppError('Ticket not found', 404);
     }
+    await this.syncPriceFields(eventId);
     return updated;
   }
 
   async deleteTicket(eventId: string, ticketId: string, actor: OrganizerActor): Promise<void> {
     const event = await this.getOwnedEvent(eventId, actor);
-    if (event.reviewStatus !== 'DRAFT') {
-      throw new AppError('Chỉ có thể xoá loại vé khi sự kiện đang ở trạng thái DRAFT', 400);
-    }
+    this.assertEditable(event, 'xoá loại vé');
     const ticket = await this.getEventTicket(eventId, ticketId);
     if (ticket.soldQuantity > 0) {
       throw new AppError('Không thể xoá loại vé đã có người mua', 400);
@@ -284,6 +554,7 @@ export class OrganizerService {
     }
 
     await this.organizerRepository.deleteTicket(ticketId);
+    await this.syncPriceFields(eventId);
   }
 
   async listTickets(eventId: string, actor: OrganizerActor): Promise<ITicket[]> {
@@ -304,14 +575,14 @@ export class OrganizerService {
     tickets: ConfigureTicketInput[]
   ): Promise<ITicket[]> {
     const event = await this.getOwnedEvent(eventId, actor);
-    if (event.reviewStatus !== 'DRAFT') {
-      throw new AppError('Chỉ có thể cấu hình loại vé khi sự kiện đang ở trạng thái DRAFT', 400);
-    }
+    this.assertEditable(event, 'cấu hình loại vé');
     if (!Array.isArray(tickets) || tickets.length === 0) {
       throw new AppError('Cần cấu hình ít nhất 1 loại vé', 400);
     }
     for (const ticket of tickets) {
-      this.validateTicketInput(ticket);
+      validateTicketInput(ticket);
+      // Fails fast on rows targeting a show that doesn't belong to this event.
+      this.resolveTicketShowId(event, ticket.showId);
     }
 
     const existing = await this.organizerRepository.findTicketsByEvent(eventId);
@@ -338,15 +609,20 @@ export class OrganizerService {
 
     const result: ITicket[] = [];
     for (const ticket of tickets) {
-      const payload = {
+      const showId = this.resolveTicketShowId(event, ticket.showId);
+      const payload: Partial<ITicket> = {
         ticketName: ticket.ticketName,
         description: ticket.description,
         price: ticket.price,
         quantity: ticket.quantity,
+        minPerOrder: ticket.minPerOrder ?? 1,
+        maxPerOrder: ticket.maxPerOrder ?? 10,
+        image: ticket.image,
         saleStart: ticket.saleStart ? new Date(ticket.saleStart) : undefined,
         saleEnd: ticket.saleEnd ? new Date(ticket.saleEnd) : undefined,
         status: ticket.status,
       };
+      if (showId) payload.showId = showId;
       if (ticket._id) {
         const updated = await this.organizerRepository.updateTicket(ticket._id, payload);
         if (!updated) {
@@ -362,12 +638,181 @@ export class OrganizerService {
       }
     }
 
+    await this.syncPriceFields(eventId);
     return result;
+  }
+
+  /**
+   * Ticket inventory management (EM-132): per-ticket-type stock snapshot —
+   * how many are configured, currently held (pending checkout), confirmed
+   * sold, and still available. Available regardless of reviewStatus (the
+   * organizer must be able to check stock before and after publish).
+   */
+  async getTicketInventory(eventId: string, actor: OrganizerActor): Promise<TicketInventoryRow[]> {
+    await this.getOwnedEvent(eventId, actor);
+    const tickets = await this.organizerRepository.findTicketsByEvent(eventId);
+    const breakdown = await this.organizerRepository.sumRegistrationsByTicket(
+      tickets.map((t) => String(t._id))
+    );
+
+    return tickets.map((t) => {
+      const b = breakdown.get(String(t._id)) ?? { sold: 0, held: 0 };
+      return {
+        ticketId: String(t._id),
+        ticketName: t.ticketName,
+        price: t.price,
+        quantity: t.quantity,
+        soldQuantity: t.soldQuantity,
+        sold: b.sold,
+        held: b.held,
+        available: Math.max(0, t.quantity - t.soldQuantity),
+        status: t.status,
+        soldPct: t.quantity ? Math.round((t.soldQuantity / t.quantity) * 100) : 0,
+      };
+    });
+  }
+
+  /**
+   * Restock or pause/resume a single ticket type's sales — the "manage stock
+   * on a live event" counterpart to configureTickets' "set up types before
+   * publish". Deliberately does not call assertEditable: this must keep
+   * working once the event is PUBLISHED and selling. Only quantity/status
+   * are editable here; renaming, pricing, and schedule changes stay behind
+   * the DRAFT/REJECTED-only configuration endpoints.
+   */
+  async adjustTicketInventory(
+    eventId: string,
+    ticketId: string,
+    actor: OrganizerActor,
+    data: AdjustTicketInventoryInput
+  ): Promise<ITicket> {
+    await this.getOwnedEvent(eventId, actor);
+    const ticket = await this.getEventTicket(eventId, ticketId);
+
+    const update: Partial<ITicket> = {};
+    if (data.quantity !== undefined) {
+      if (typeof data.quantity !== 'number' || !Number.isInteger(data.quantity) || data.quantity < 1) {
+        throw new AppError('quantity phải là số nguyên >= 1', 400);
+      }
+      if (data.quantity < ticket.soldQuantity) {
+        throw new AppError(
+          `Không thể đặt quantity (${data.quantity}) thấp hơn số vé đã bán/đang giữ (${ticket.soldQuantity})`,
+          400
+        );
+      }
+      update.quantity = data.quantity;
+    }
+    if (data.status !== undefined) {
+      if (data.status !== 'ACTIVE' && data.status !== 'HIDDEN') {
+        throw new AppError('status chỉ có thể là ACTIVE hoặc HIDDEN', 400);
+      }
+      update.status = data.status;
+    }
+    if (Object.keys(update).length === 0) {
+      throw new AppError('Cần cung cấp quantity hoặc status để cập nhật tồn kho', 400);
+    }
+
+    const updated = await this.organizerRepository.updateTicket(ticketId, update);
+    if (!updated) {
+      throw new AppError('Ticket not found', 404);
+    }
+    await this.syncPriceFields(eventId);
+    return updated;
+  }
+
+  async listShows(eventId: string, actor: OrganizerActor): Promise<IEvent['shows']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    return event.shows;
+  }
+
+  /**
+   * Schedule management (EM-25): replace an event's whole show/schedule list
+   * in one call — same "submit the whole table" shape as configureTickets.
+   * Rows carrying `_id` retime an existing show, rows without one create a
+   * new show, and any existing show left out of the submitted set is removed
+   * (blocked by resolveShowReplacement while a ticket type still references
+   * it). startDate/endDate/time/sessions are recomputed from the new show
+   * list so discovery fields (homepage/listing) stay in sync.
+   */
+  async configureShows(
+    eventId: string,
+    actor: OrganizerActor,
+    shows: ShowInput[]
+  ): Promise<IEvent['shows']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    this.assertEditable(event, 'cấu hình lịch trình');
+
+    const newShows = await this.resolveShowReplacement(event, shows);
+    const { startDate, endDate } = resolveShowTimes(shows);
+
+    const updated = await this.organizerRepository.updateEditableEvent(eventId, {
+      shows: newShows,
+      startDate,
+      endDate,
+      date: startDate,
+      time: deriveTime(startDate),
+      sessions: deriveSessions(newShows, startDate),
+    });
+    if (!updated) {
+      // reviewStatus changed between assertEditable and the atomic write
+      // (e.g. a concurrent submit locked the event into the review queue).
+      throw new AppError(
+        'Chỉ có thể cấu hình lịch trình khi sự kiện đang ở trạng thái nháp hoặc bị từ chối',
+        400
+      );
+    }
+    return updated.shows;
+  }
+
+  async listPermits(eventId: string, actor: OrganizerActor): Promise<IEvent['permitDocuments']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    return event.permitDocuments;
+  }
+
+  /**
+   * Permit submission (EM-136/EM-28): replace an event's whole legal permit
+   * document list in one call — same "submit the whole table" shape as
+   * configureTickets/configureShows. DRAFT/REJECTED-only: these are the
+   * documents admin moderation reviews as part of approval, so they stay
+   * locked once the event enters the review queue, same as everything else
+   * assertEditable guards. An empty list is valid — permits are optional
+   * (only events that requested the platform's permit-support logistics
+   * service need them).
+   */
+  async configurePermits(
+    eventId: string,
+    actor: OrganizerActor,
+    permitDocuments: PermitDocumentInput[]
+  ): Promise<IEvent['permitDocuments']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    this.assertEditable(event, 'cập nhật hồ sơ giấy phép');
+    validatePermitDocuments(permitDocuments);
+
+    const mapped = permitDocuments.map((d) => ({
+      name: d.name,
+      url: d.url,
+      sizeKb: d.sizeKb,
+    }));
+
+    const updated = await this.organizerRepository.updateEditableEvent(eventId, {
+      permitDocuments: mapped,
+    });
+    if (!updated) {
+      // reviewStatus changed between assertEditable and the atomic write
+      // (e.g. a concurrent submit locked the event into the review queue).
+      throw new AppError(
+        'Chỉ có thể cập nhật hồ sơ giấy phép khi sự kiện đang ở trạng thái nháp hoặc bị từ chối',
+        400
+      );
+    }
+    return updated.permitDocuments;
   }
 
   async submitForReview(eventId: string, actor: OrganizerActor): Promise<IEvent> {
     const event = await this.getOwnedEvent(eventId, actor);
-    if (event.reviewStatus !== 'DRAFT') {
+    // DRAFT: first submission · REJECTED: resubmission after fixing the
+    // admin's correction notes (Rejected → Pending_Review lifecycle loop).
+    if (event.reviewStatus !== 'DRAFT' && event.reviewStatus !== 'REJECTED') {
       throw new AppError('Sự kiện đã được gửi duyệt hoặc đã được xử lý', 400);
     }
 
@@ -376,9 +821,11 @@ export class OrganizerService {
       throw new AppError('Cần ít nhất 1 loại vé trước khi gửi duyệt', 400);
     }
 
-    const updated = await this.organizerRepository.updateEventReviewStatus(eventId, 'PENDING_REVIEW');
+    const updated = await this.organizerRepository.submitEventForReview(eventId);
     if (!updated) {
-      throw new AppError('Event not found', 404);
+      // reviewStatus changed between the read above and the atomic update
+      // (e.g. an admin decision landed) — treat as an invalid transition.
+      throw new AppError('Sự kiện đã được gửi duyệt hoặc đã được xử lý', 400);
     }
     return updated;
   }
@@ -414,6 +861,18 @@ export class OrganizerService {
     return event;
   }
 
+  // DRAFT and REJECTED are the organizer-editable states: a rejected event must
+  // stay correctable so it can be fixed and resubmitted (Rejected → Pending_Review).
+  // PENDING_REVIEW is locked in the admin queue; PUBLISHED is immutable to organizers.
+  private assertEditable(event: IEvent, action: string): void {
+    if (event.reviewStatus !== 'DRAFT' && event.reviewStatus !== 'REJECTED') {
+      throw new AppError(
+        `Chỉ có thể ${action} khi sự kiện đang ở trạng thái nháp hoặc bị từ chối (hiện tại: ${event.reviewStatus})`,
+        400
+      );
+    }
+  }
+
   // Loads a ticket and enforces it actually belongs to the given event, so an
   // organizer can't reference another event's ticket id through this event's URL.
   private async getEventTicket(eventId: string, ticketId: string): Promise<ITicket> {
@@ -424,25 +883,4 @@ export class OrganizerService {
     return ticket;
   }
 
-  private validateTicketInput(ticket: CreateTicketInput): void {
-    if (!ticket.ticketName) {
-      throw new AppError('ticketName là bắt buộc cho mỗi loại vé', 400);
-    }
-    if (typeof ticket.price !== 'number' || ticket.price < 0) {
-      throw new AppError('price của vé phải là số >= 0', 400);
-    }
-    if (typeof ticket.quantity !== 'number' || ticket.quantity < 1) {
-      throw new AppError('quantity của vé phải >= 1', 400);
-    }
-    if (ticket.saleStart && ticket.saleEnd) {
-      const start = new Date(ticket.saleStart);
-      const end = new Date(ticket.saleEnd);
-      if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end < start) {
-        throw new AppError('saleEnd phải sau saleStart', 400);
-      }
-    }
-    if (ticket.status && ticket.status !== 'ACTIVE' && ticket.status !== 'HIDDEN') {
-      throw new AppError('status của vé chỉ có thể là ACTIVE hoặc HIDDEN', 400);
-    }
-  }
 }

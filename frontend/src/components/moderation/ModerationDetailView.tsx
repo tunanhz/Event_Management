@@ -1,14 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import {
-  ArrowLeft, Building2, CalendarDays, Check, FileText, Mail, MapPin, Phone, Ticket, Users, X,
+  ArrowLeft, Building2, CalendarDays, Check, FileText, Loader2, Mail, MapPin, Phone, Ticket, Users, X,
 } from "lucide-react"
 import { cn, formatDateTime, formatVnd, formatNumber } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ModerationDecisionModal } from "./ModerationDecisionModal"
 import { DOCUMENT_TYPE_LABELS, type ModerationEventDetail } from "./moderation-detail-data"
+import { approveEvent, fetchModerationDetail, rejectEvent } from "./moderation-api"
 import type { ModerationStatus } from "@/types"
 
 const TABS = [
@@ -25,21 +26,75 @@ const STATUS_BADGE: Record<ModerationStatus, { label: string; variant: "warning"
   rejected: { label: "Đã từ chối", variant: "destructive" },
 }
 
-// Panel thẩm định hồ sơ sự kiện cho Admin: xem thông tin/vé/hồ sơ rồi
-// Duyệt hoặc Từ chối (bắt buộc lý do). Dữ liệu mock, trạng thái cục bộ.
-export function ModerationDetailView({ detail }: { detail: ModerationEventDetail }) {
-  const [status, setStatus] = useState<ModerationStatus>(detail.status)
-  const [rejectionReason, setRejectionReason] = useState(detail.rejectionReason)
+// Panel thẩm định hồ sơ sự kiện cho Admin — nối API /api/admin/events/:id.
+// Xem thông tin/vé/hồ sơ rồi Duyệt hoặc Từ chối (bắt buộc lý do) qua BE thật.
+export function ModerationDetailView({ eventId }: { eventId: string }) {
+  const [detail, setDetail] = useState<ModerationEventDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabId>("info")
   const [modal, setModal] = useState<"approve" | "reject" | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  const badge = STATUS_BADGE[status]
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      setDetail(await fetchModerationDetail(eventId))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không tải được hồ sơ sự kiện")
+    } finally {
+      setLoading(false)
+    }
+  }, [eventId])
 
-  const decide = (reason?: string) => {
-    setStatus(modal === "approve" ? "approved" : "rejected")
-    if (modal === "reject") setRejectionReason(reason)
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const decide = async (reason?: string) => {
+    const mode = modal
     setModal(null)
+    if (!mode) return
+    setBusy(true)
+    setError(null)
+    try {
+      if (mode === "approve") await approveEvent(eventId)
+      else await rejectEvent(eventId, reason ?? "")
+      await load() // reflect the new reviewStatus + rejectionReason
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Xử lý quyết định thất bại")
+    } finally {
+      setBusy(false)
+    }
   }
+
+  if (loading) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin opacity-60" />
+        <p className="text-sm">Đang tải hồ sơ sự kiện…</p>
+      </div>
+    )
+  }
+
+  if (error && !detail) {
+    return (
+      <div className="space-y-4">
+        <Link href="/dashboard/moderation" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Hàng đợi kiểm duyệt
+        </Link>
+        <div role="alert" className="rounded-2xl border border-rose-300/60 bg-rose-500/10 p-4 text-sm text-rose-600 dark:text-rose-400">
+          {error}
+        </div>
+      </div>
+    )
+  }
+
+  if (!detail) return null
+
+  const status = detail.status
+  const badge = STATUS_BADGE[status]
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -49,6 +104,12 @@ export function ModerationDetailView({ detail }: { detail: ModerationEventDetail
       >
         <ArrowLeft className="h-4 w-4" /> Hàng đợi kiểm duyệt
       </Link>
+
+      {error && (
+        <div role="alert" className="rounded-xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-400">
+          {error}
+        </div>
+      )}
 
       {/* Header + hành động */}
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-start sm:justify-between">
@@ -69,13 +130,15 @@ export function ModerationDetailView({ detail }: { detail: ModerationEventDetail
           <div className="flex flex-shrink-0 items-center gap-2">
             <button
               onClick={() => setModal("approve")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 cursor-pointer"
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
             >
-              <Check className="h-4 w-4" /> Duyệt & công bố
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Duyệt & công bố
             </button>
             <button
               onClick={() => setModal("reject")}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 px-4 py-2.5 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-500/10 cursor-pointer"
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 px-4 py-2.5 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-500/10 disabled:opacity-50 cursor-pointer"
             >
               <X className="h-4 w-4" /> Từ chối
             </button>
@@ -83,10 +146,10 @@ export function ModerationDetailView({ detail }: { detail: ModerationEventDetail
         )}
       </div>
 
-      {status === "rejected" && rejectionReason && (
+      {status === "rejected" && detail.rejectionReason && (
         <div role="alert" className="rounded-2xl border border-rose-300/60 bg-rose-500/10 p-4 text-sm text-rose-600 dark:text-rose-400">
           <p className="font-semibold">Lý do từ chối (đã gửi Ban tổ chức):</p>
-          <p className="mt-1">{rejectionReason}</p>
+          <p className="mt-1">{detail.rejectionReason}</p>
         </div>
       )}
       {status === "approved" && (
@@ -117,10 +180,17 @@ export function ModerationDetailView({ detail }: { detail: ModerationEventDetail
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         {tab === "info" && (
           <div className="space-y-4">
-            <p className="text-sm leading-relaxed text-foreground">{detail.description}</p>
+            {detail.description ? (
+              <div
+                className="text-sm leading-relaxed text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_strong]:font-semibold"
+                dangerouslySetInnerHTML={{ __html: detail.description }}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">Chưa có mô tả.</p>
+            )}
             <dl className="grid gap-3 sm:grid-cols-2">
-              <InfoRow icon={CalendarDays} label="Bắt đầu" value={formatDateTime(detail.startDate)} />
-              <InfoRow icon={CalendarDays} label="Kết thúc" value={formatDateTime(detail.endDate)} />
+              <InfoRow icon={CalendarDays} label="Bắt đầu" value={detail.startDate ? formatDateTime(detail.startDate) : "—"} />
+              <InfoRow icon={CalendarDays} label="Kết thúc" value={detail.endDate ? formatDateTime(detail.endDate) : "—"} />
               <InfoRow icon={Users} label="Sức chứa" value={`${formatNumber(detail.capacity)} người`} />
               <InfoRow icon={Ticket} label="Số loại vé" value={`${detail.tickets.length}`} />
               <InfoRow icon={Mail} label="Email BTC" value={detail.organizerEmail} />
@@ -147,10 +217,13 @@ export function ModerationDetailView({ detail }: { detail: ModerationEventDetail
                     <td className="py-3 pr-4 tabular-nums text-foreground">{t.price === 0 ? "Miễn phí" : formatVnd(t.price)}</td>
                     <td className="py-3 pr-4 tabular-nums text-foreground">{formatNumber(t.quantity)}</td>
                     <td className="py-3 text-muted-foreground">
-                      {formatDateTime(t.saleStart)} → {formatDateTime(t.saleEnd)}
+                      {t.saleStart ? formatDateTime(t.saleStart) : "—"} → {t.saleEnd ? formatDateTime(t.saleEnd) : "—"}
                     </td>
                   </tr>
                 ))}
+                {detail.tickets.length === 0 && (
+                  <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">Chưa có loại vé.</td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -164,10 +237,9 @@ export function ModerationDetailView({ detail }: { detail: ModerationEventDetail
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">{doc.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {DOCUMENT_TYPE_LABELS[doc.type]} · {Math.round(doc.sizeKb)} KB
+                    {DOCUMENT_TYPE_LABELS[doc.type]}{doc.sizeKb ? ` · ${Math.round(doc.sizeKb)} KB` : ""}
                   </p>
                 </div>
-                <Badge variant="secondary">Mock</Badge>
               </li>
             ))}
             {detail.documents.length === 0 && (

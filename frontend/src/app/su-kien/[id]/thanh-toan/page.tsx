@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import Header from "@/components/home/Header"
 import { PaymentView } from "@/components/booking/PaymentView"
-import { findEventById, getEventDetail } from "@/lib/mockData"
+import { fetchEventDetail } from "@/lib/discovery-api"
 import { parseQuantities, totalQuantity } from "@/lib/booking-selection"
 
 export async function generateMetadata({
@@ -11,8 +11,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params
-  const event = findEventById(id)
-  return { title: event ? `Thanh toán — ${event.title} | EventBox` : "Thanh toán | EventBox" }
+  const detail = await fetchEventDetail(id)
+  return { title: detail ? `Thanh toán — ${detail.event.title} | EventBox` : "Thanh toán | EventBox" }
 }
 
 /** Booking step 2 — /su-kien/[id]/thanh-toan?<ticketId>=<qty> */
@@ -25,10 +25,9 @@ export default async function PaymentPage({
 }) {
   const { id } = await params
   const sp = await searchParams
-  const event = findEventById(id)
-  if (!event) notFound()
+  const detail = await fetchEventDetail(id)
+  if (!detail) notFound()
 
-  const detail = getEventDetail(event)
   const quantities = parseQuantities(detail.tickets, sp)
 
   // No tickets selected → send back to the selection step.
@@ -37,7 +36,7 @@ export default async function PaymentPage({
   return (
     <>
       <Header />
-      <PaymentView event={event} tickets={detail.tickets} quantities={quantities} />
+      <PaymentView event={detail.event} tickets={detail.tickets} quantities={quantities} />
     </>
   )
 }

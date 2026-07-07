@@ -44,6 +44,9 @@
 .tabActive { color: var(--primary); font-weight: 600; }
 .tabActive::after { background: var(--primary); }
 
+/* Locked forward step — not reachable until earlier steps validate. */
+.tabLocked { opacity: 0.45; cursor: not-allowed; }
+
 .num {
   display: inline-flex;
   align-items: center;

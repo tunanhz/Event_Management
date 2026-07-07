@@ -1,11 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { Check, X, Building2, MapPin, Inbox, RotateCcw, Eye } from "lucide-react"
+import { Check, X, Building2, MapPin, Inbox, Eye, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { mockModerationEvents } from "@/lib/mock-data"
+import { ModerationDecisionModal } from "@/components/moderation/ModerationDecisionModal"
+import {
+  approveEvent,
+  fetchModerationQueue,
+  rejectEvent,
+} from "@/components/moderation/moderation-api"
 import type { ModerationEvent, ModerationStatus } from "@/types"
 
 const TABS: { id: ModerationStatus; label: string }[] = [
@@ -14,25 +19,83 @@ const TABS: { id: ModerationStatus; label: string }[] = [
   { id: "rejected", label: "Từ chối" },
 ]
 
+type Buckets = Record<ModerationStatus, ModerationEvent[]>
+const EMPTY: Buckets = { pending: [], approved: [], rejected: [] }
+
+/** Admin moderation queue — wired to /api/admin/events. */
 export default function ModerationPage() {
-  const [events, setEvents] = useState<ModerationEvent[]>(mockModerationEvents)
+  const [data, setData] = useState<Buckets>(EMPTY)
   const [tab, setTab] = useState<ModerationStatus>("pending")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [rejectFor, setRejectFor] = useState<ModerationEvent | null>(null)
 
-  const setStatus = (id: string, status: ModerationStatus) =>
-    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)))
+  const reload = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [pending, approved, rejected] = await Promise.all([
+        fetchModerationQueue("pending"),
+        fetchModerationQueue("approved"),
+        fetchModerationQueue("rejected"),
+      ])
+      setData({ pending, approved, rejected })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không tải được danh sách kiểm duyệt")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  const count = (s: ModerationStatus) => events.filter((e) => e.status === s).length
-  const rows = events.filter((e) => e.status === tab)
+  useEffect(() => {
+    void reload()
+  }, [reload])
+
+  const approve = async (id: string) => {
+    setBusyId(id)
+    try {
+      await approveEvent(id)
+      await reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Duyệt sự kiện thất bại")
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const confirmReject = async (reason?: string) => {
+    if (!rejectFor || !reason) return
+    const id = rejectFor.id
+    setRejectFor(null)
+    setBusyId(id)
+    try {
+      await rejectEvent(id, reason)
+      await reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Từ chối sự kiện thất bại")
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const count = (s: ModerationStatus) => data[s].length
+  const rows = data[tab]
 
   return (
     <div className="space-y-6 animate-fade-up">
-      {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-foreground">Kiểm duyệt sự kiện</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Xét duyệt các sự kiện do Ban tổ chức gửi lên trước khi công bố.
         </p>
       </div>
+
+      {error && (
+        <div role="alert" className="rounded-xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-400">
+          {error}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2">
@@ -63,7 +126,12 @@ export default function ModerationPage() {
 
       {/* List */}
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        {rows.length === 0 ? (
+        {loading ? (
+          <div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin opacity-60" />
+            <p className="text-sm">Đang tải hàng đợi kiểm duyệt…</p>
+          </div>
+        ) : rows.length === 0 ? (
           <div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">
             <Inbox className="h-12 w-12 opacity-40" />
             <p className="text-sm">Không có sự kiện nào trong mục này.</p>
@@ -119,33 +187,26 @@ export default function ModerationPage() {
                   {event.status === "pending" ? (
                     <>
                       <button
-                        onClick={() => setStatus(event.id, "approved")}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 cursor-pointer"
+                        onClick={() => approve(event.id)}
+                        disabled={busyId === event.id}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
                       >
-                        <Check className="h-4 w-4" />
+                        {busyId === event.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                         Duyệt
                       </button>
                       <button
-                        onClick={() => setStatus(event.id, "rejected")}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 px-3.5 py-2 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
+                        onClick={() => setRejectFor(event)}
+                        disabled={busyId === event.id}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 px-3.5 py-2 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50 cursor-pointer"
                       >
                         <X className="h-4 w-4" />
                         Từ chối
                       </button>
                     </>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Badge variant={event.status === "approved" ? "success" : "destructive"}>
-                        {event.status === "approved" ? "Đã duyệt" : "Đã từ chối"}
-                      </Badge>
-                      <button
-                        onClick={() => setStatus(event.id, "pending")}
-                        title="Đưa về chờ duyệt"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <Badge variant={event.status === "approved" ? "success" : "destructive"}>
+                      {event.status === "approved" ? "Đã duyệt" : "Đã từ chối"}
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -153,6 +214,15 @@ export default function ModerationPage() {
           </div>
         )}
       </div>
+
+      {rejectFor && (
+        <ModerationDecisionModal
+          mode="reject"
+          eventTitle={rejectFor.title}
+          onConfirm={confirmReject}
+          onClose={() => setRejectFor(null)}
+        />
+      )}
     </div>
   )
 }

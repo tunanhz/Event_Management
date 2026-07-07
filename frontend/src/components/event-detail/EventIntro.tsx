@@ -8,6 +8,9 @@ import styles from './EventIntro.module.css';
 
 interface EventIntroProps {
   blocks: ContentBlock[];
+  /** Raw rich-text HTML fallback when the event has no structured blocks
+   *  (events created via the organizer wizard store description as HTML). */
+  html?: string;
 }
 
 function renderBlock(block: ContentBlock, i: number) {
@@ -25,13 +28,18 @@ function renderBlock(block: ContentBlock, i: number) {
   }
 }
 
-export default function EventIntro({ blocks }: EventIntroProps) {
+export default function EventIntro({ blocks, html }: EventIntroProps) {
   const [expanded, setExpanded] = useState(false);
+  const useHtml = blocks.length === 0 && !!html;
 
   return (
     <SectionCard title="Giới thiệu" id="gioi-thieu">
       <div className={`${styles.content} ${expanded ? '' : styles.clamped}`}>
-        {blocks.map(renderBlock)}
+        {useHtml ? (
+          <div dangerouslySetInnerHTML={{ __html: html as string }} />
+        ) : (
+          blocks.map(renderBlock)
+        )}
         {!expanded && <span className={styles.fade} aria-hidden="true" />}
       </div>
 

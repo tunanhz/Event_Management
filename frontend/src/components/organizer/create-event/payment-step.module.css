@@ -1,0 +1,72 @@
+/* ─── Step 6: "Thông tin thanh toán" (payout bank account) ──────────── */
+
+.intro {
+  font-size: 0.92rem;
+  color: var(--muted-foreground);
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+}
+
+/* Leading icon inside an input wrap */
+.leadingIcon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+  display: flex;
+  pointer-events: none;
+}
+.withIcon { padding-left: 2.6rem; }
+
+/* Bank <select> styled like the text inputs */
+.select {
+  padding-left: 2.6rem;
+  padding-right: 2.5rem;
+  appearance: none;
+  cursor: pointer;
+}
+.selectEmpty { color: var(--muted-foreground); }
+.selectChevron {
+  position: absolute;
+  right: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.upper { text-transform: uppercase; }
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--muted-foreground);
+  margin-top: 0.4rem;
+}
+
+/* Read-back preview card */
+.previewCard {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--muted);
+  padding: 0.35rem 1.1rem;
+}
+.previewRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.previewRow:last-child { border-bottom: none; }
+.previewLabel {
+  font-size: 0.88rem;
+  color: var(--muted-foreground);
+}
+.previewValue {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--foreground);
+  text-align: right;
+  word-break: break-word;
+}

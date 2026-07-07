@@ -44,6 +44,15 @@ export class RegistrationRepository {
     return Registration.findById(id);
   }
 
+  // Event + ticket joined for display (payment page, ticket detail). Lean —
+  // read-only, so mutating flows keep using findById above.
+  async findByIdPopulated(id: string): Promise<IRegistration | null> {
+    return Registration.findById(id)
+      .populate('eventId', 'title imageUrl banner date time location startDate city')
+      .populate('ticketId', 'ticketName price')
+      .lean();
+  }
+
   async findByParticipant(
     participantId: string,
     query: PaginationQuery
@@ -53,7 +62,13 @@ export class RegistrationRepository {
     const skip = (page - 1) * limit;
 
     const [data, totalItems] = await Promise.all([
-      Registration.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Registration.find(filter)
+        .populate('eventId', 'title imageUrl banner date time location startDate city')
+        .populate('ticketId', 'ticketName price')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
       Registration.countDocuments(filter),
     ]);
 

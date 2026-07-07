@@ -1,3 +1,4 @@
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -15,6 +16,8 @@ import { starRoutes } from './modules/star';
 import { bannerRoutes } from './modules/banner';
 import { organizerRoutes } from './modules/organizer';
 import { registrationRoutes } from './modules/registration';
+import { adminEventRoutes } from './modules/admin-event';
+import { uploadRoutes } from './modules/upload';
 
 const app = express();
 
@@ -40,6 +43,16 @@ app.use('/api/stars', starRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/organizer', organizerRoutes);
 app.use('/api/registrations', registrationRoutes);
+app.use('/api/admin/events', adminEventRoutes);
+app.use('/api/uploads', uploadRoutes);
+
+// Uploaded permit documents — CORP header relaxed so the FE origin can embed them.
+app.use(
+  '/uploads',
+  express.static(path.join(process.cwd(), 'uploads'), {
+    setHeaders: (res) => res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'),
+  })
+);
 
 // ─── Error Handling ─────────────────────────────────────────────────
 app.use(notFoundHandler);
