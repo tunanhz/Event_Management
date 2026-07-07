@@ -105,6 +105,24 @@ export class OrganizerController {
     res.json(ApiResponse.ok(null, 'Xoá loại vé thành công'));
   });
 
+  getTicketInventory = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const inventory = await this.organizerService.getTicketInventory(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(inventory, 'Lấy tồn kho vé thành công'));
+  });
+
+  adjustTicketInventory = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const ticket = await this.organizerService.adjustTicketInventory(
+      req.params.id as string,
+      req.params.ticketId as string,
+      { id: req.user!.id, role: req.user!.role },
+      req.body ?? {}
+    );
+    res.json(ApiResponse.ok(ticket, 'Cập nhật tồn kho vé thành công'));
+  });
+
   listShows = asyncHandler(async (req: AuthRequest, res: Response) => {
     const shows = await this.organizerService.listShows(req.params.id as string, {
       id: req.user!.id,
