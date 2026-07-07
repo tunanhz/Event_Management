@@ -16,10 +16,12 @@ interface StepTabsProps {
   onNext?: () => void
   /** Locks both actions while a save (uploads + API calls) is in flight. */
   saving?: boolean
+  /** View-only mode (e.g. PENDING_REVIEW): tabs stay navigable, actions hidden. */
+  readOnly?: boolean
 }
 
 /** Wizard header with step tabs and Save / Continue actions. */
-export function StepTabs({ current, maxStep = 6, onSelect, onSave, onNext, saving }: StepTabsProps) {
+export function StepTabs({ current, maxStep = 6, onSelect, onSave, onNext, saving, readOnly }: StepTabsProps) {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   // Arrow-key roving within the reachable (unlocked) steps: 1…maxStep.
@@ -87,14 +89,16 @@ export function StepTabs({ current, maxStep = 6, onSelect, onSave, onNext, savin
         })}
       </div>
 
-      <div className={styles.actions}>
-        <button type="button" className={styles.saveBtn} onClick={onSave} disabled={saving}>
-          {saving ? "Đang lưu…" : "Lưu"}
-        </button>
-        <button type="button" className={styles.nextBtn} onClick={onNext} disabled={saving}>
-          Tiếp tục
-        </button>
-      </div>
+      {!readOnly && (
+        <div className={styles.actions}>
+          <button type="button" className={styles.saveBtn} onClick={onSave} disabled={saving}>
+            {saving ? "Đang lưu…" : "Lưu"}
+          </button>
+          <button type="button" className={styles.nextBtn} onClick={onNext} disabled={saving}>
+            Tiếp tục
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -69,6 +69,18 @@ class ClientApiClient {
     });
   }
 
+  async patch<T>(
+    endpoint: string,
+    body: unknown,
+    options?: ClientFetchOptions
+  ): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  }
+
   async delete<T>(endpoint: string, options?: ClientFetchOptions): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: "DELETE" });
   }
