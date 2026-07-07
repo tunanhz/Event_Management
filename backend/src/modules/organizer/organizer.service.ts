@@ -678,7 +678,9 @@ export class OrganizerService {
    * publish". Deliberately does not call assertEditable: this must keep
    * working once the event is PUBLISHED and selling. Only quantity/status
    * are editable here; renaming, pricing, and schedule changes stay behind
-   * the DRAFT/REJECTED-only configuration endpoints.
+   * the DRAFT/REJECTED-only configuration endpoints. Still blocked once the
+   * event has started — stock is only adjustable while tickets are on sale
+   * (before the event begins), not while it's under way or over.
    */
   async adjustTicketInventory(
     eventId: string,
@@ -686,7 +688,8 @@ export class OrganizerService {
     actor: OrganizerActor,
     data: AdjustTicketInventoryInput
   ): Promise<ITicket> {
-    await this.getOwnedEvent(eventId, actor);
+    const event = await this.getOwnedEvent(eventId, actor);
+    this.assertNotStarted(event, 'điều chỉnh kho vé');
     const ticket = await this.getEventTicket(eventId, ticketId);
 
     const update: Partial<ITicket> = {};
@@ -870,6 +873,16 @@ export class OrganizerService {
         `Chỉ có thể ${action} khi sự kiện đang ở trạng thái nháp hoặc bị từ chối (hiện tại: ${event.reviewStatus})`,
         400
       );
+    }
+  }
+
+  // Stock is only adjustable while tickets are on sale — i.e. before the event
+  // begins. Once it has started (ongoing or already over) the stock is frozen.
+  // Uses startDate (fall back to the legacy date) as the cutoff.
+  private assertNotStarted(event: IEvent, action: string): void {
+    const startRef = event.startDate ?? event.date;
+    if (startRef && new Date(startRef).getTime() <= Date.now()) {
+      throw new AppError(`Sự kiện đã bắt đầu — không thể ${action}`, 400);
     }
   }
 

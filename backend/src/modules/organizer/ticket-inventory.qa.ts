@@ -17,6 +17,7 @@ import mongoose from 'mongoose';
 import { config } from '../../config';
 import { OTP } from '../user/otp.model';
 import { User } from '../user/user.model';
+import { Event } from '../event/event.model';
 
 const BASE_URL = process.env.QA_BASE_URL || `http://localhost:${config.port}`;
 const ORGANIZER_EMAIL = 'qa.organizer.em132@example.com';
@@ -256,6 +257,30 @@ async function main() {
     {}
   );
   check('Empty patch body rejected (400)', empty.status === 400, empty.json);
+
+  console.log('11. Started (ongoing) event: stock adjust blocked, inventory still viewable');
+  // Force the event to have already started but not yet ended — the API rejects
+  // past dates on create, so patch the doc directly. Restock must be blocked the
+  // moment the event begins (sale window closed), even though it hasn't ended.
+  await Event.updateOne(
+    { _id: eventId },
+    {
+      $set: {
+        startDate: new Date(Date.now() - 60 * 60 * 1000), // started 1h ago
+        endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // ends in 2 days
+        date: new Date(Date.now() - 60 * 60 * 1000),
+      },
+    }
+  );
+  const startedAdjust = await api(
+    'PATCH',
+    `/api/organizer/events/${eventId}/tickets/${ticketId}/inventory`,
+    organizerToken,
+    { quantity: 20 }
+  );
+  check('Adjust on started event rejected (400)', startedAdjust.status === 400, startedAdjust.json);
+  const startedView = await api('GET', `/api/organizer/events/${eventId}/tickets/inventory`, organizerToken);
+  check('Inventory still viewable on started event (200)', startedView.status === 200, startedView.json);
 
   console.log(`\n${passed} passed, ${failed} failed`);
   await mongoose.disconnect();
