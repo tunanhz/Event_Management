@@ -17,6 +17,7 @@ import { bannerRoutes } from './modules/banner';
 import { organizerRoutes } from './modules/organizer';
 import { registrationRoutes } from './modules/registration';
 import { adminEventRoutes } from './modules/admin-event';
+import { adminTicketRoutes } from './modules/admin-ticket';
 import { uploadRoutes } from './modules/upload';
 
 const app = express();
@@ -44,6 +45,7 @@ app.use('/api/banners', bannerRoutes);
 app.use('/api/organizer', organizerRoutes);
 app.use('/api/registrations', registrationRoutes);
 app.use('/api/admin/events', adminEventRoutes);
+app.use('/api/admin/tickets', adminTicketRoutes);
 app.use('/api/uploads', uploadRoutes);
 
 // Uploaded permit documents — CORP header relaxed so the FE origin can embed them.

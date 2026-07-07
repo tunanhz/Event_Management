@@ -12,7 +12,8 @@
     "seed:homepage": "tsx src/scripts/seed-homepage.ts",
     "seed:events": "tsx src/scripts/seed-organizer-events.ts",
     "seed:registrations": "tsx src/scripts/seed-registrations.ts",
-    "cleanup:qa": "tsx src/scripts/cleanup-qa-events.ts"
+    "cleanup:qa": "tsx src/scripts/cleanup-qa-events.ts",
+    "qa:admin-tickets": "tsx src/modules/admin-ticket/admin-ticket.qa.ts"
   },
   "keywords": [
     "event-management",

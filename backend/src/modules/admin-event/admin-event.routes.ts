@@ -10,8 +10,13 @@ const adminEventController = new AdminEventController();
 router.use(isAuthenticated as any, authorize('ADMIN') as any);
 
 router.get('/', adminEventController.listEvents);
+router.get('/status-tracking', adminEventController.getStatusTracking);
 router.get('/:id', adminEventController.getEventDetail);
+router.put('/:id', adminEventController.updateEvent);
+router.patch('/:id/status', adminEventController.forceStatus);
+router.post('/:id/cancel', adminEventController.cancelEvent);
 router.post('/:id/approve', adminEventController.approveEvent);
 router.post('/:id/reject', adminEventController.rejectEvent);
+router.delete('/:id', adminEventController.deleteEvent);
 
 export default router;
