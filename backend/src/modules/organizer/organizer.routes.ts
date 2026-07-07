@@ -21,4 +21,8 @@ router.put('/events/:id/tickets', organizerController.configureTickets); // EM-1
 router.put('/events/:id/tickets/:ticketId', organizerController.updateTicket);
 router.delete('/events/:id/tickets/:ticketId', organizerController.deleteTicket);
 
+// ─── Schedule management (EM-25) ──────────────────────────────────────
+router.get('/events/:id/shows', organizerController.listShows);
+router.put('/events/:id/shows', organizerController.configureShows); // bulk schedule (shows) configuration
+
 export default router;

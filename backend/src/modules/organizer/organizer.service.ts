@@ -10,6 +10,7 @@ import {
   ConfigureTicketInput,
   CreateEventInput,
   CreateTicketInput,
+  ShowInput,
   UpdateEventInput,
   UpdateTicketInput,
 } from './event-wizard-types';
@@ -612,6 +613,50 @@ export class OrganizerService {
 
     await this.syncPriceFields(eventId);
     return result;
+  }
+
+  async listShows(eventId: string, actor: OrganizerActor): Promise<IEvent['shows']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    return event.shows;
+  }
+
+  /**
+   * Schedule management (EM-25): replace an event's whole show/schedule list
+   * in one call — same "submit the whole table" shape as configureTickets.
+   * Rows carrying `_id` retime an existing show, rows without one create a
+   * new show, and any existing show left out of the submitted set is removed
+   * (blocked by resolveShowReplacement while a ticket type still references
+   * it). startDate/endDate/time/sessions are recomputed from the new show
+   * list so discovery fields (homepage/listing) stay in sync.
+   */
+  async configureShows(
+    eventId: string,
+    actor: OrganizerActor,
+    shows: ShowInput[]
+  ): Promise<IEvent['shows']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    this.assertEditable(event, 'cấu hình lịch trình');
+
+    const newShows = await this.resolveShowReplacement(event, shows);
+    const { startDate, endDate } = resolveShowTimes(shows);
+
+    const updated = await this.organizerRepository.updateEditableEvent(eventId, {
+      shows: newShows,
+      startDate,
+      endDate,
+      date: startDate,
+      time: deriveTime(startDate),
+      sessions: deriveSessions(newShows, startDate),
+    });
+    if (!updated) {
+      // reviewStatus changed between assertEditable and the atomic write
+      // (e.g. a concurrent submit locked the event into the review queue).
+      throw new AppError(
+        'Chỉ có thể cấu hình lịch trình khi sự kiện đang ở trạng thái nháp hoặc bị từ chối',
+        400
+      );
+    }
+    return updated.shows;
   }
 
   async submitForReview(eventId: string, actor: OrganizerActor): Promise<IEvent> {

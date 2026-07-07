@@ -104,4 +104,22 @@ export class OrganizerController {
     });
     res.json(ApiResponse.ok(null, 'Xoá loại vé thành công'));
   });
+
+  listShows = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const shows = await this.organizerService.listShows(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(shows, 'Lấy lịch trình sự kiện thành công'));
+  });
+
+  configureShows = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { shows } = req.body ?? {};
+    const result = await this.organizerService.configureShows(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      shows
+    );
+    res.json(ApiResponse.ok(result, 'Cấu hình lịch trình thành công'));
+  });
 }
