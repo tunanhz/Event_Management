@@ -1,31 +1,63 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Check, X } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Check, X, DollarSign } from "lucide-react"
+import { cn, formatVnd } from "@/lib/utils"
 
 interface ModerationDecisionModalProps {
   mode: "approve" | "reject"
   eventTitle: string
-  onConfirm: (reason?: string) => void
+  /** Logistics services the organizer requested — shown in approve mode. */
+  logisticsServices?: string[]
+  onConfirm: (reason?: string, serviceCost?: number) => void
   onClose: () => void
 }
 
-// Modal xác nhận Duyệt / Từ chối. Từ chối bắt buộc nhập lý do (theo quy tắc
-// nghiệp vụ: organizer cần correction log để sửa hồ sơ và gửi lại).
-export function ModerationDecisionModal({ mode, eventTitle, onConfirm, onClose }: ModerationDecisionModalProps) {
+const SERVICE_LABELS: Record<string, string> = {
+  "tron-goi": "Dịch vụ trọn gói",
+  "san-khau": "Sân khấu",
+  "am-thanh": "Âm thanh",
+  "anh-sang": "Ánh sáng",
+  "ban-ghe": "Bàn ghế",
+  "nhan-su": "Nhân sự",
+}
+
+function formatServiceLabel(s: string): string {
+  if (SERVICE_LABELS[s]) return SERVICE_LABELS[s]
+  // custom services start with "khac:" prefix from the wizard
+  if (s.startsWith("khac:")) return s.slice(5).trim()
+  return s
+}
+
+// Modal xác nhận Duyệt / Từ chối. Duyệt: nếu organizer có yêu cầu dịch vụ,
+// admin nhập báo giá (serviceCost) → organizer phải cọc 20% trước khi publish.
+// Từ chối: bắt buộc nhập lý do (organizer cần correction log để sửa hồ sơ).
+export function ModerationDecisionModal({
+  mode,
+  eventTitle,
+  logisticsServices = [],
+  onConfirm,
+  onClose,
+}: ModerationDecisionModalProps) {
   const [reason, setReason] = useState("")
+  const [serviceCostStr, setServiceCostStr] = useState("")
   const [touched, setTouched] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const costInputRef = useRef<HTMLInputElement>(null)
   const isReject = mode === "reject"
   const reasonInvalid = isReject && reason.trim().length === 0
 
+  const hasServices = logisticsServices.length > 0
+  const parsedCost = Number(serviceCostStr) || 0
+  const costInvalid = !isReject && hasServices && parsedCost <= 0
+
   useEffect(() => {
     if (isReject) textareaRef.current?.focus()
+    else if (hasServices) costInputRef.current?.focus()
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [isReject, onClose])
+  }, [isReject, hasServices, onClose])
 
   const handleConfirm = () => {
     setTouched(true)
@@ -33,7 +65,14 @@ export function ModerationDecisionModal({ mode, eventTitle, onConfirm, onClose }
       textareaRef.current?.focus()
       return
     }
-    onConfirm(isReject ? reason.trim() : undefined)
+    if (costInvalid) {
+      costInputRef.current?.focus()
+      return
+    }
+    onConfirm(
+      isReject ? reason.trim() : undefined,
+      !isReject && hasServices ? parsedCost : 0
+    )
   }
 
   return (
@@ -45,18 +84,72 @@ export function ModerationDecisionModal({ mode, eventTitle, onConfirm, onClose }
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-fade-up"
+        className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl animate-fade-up"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-bold text-foreground">
-          {isReject ? "Từ chối sự kiện" : "Duyệt & công bố sự kiện"}
+          {isReject ? "Từ chối sự kiện" : "Duyệt sự kiện"}
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
           {isReject
-            ? `Nhập lý do từ chối để Ban tổ chức chỉnh sửa hồ sơ “${eventTitle}”.`
-            : `Sự kiện “${eventTitle}” sẽ được công bố lên trang công khai và gửi thông báo tới Ban tổ chức.`}
+            ? `Nhập lý do từ chối để Ban tổ chức chỉnh sửa hồ sơ "${eventTitle}".`
+            : hasServices
+              ? `Sự kiện "${eventTitle}" có yêu cầu dịch vụ. Nhập báo giá dịch vụ — Organizer phải cọc 20% trước khi sự kiện được công bố.`
+              : `Sự kiện "${eventTitle}" sẽ được công bố lên trang công khai (không có dịch vụ thuê).`}
         </p>
 
+        {/* Approve mode — show services + cost input */}
+        {!isReject && hasServices && (
+          <div className="mt-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Dịch vụ yêu cầu:</p>
+              <ul className="mt-1.5 space-y-1">
+                {logisticsServices.map((s, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-500" />
+                    {formatServiceLabel(s)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <label htmlFor="service-cost" className="text-sm font-semibold text-foreground">
+                Tổng chi phí dịch vụ (VNĐ) <span className="text-rose-500">*</span>
+              </label>
+              <div className="mt-1.5 flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <input
+                  ref={costInputRef}
+                  id="service-cost"
+                  type="number"
+                  min={0}
+                  value={serviceCostStr}
+                  onChange={(e) => setServiceCostStr(e.target.value)}
+                  onBlur={() => setTouched(true)}
+                  placeholder="VD: 15000000"
+                  className={cn(
+                    "flex-1 rounded-xl border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-cyan-500",
+                    touched && costInvalid ? "border-rose-400" : "border-border"
+                  )}
+                />
+              </div>
+              {parsedCost > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Organizer cọc 20%: <span className="font-semibold text-foreground">{formatVnd(Math.round(parsedCost * 0.2))}</span>
+                  {" · "}Còn lại sau sự kiện: <span className="font-semibold text-foreground">{formatVnd(Math.round(parsedCost * 0.8))}</span>
+                </p>
+              )}
+              {touched && costInvalid && (
+                <p role="alert" className="mt-1 text-xs text-rose-500">
+                  Vui lòng nhập báo giá dịch vụ — cần thiết để tính cọc 20%.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Reject mode — reason textarea */}
         {isReject && (
           <div className="mt-4">
             <label htmlFor="reject-reason" className="text-sm font-semibold text-foreground">
@@ -100,7 +193,7 @@ export function ModerationDecisionModal({ mode, eventTitle, onConfirm, onClose }
             )}
           >
             {isReject ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-            {isReject ? "Xác nhận từ chối" : "Xác nhận duyệt"}
+            {isReject ? "Xác nhận từ chối" : hasServices ? "Duyệt & gửi báo giá" : "Xác nhận duyệt"}
           </button>
         </div>
       </div>

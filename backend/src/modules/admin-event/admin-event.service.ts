@@ -5,7 +5,7 @@ import { ITicket } from '../organizer/ticket.model';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
 
-const REVIEW_STATUSES = ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED'] as const;
+const REVIEW_STATUSES = ['DRAFT', 'PENDING_REVIEW', 'APPROVED_WAITING_DEPOSIT', 'PUBLISHED', 'REJECTED'] as const;
 
 /**
  * Admin event moderation (AM-01): review queue, detail inspection and the
@@ -34,14 +34,33 @@ export class AdminEventService {
     return { event, tickets };
   }
 
-  /** PENDING_REVIEW → PUBLISHED; records the deciding admin + timestamp. */
-  async approveEvent(eventId: string, adminId: string): Promise<IEvent> {
+  /**
+   * Approve an event. If serviceCost > 0 → APPROVED_WAITING_DEPOSIT (organizer
+   * must pay 20% deposit before the event goes public). Otherwise → PUBLISHED.
+   */
+  async approveEvent(eventId: string, adminId: string, serviceCost: number): Promise<IEvent> {
     await this.getEventOrThrow(eventId);
 
-    const updated = await this.adminEventRepository.approveEvent(eventId, adminId);
+    if (serviceCost > 0) {
+      const depositAmount = Math.round(serviceCost * 0.2);
+      const updated = await this.adminEventRepository.approveEventWithDeposit(
+        eventId,
+        adminId,
+        serviceCost,
+        depositAmount
+      );
+      if (!updated) {
+        throw new AppError(
+          'Sự kiện không còn ở trạng thái chờ duyệt (có thể đã được xử lý bởi admin khác). Vui lòng tải lại hàng đợi.',
+          409
+        );
+      }
+      return updated;
+    }
+
+    // No services → publish directly
+    const updated = await this.adminEventRepository.approveEventDirect(eventId, adminId);
     if (!updated) {
-      // Event exists but was no longer PENDING_REVIEW at write time — either
-      // already decided by another admin or withdrawn back to draft (AM-01).
       throw new AppError(
         'Sự kiện không còn ở trạng thái chờ duyệt (có thể đã được xử lý bởi admin khác). Vui lòng tải lại hàng đợi.',
         409
@@ -68,6 +87,22 @@ export class AdminEventService {
         'Sự kiện không còn ở trạng thái chờ duyệt (có thể đã được xử lý bởi admin khác). Vui lòng tải lại hàng đợi.',
         409
       );
+    }
+    return updated;
+  }
+
+  /** Set additional cost for post-event settlement. */
+  async setAdditionalCost(eventId: string, additionalCost: number): Promise<IEvent> {
+    if (typeof additionalCost !== 'number' || additionalCost < 0) {
+      throw new AppError('Chi phí phát sinh phải là số >= 0', 400);
+    }
+    const event = await this.getEventOrThrow(eventId);
+    if (event.serviceCost <= 0) {
+      throw new AppError('Sự kiện không có dịch vụ thuê nên không có chi phí phát sinh', 400);
+    }
+    const updated = await this.adminEventRepository.setAdditionalCost(eventId, additionalCost);
+    if (!updated) {
+      throw new AppError('Không thể cập nhật chi phí phát sinh', 500);
     }
     return updated;
   }

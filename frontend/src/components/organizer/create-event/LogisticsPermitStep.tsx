@@ -31,7 +31,27 @@ export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) 
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
 
+  const getOtherServiceValue = () => {
+    const item = form.logisticsServices.find((s) => s.startsWith("khac:"))
+    return item ? item.substring(5) : ""
+  }
+
+  const handleOtherServiceChange = (val: string) => {
+    const withoutOther = form.logisticsServices.filter((s) => !s.startsWith("khac:"))
+    update({ logisticsServices: [...withoutOther, `khac:${val}`] })
+  }
+
   const toggleService = (id: string) => {
+    if (id === "khac") {
+      const hasOther = form.logisticsServices.some((s) => s.startsWith("khac:"))
+      if (hasOther) {
+        update({ logisticsServices: form.logisticsServices.filter((s) => !s.startsWith("khac:")) })
+      } else {
+        update({ logisticsServices: [...form.logisticsServices, "khac:"] })
+      }
+      return
+    }
+
     const next = form.logisticsServices.includes(id)
       ? form.logisticsServices.filter((s) => s !== id)
       : [...form.logisticsServices, id]
@@ -85,8 +105,6 @@ export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) 
     }
 
     if (accepted.length > 0) {
-      // Functional update: a file removed while uploads were in flight must
-      // not be resurrected by a stale form snapshot.
       update((prev) => ({ permitDocuments: [...prev.permitDocuments, ...accepted] }))
     }
     setUploadError(errors.length > 0 ? errors.join(" ") : null)
@@ -100,40 +118,51 @@ export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) 
   return (
     <div className={pageStyles.form}>
       {/* ── Platform support services ─────────────────────────────── */}
-      <SectionCard title="Dịch vụ hỗ trợ từ nền tảng">
+      <SectionCard title="Dịch vụ">
         <p className={styles.intro}>
-          Chọn các dịch vụ Ban tổ chức muốn EventBox hỗ trợ. Đội ngũ vận hành sẽ
-          liên hệ báo giá sau khi sự kiện được duyệt.
+          Chọn các hạng mục dịch vụ Ban tổ chức muốn thuê từ nền tảng. Đội ngũ vận hành sẽ
+          liên hệ báo giá sau khi nhận hồ sơ sự kiện.
         </p>
         <div className={styles.serviceList}>
           {LOGISTICS_SERVICES.map((service) => {
-            const checked = form.logisticsServices.includes(service.id)
+            const checked = service.id === "khac"
+              ? form.logisticsServices.some((s) => s.startsWith("khac:"))
+              : form.logisticsServices.includes(service.id)
             return (
-              <label
-                key={service.id}
-                className={cn(styles.serviceRow, checked && styles.serviceRowActive)}
-              >
-                <input
-                  type="checkbox"
-                  className={styles.serviceCheckbox}
-                  checked={checked}
-                  onChange={() => toggleService(service.id)}
-                />
-                <span>
-                  <span className={styles.serviceLabel}>{service.label}</span>
-                  <span className={styles.serviceDesc}>{service.description}</span>
-                </span>
-              </label>
+              <div key={service.id} className="flex flex-col gap-2">
+                <label
+                  className={cn(styles.serviceRow, checked && styles.serviceRowActive)}
+                >
+                  <input
+                    type="checkbox"
+                    className={styles.serviceCheckbox}
+                    checked={checked}
+                    onChange={() => toggleService(service.id)}
+                  />
+                  <span className="flex flex-col gap-0.5">
+                    <span className={styles.serviceLabel}>{service.label}</span>
+                    <span className={styles.serviceDesc}>{service.description}</span>
+                  </span>
+                </label>
+                {service.id === "khac" && checked && (
+                  <input
+                    type="text"
+                    value={getOtherServiceValue()}
+                    onChange={(e) => handleOtherServiceChange(e.target.value)}
+                    className="block w-full rounded-xl border border-input bg-card py-2 px-3 text-sm text-foreground focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition-all"
+                    placeholder="Vui lòng nhập yêu cầu dịch vụ khác..."
+                  />
+                )}
+              </div>
             )
           })}
         </div>
       </SectionCard>
 
       {/* ── Legal permit upload ───────────────────────────────────── */}
-      <SectionCard title="Giấy phép & hồ sơ pháp lý" required>
+      <SectionCard title="Giấy phép & Sơ đồ sự kiện" required>
         <p className={styles.intro}>
-          Đính kèm giấy phép tổ chức, hợp đồng thuê địa điểm hoặc hồ sơ pháp lý
-          liên quan để Admin thẩm định. Định dạng PDF, DOCX, PNG — tối đa{" "}
+          Đính kèm giấy phép tổ chức và sơ đồ sự kiện để Admin thẩm định. Định dạng PDF, DOCX, PNG — tối đa{" "}
           {PERMIT_FILE_RULES.maxSizeMb}MB mỗi tệp.
         </p>
 

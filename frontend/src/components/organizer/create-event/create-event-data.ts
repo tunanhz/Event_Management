@@ -85,10 +85,13 @@ export interface PermitDocument {
 
 /** Platform support services the organizer can request (per SRS wizard step 3). */
 export const LOGISTICS_SERVICES: { id: string; label: string; description: string }[] = [
-  { id: "audio-lighting", label: "Âm thanh & ánh sáng", description: "Gói thiết bị âm thanh, ánh sáng sân khấu theo quy mô sự kiện." },
-  { id: "furniture", label: "Thuê bàn ghế & thiết bị", description: "Bàn ghế, quầy check-in, backdrop, lều trại cho khu vực sự kiện." },
-  { id: "checkin-staff", label: "Tuyển nhân viên check-in", description: "Nền tảng cung cấp staff soát vé đã đào tạo cho ngày diễn ra." },
-  { id: "permit-support", label: "Hỗ trợ xin giấy phép", description: "Tư vấn và thay mặt nộp hồ sơ xin phép tổ chức với cơ quan địa phương." },
+  { id: "tron-goi", label: "Dịch vụ trọn gói", description: "Cung cấp toàn bộ sân khấu, âm thanh, ánh sáng, bàn ghế và nhân sự." },
+  { id: "san-khau", label: "Sân khấu", description: "Thiết kế, lắp đặt sân khấu theo yêu cầu." },
+  { id: "am-thanh", label: "Âm thanh", description: "Hệ thống loa, mic, amply chuyên nghiệp." },
+  { id: "anh-sang", label: "Ánh sáng", description: "Hệ thống đèn chiếu, đèn LED sự kiện." },
+  { id: "ban-ghe", label: "Bàn ghế", description: "Cho thuê bàn ghế, backdrop, thảm đỏ." },
+  { id: "nhan-su", label: "Nhân sự", description: "Staff hỗ trợ soát vé, PG, lễ tân, an ninh sự kiện." },
+  { id: "khac", label: "Dịch vụ khác", description: "Tùy chọn dịch vụ khác do Ban tổ chức tự nhập." },
 ]
 
 /** Upload constraints for permit documents (per SRS: PDF/DOCX/PNG, ≤ 15MB). */

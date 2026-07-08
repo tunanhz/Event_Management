@@ -158,4 +158,20 @@ export class OrganizerController {
     );
     res.json(ApiResponse.ok(result, 'Cập nhật hồ sơ giấy phép thành công'));
   });
+
+  payDeposit = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const event = await this.organizerService.payDeposit(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(event, 'Đã thanh toán cọc 20% — sự kiện đã được công bố'));
+  });
+
+  payRemaining = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const event = await this.organizerService.payRemaining(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(event, 'Đã thanh toán khoản còn lại'));
+  });
 }

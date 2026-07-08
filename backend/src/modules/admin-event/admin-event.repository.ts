@@ -58,12 +58,9 @@ export class AdminEventRepository {
   }
 
   /**
-   * Atomic PENDING_REVIEW → PUBLISHED transition (AM-01 concurrency rule):
-   * the reviewStatus filter guarantees a record concurrently processed by
-   * another admin (or withdrawn by the organizer) is never overwritten —
-   * the call simply matches nothing and returns null.
+   * Atomic PENDING_REVIEW → PUBLISHED transition (no services / serviceCost=0).
    */
-  async approveEvent(id: string, adminId: string): Promise<IEvent | null> {
+  async approveEventDirect(id: string, adminId: string): Promise<IEvent | null> {
     return Event.findOneAndUpdate(
       { _id: id, reviewStatus: 'PENDING_REVIEW' },
       {
@@ -71,9 +68,37 @@ export class AdminEventRepository {
           reviewStatus: 'PUBLISHED',
           approvedById: new mongoose.Types.ObjectId(adminId),
           reviewedAt: new Date(),
-          // Legacy public-listing visibility flag — homepage/listing/detail
-          // (event module) only serve status='published' events.
           status: 'published',
+        },
+        $unset: { rejectionReason: '' },
+      },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  /**
+   * Atomic PENDING_REVIEW → APPROVED_WAITING_DEPOSIT transition (has services).
+   * Records the admin's service cost quotation and the 20% deposit amount.
+   */
+  async approveEventWithDeposit(
+    id: string,
+    adminId: string,
+    serviceCost: number,
+    depositAmount: number
+  ): Promise<IEvent | null> {
+    const finalPaymentAmount = serviceCost - depositAmount;
+    return Event.findOneAndUpdate(
+      { _id: id, reviewStatus: 'PENDING_REVIEW' },
+      {
+        $set: {
+          reviewStatus: 'APPROVED_WAITING_DEPOSIT',
+          approvedById: new mongoose.Types.ObjectId(adminId),
+          reviewedAt: new Date(),
+          serviceCost,
+          depositAmount,
+          depositStatus: 'UNPAID',
+          finalPaymentAmount,
+          // status stays 'draft' until deposit is paid
         },
         $unset: { rejectionReason: '' },
       },
@@ -92,6 +117,21 @@ export class AdminEventRepository {
           reviewedAt: new Date(),
         },
       },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  /**
+   * Set additional cost for a completed/published event and compute the
+   * final payment amount = (serviceCost * 0.8) + additionalCost.
+   */
+  async setAdditionalCost(id: string, additionalCost: number): Promise<IEvent | null> {
+    const event = await Event.findById(id).lean();
+    if (!event) return null;
+    const finalPaymentAmount = Math.round(event.serviceCost * 0.8) + additionalCost;
+    return Event.findByIdAndUpdate(
+      id,
+      { $set: { additionalCost, finalPaymentAmount } },
       { new: true, runValidators: true }
     ).lean();
   }

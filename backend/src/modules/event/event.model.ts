@@ -65,11 +65,19 @@ export interface IEvent extends Document {
   capacity?: number;
   // Organizer approval workflow state (separate from the legacy public-listing
   // `status` field above, which controls homepage visibility).
-  reviewStatus: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
+  reviewStatus: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED_WAITING_DEPOSIT' | 'PUBLISHED' | 'REJECTED';
   // Set by admin moderation: reason shown to the organizer on REJECTED,
   // timestamp of the approve/reject decision.
   rejectionReason?: string;
   reviewedAt?: Date;
+
+  // ── Service cost & deposit fields (admin quotation workflow) ──
+  serviceCost: number;
+  depositAmount: number;
+  depositStatus: 'UNPAID' | 'PAID';
+  additionalCost: number;
+  finalPaymentAmount: number;
+  finalPaymentStatus: 'UNPAID' | 'PAID';
 
   // ── Full 6-step wizard fields (organizer create-event form) ──
   posterImage?: string;
@@ -145,11 +153,19 @@ const eventSchema = new Schema<IEvent>(
     capacity: { type: Number, min: 1 },
     reviewStatus: {
       type: String,
-      enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED'],
+      enum: ['DRAFT', 'PENDING_REVIEW', 'APPROVED_WAITING_DEPOSIT', 'PUBLISHED', 'REJECTED'],
       default: 'DRAFT',
     },
     rejectionReason: { type: String, trim: true, maxlength: 1000 },
     reviewedAt: { type: Date },
+
+    // ── Service cost & deposit fields (admin quotation workflow) ──
+    serviceCost: { type: Number, default: 0, min: 0 },
+    depositAmount: { type: Number, default: 0, min: 0 },
+    depositStatus: { type: String, enum: ['UNPAID', 'PAID'], default: 'UNPAID' },
+    additionalCost: { type: Number, default: 0, min: 0 },
+    finalPaymentAmount: { type: Number, default: 0, min: 0 },
+    finalPaymentStatus: { type: String, enum: ['UNPAID', 'PAID'], default: 'UNPAID' },
 
     // ── Full 6-step wizard fields (organizer create-event form) ──
     posterImage: { type: String },

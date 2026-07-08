@@ -15,12 +15,13 @@ import type { ModerationEvent, ModerationStatus } from "@/types"
 
 const TABS: { id: ModerationStatus; label: string }[] = [
   { id: "pending", label: "Chờ duyệt" },
+  { id: "waiting_deposit", label: "Chờ cọc" },
   { id: "approved", label: "Đã duyệt" },
   { id: "rejected", label: "Từ chối" },
 ]
 
 type Buckets = Record<ModerationStatus, ModerationEvent[]>
-const EMPTY: Buckets = { pending: [], approved: [], rejected: [] }
+const EMPTY: Buckets = { pending: [], approved: [], rejected: [], waiting_deposit: [] }
 
 /** Admin moderation queue — wired to /api/admin/events. */
 export default function ModerationPage() {
@@ -35,12 +36,13 @@ export default function ModerationPage() {
     setLoading(true)
     setError(null)
     try {
-      const [pending, approved, rejected] = await Promise.all([
+      const [pending, approved, rejected, waiting_deposit] = await Promise.all([
         fetchModerationQueue("pending"),
         fetchModerationQueue("approved"),
         fetchModerationQueue("rejected"),
+        fetchModerationQueue("waiting_deposit"),
       ])
-      setData({ pending, approved, rejected })
+      setData({ pending, approved, rejected, waiting_deposit })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được danh sách kiểm duyệt")
     } finally {
@@ -203,6 +205,8 @@ export default function ModerationPage() {
                         Từ chối
                       </button>
                     </>
+                  ) : event.status === "waiting_deposit" ? (
+                    <Badge variant="warning">Chờ cọc 20%</Badge>
                   ) : (
                     <Badge variant={event.status === "approved" ? "success" : "destructive"}>
                       {event.status === "approved" ? "Đã duyệt" : "Đã từ chối"}

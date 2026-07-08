@@ -13,5 +13,6 @@ router.get('/', adminEventController.listEvents);
 router.get('/:id', adminEventController.getEventDetail);
 router.post('/:id/approve', adminEventController.approveEvent);
 router.post('/:id/reject', adminEventController.rejectEvent);
+router.post('/:id/additional-cost', adminEventController.setAdditionalCost);
 
 export default router;

@@ -27,6 +27,23 @@ export interface ModerationEventDetail extends ModerationEvent {
   tickets: ModerationTicketType[]
   documents: ModerationDocument[]
   rejectionReason?: string
+  // Service & deposit fields (quotation workflow)
+  logisticsServices?: string[]
+  serviceCost?: number
+  depositAmount?: number
+  depositStatus?: "UNPAID" | "PAID"
+  additionalCost?: number
+  finalPaymentAmount?: number
+  finalPaymentStatus?: "UNPAID" | "PAID"
+  // Raw backend reviewStatus (for distinguishing APPROVED_WAITING_DEPOSIT)
+  reviewStatus?: string
+  // Contract info
+  contract?: {
+    repName?: string
+    signatureUrl?: string
+    agreedToTerms?: boolean
+    serviceDepositAgreed?: boolean
+  }
 }
 
 const DETAIL_EXTRAS: Record<string, Omit<ModerationEventDetail, keyof ModerationEvent>> = {

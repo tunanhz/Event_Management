@@ -114,6 +114,57 @@
 }
 .submitBtn:hover { opacity: 0.9; }
 .submitBtn:disabled { opacity: 0.55; cursor: default; }
+
+.depositBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  padding: 0.6rem 1.05rem;
+  border-radius: 10px;
+  border: none;
+  background: var(--warning-fg);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+.depositBtn:hover { opacity: 0.9; }
+.depositBtn:disabled { opacity: 0.55; cursor: default; }
+
+.actionBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.depositBanner {
+  margin-top: 0.15rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--warning-fg);
+  background: var(--warning-surface);
+  border: 1px solid var(--warning-border);
+}
+.depositBanner strong { font-weight: 700; }
+.depositNote {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.badgeWaitingDeposit {
+  color: var(--warning-fg);
+  background: var(--warning-surface);
+  border-color: var(--warning-border);
+}
+
 .spin { animation: mycard-spin 0.8s linear infinite; }
 @keyframes mycard-spin { to { transform: rotate(360deg); } }
 

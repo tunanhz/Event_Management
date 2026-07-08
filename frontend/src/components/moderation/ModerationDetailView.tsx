@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import {
-  ArrowLeft, Building2, CalendarDays, Check, FileText, Loader2, Mail, MapPin, Phone, Ticket, Users, X,
+  ArrowLeft, Building2, CalendarDays, Check, FileText, Loader2,
+  Mail, MapPin, Phone, Ticket, Users, X, Wrench, CreditCard,
 } from "lucide-react"
 import { cn, formatDateTime, formatVnd, formatNumber } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +16,7 @@ import type { ModerationStatus } from "@/types"
 const TABS = [
   { id: "info", label: "Thông tin" },
   { id: "tickets", label: "Loại vé" },
+  { id: "services", label: "Dịch vụ & Hợp đồng" },
   { id: "documents", label: "Hồ sơ pháp lý" },
 ] as const
 
@@ -22,12 +24,28 @@ type TabId = (typeof TABS)[number]["id"]
 
 const STATUS_BADGE: Record<ModerationStatus, { label: string; variant: "warning" | "success" | "destructive" }> = {
   pending: { label: "Chờ duyệt", variant: "warning" },
+  waiting_deposit: { label: "Chờ cọc 20%", variant: "warning" },
   approved: { label: "Đã duyệt", variant: "success" },
   rejected: { label: "Đã từ chối", variant: "destructive" },
 }
 
+const SERVICE_LABELS: Record<string, string> = {
+  "tron-goi": "Dịch vụ trọn gói",
+  "san-khau": "Sân khấu",
+  "am-thanh": "Âm thanh",
+  "anh-sang": "Ánh sáng",
+  "ban-ghe": "Bàn ghế",
+  "nhan-su": "Nhân sự",
+}
+
+function formatServiceLabel(s: string): string {
+  if (SERVICE_LABELS[s]) return SERVICE_LABELS[s]
+  if (s.startsWith("khac:")) return s.slice(5).trim()
+  return s
+}
+
 // Panel thẩm định hồ sơ sự kiện cho Admin — nối API /api/admin/events/:id.
-// Xem thông tin/vé/hồ sơ rồi Duyệt hoặc Từ chối (bắt buộc lý do) qua BE thật.
+// Xem thông tin/vé/dịch vụ/hồ sơ rồi Duyệt (kèm báo giá nếu có dịch vụ) hoặc Từ chối.
 export function ModerationDetailView({ eventId }: { eventId: string }) {
   const [detail, setDetail] = useState<ModerationEventDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -52,14 +70,14 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
     void load()
   }, [load])
 
-  const decide = async (reason?: string) => {
+  const decide = async (reason?: string, serviceCost?: number) => {
     const mode = modal
     setModal(null)
     if (!mode) return
     setBusy(true)
     setError(null)
     try {
-      if (mode === "approve") await approveEvent(eventId)
+      if (mode === "approve") await approveEvent(eventId, serviceCost ?? 0)
       else await rejectEvent(eventId, reason ?? "")
       await load() // reflect the new reviewStatus + rejectionReason
     } catch (err) {
@@ -95,6 +113,10 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
 
   const status = detail.status
   const badge = STATUS_BADGE[status]
+  const serviceCost = detail.serviceCost ?? 0
+  const depositAmount = detail.depositAmount ?? 0
+  const finalPaymentAmount = detail.finalPaymentAmount || (serviceCost > 0 ? (serviceCost - depositAmount + (detail.additionalCost ?? 0)) : 0)
+  const logisticsServices = detail.logisticsServices ?? []
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -133,7 +155,7 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
               disabled={busy}
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Duyệt & công bố
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Duyệt
             </button>
             <button
               onClick={() => setModal("reject")}
@@ -146,15 +168,54 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
         )}
       </div>
 
+      {/* Status alerts */}
       {status === "rejected" && detail.rejectionReason && (
         <div role="alert" className="rounded-2xl border border-rose-300/60 bg-rose-500/10 p-4 text-sm text-rose-600 dark:text-rose-400">
           <p className="font-semibold">Lý do từ chối (đã gửi Ban tổ chức):</p>
           <p className="mt-1">{detail.rejectionReason}</p>
         </div>
       )}
+      {status === "waiting_deposit" && (
+        <div className="rounded-2xl border border-amber-300/60 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-400">
+          <p className="font-semibold">Đã duyệt — chờ Organizer cọc 20%</p>
+          <p className="mt-1">
+            Chi phí dịch vụ: <span className="font-bold">{formatVnd(serviceCost)}</span>
+            {" · "}Cọc 20%: <span className="font-bold">{formatVnd(depositAmount)}</span>
+            {" · "}Trạng thái cọc: <Badge variant={detail.depositStatus === "PAID" ? "success" : "warning"}>
+              {detail.depositStatus === "PAID" ? "Đã cọc" : "Chưa cọc"}
+            </Badge>
+          </p>
+        </div>
+      )}
       {status === "approved" && (
         <div className="rounded-2xl border border-emerald-300/60 bg-emerald-500/10 p-4 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-          Sự kiện đã được duyệt và công bố lên trang công khai. Thông báo đã gửi tới Ban tổ chức.
+          Sự kiện đã được duyệt và công bố lên trang công khai.
+          {serviceCost > 0 && (
+            <span className="ml-1 font-normal">
+              Chi phí dịch vụ: {formatVnd(serviceCost)} · Cọc: {formatVnd(depositAmount)} (đã thanh toán)
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Financial summary for events with services */}
+      {serviceCost > 0 && (status === "approved" || status === "waiting_deposit") && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <FinanceCard icon={CreditCard} label="Chi phí dịch vụ" value={formatVnd(serviceCost)} />
+          <FinanceCard
+            icon={CreditCard}
+            label="Cọc 20%"
+            value={formatVnd(depositAmount)}
+            badge={detail.depositStatus === "PAID" ? "Đã thanh toán" : "Chưa thanh toán"}
+            badgeVariant={detail.depositStatus === "PAID" ? "success" : "warning"}
+          />
+          <FinanceCard
+            icon={CreditCard}
+            label="Còn lại sau sự kiện"
+            value={formatVnd(finalPaymentAmount)}
+            badge={detail.finalPaymentStatus === "PAID" ? "Đã thanh toán" : "Chưa thanh toán"}
+            badgeVariant={detail.finalPaymentStatus === "PAID" ? "success" : "warning"}
+          />
         </div>
       )}
 
@@ -229,6 +290,48 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
           </div>
         )}
 
+        {tab === "services" && (
+          <div className="space-y-5">
+            {/* Logistics services */}
+            <div>
+              <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <Wrench className="h-4 w-4 text-cyan-500" /> Dịch vụ yêu cầu
+              </h4>
+              {logisticsServices.length > 0 ? (
+                <ul className="mt-2 space-y-1.5">
+                  {logisticsServices.map((s, i) => (
+                    <li key={i} className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                      <span className="h-2 w-2 rounded-full bg-cyan-500" />
+                      {formatServiceLabel(s)}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-muted-foreground">Organizer không yêu cầu thuê dịch vụ nền tảng.</p>
+              )}
+            </div>
+
+            {/* Contract info */}
+            <div>
+              <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <FileText className="h-4 w-4 text-cyan-500" /> Hợp đồng dịch vụ
+              </h4>
+              {detail.contract ? (
+                <div className="mt-2 space-y-2 rounded-xl border border-border bg-background p-4 text-sm">
+                  <p><span className="text-muted-foreground">Người đại diện:</span> <span className="font-semibold">{detail.contract.repName || "—"}</span></p>
+                  <p><span className="text-muted-foreground">Đồng ý điều khoản:</span> {detail.contract.agreedToTerms ? <Badge variant="success">Đã đồng ý</Badge> : <Badge variant="destructive">Chưa</Badge>}</p>
+                  <p><span className="text-muted-foreground">Đồng ý cọc 20% dịch vụ:</span> {detail.contract.serviceDepositAgreed ? <Badge variant="success">Đã đồng ý</Badge> : <Badge variant="destructive">Chưa</Badge>}</p>
+                  {detail.contract.signatureUrl && (
+                    <p><span className="text-muted-foreground">Chữ ký:</span> <span className="font-semibold text-cyan-500">Đã ký</span></p>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-muted-foreground">Chưa có thông tin hợp đồng.</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {tab === "documents" && (
           <ul className="space-y-2">
             {detail.documents.map((doc) => (
@@ -253,6 +356,7 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
         <ModerationDecisionModal
           mode={modal}
           eventTitle={detail.title}
+          logisticsServices={logisticsServices}
           onConfirm={decide}
           onClose={() => setModal(null)}
         />
@@ -268,6 +372,31 @@ function InfoRow({ icon: Icon, label, value }: { icon: typeof Mail; label: strin
       <div className="min-w-0">
         <dt className="text-xs text-muted-foreground">{label}</dt>
         <dd className="text-sm font-semibold text-foreground">{value}</dd>
+      </div>
+    </div>
+  )
+}
+
+function FinanceCard({
+  icon: Icon,
+  label,
+  value,
+  badge,
+  badgeVariant = "warning",
+}: {
+  icon: typeof CreditCard
+  label: string
+  value: string
+  badge?: string
+  badgeVariant?: "warning" | "success" | "destructive"
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-border bg-background p-4">
+      <Icon className="mt-0.5 h-5 w-5 flex-shrink-0 text-cyan-500" />
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-lg font-bold text-foreground">{value}</p>
+        {badge && <Badge variant={badgeVariant} className="mt-1">{badge}</Badge>}
       </div>
     </div>
   )

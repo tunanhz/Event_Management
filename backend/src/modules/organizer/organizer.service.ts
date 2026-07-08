@@ -896,4 +896,40 @@ export class OrganizerService {
     return ticket;
   }
 
+  // ── Deposit & settlement ────────────────────────────────────────────────
+  /**
+   * Organizer pays the 20% deposit → event becomes PUBLISHED.
+   * Preconditions: event in APPROVED_WAITING_DEPOSIT + depositStatus UNPAID.
+   */
+  async payDeposit(eventId: string, actor: { id: string; role: string }): Promise<IEvent> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    if (event.reviewStatus !== 'APPROVED_WAITING_DEPOSIT') {
+      throw new AppError('Sự kiện không ở trạng thái chờ cọc', 400);
+    }
+    const updated = await this.organizerRepository.payDeposit(eventId);
+    if (!updated) {
+      throw new AppError('Thanh toán cọc thất bại — vui lòng thử lại', 409);
+    }
+    return updated;
+  }
+
+  /**
+   * Organizer pays remaining balance after event ends.
+   * Remaining = 80% serviceCost + additionalCost.
+   */
+  async payRemaining(eventId: string, actor: { id: string; role: string }): Promise<IEvent> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    if (event.finalPaymentAmount <= 0) {
+      throw new AppError('Không có khoản thanh toán nào còn lại', 400);
+    }
+    if (event.finalPaymentStatus === 'PAID') {
+      throw new AppError('Khoản thanh toán đã được thanh toán trước đó', 400);
+    }
+    const updated = await this.organizerRepository.payRemaining(eventId);
+    if (!updated) {
+      throw new AppError('Thanh toán thất bại — vui lòng thử lại', 409);
+    }
+    return updated;
+  }
+
 }
