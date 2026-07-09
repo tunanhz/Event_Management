@@ -11,7 +11,7 @@ export const CONTRACT_CLAUSES: { title: string; text: string }[] = [
   },
   {
     title: "Điều 2. Phạm vi dịch vụ",
-    text: "EventBox cung cấp nền tảng đăng tải sự kiện, bán vé trực tuyến, thu hộ và đối soát doanh thu theo các điều khoản hiện hành.",
+    text: "EventBox cung cấp nền tảng đăng tải sự kiện, bán vé trực tuyến, thu hộ và đối soát doanh thu theo các điều khoản hiện hành. Các hạng mục thuê dịch vụ từ nền tảng cần cọc trước 20% chi phí dịch vụ (chi phí cụ thể sẽ được admin thông báo lại sau khi xem và duyệt sự kiện).",
   },
   {
     title: "Điều 3. Trách nhiệm Ban tổ chức",

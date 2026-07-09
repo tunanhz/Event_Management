@@ -35,4 +35,8 @@ router.put('/events/:id/shows', organizerController.configureShows); // bulk sch
 router.get('/events/:id/permits', organizerController.listPermits);
 router.put('/events/:id/permits', organizerController.configurePermits); // bulk permit-document submission
 
+// ─── Deposit & settlement (quotation workflow) ────────────────────────
+router.post('/events/:id/pay-deposit', organizerController.payDeposit);
+router.post('/events/:id/pay-remaining', organizerController.payRemaining);
+
 export default router;

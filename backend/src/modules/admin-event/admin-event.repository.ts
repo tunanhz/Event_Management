@@ -1,13 +1,48 @@
 import mongoose from 'mongoose';
 import { Event, IEvent } from '../event/event.model';
 import { Ticket, ITicket } from '../organizer/ticket.model';
+import { Registration } from '../registration/registration.model';
+import { Payment } from '../registration/payment.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
 
 export interface AdminEventQuery extends PaginationQuery {
   /** Filter by moderation state (e.g. PENDING_REVIEW for the review queue). */
   reviewStatus?: string;
+  /** Filter by public lifecycle state (draft/published/cancelled/completed). */
+  status?: string;
+  categoryId?: string;
+  creatorId?: string;
   /** Case-insensitive title search. */
   search?: string;
+}
+
+export interface EventStatusTrackingItem {
+  _id: string;
+  title: string;
+  organizer?: string;
+  reviewStatus: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
+  status: 'draft' | 'published' | 'cancelled' | 'completed';
+  updatedAt: Date;
+  createdAt: Date;
+  reviewedAt?: Date;
+  rejectionReason?: string;
+  categoryId?: { _id: string; name?: string; slug?: string } | string;
+  creatorId?: { _id: string; fullName?: string; email?: string } | string;
+}
+
+export interface EventStatusTrackingSummary {
+  total: number;
+  draft: number;
+  pendingReview: number;
+  published: number;
+  rejected: number;
+  cancelled: number;
+  completed: number;
+}
+
+export interface EventStatusTrackingResult {
+  summary: EventStatusTrackingSummary;
+  events: EventStatusTrackingItem[];
 }
 
 /** Escape user input before embedding it in a RegExp (title search). */
@@ -17,9 +52,12 @@ function escapeRegExp(input: string): string {
 
 export class AdminEventRepository {
   async findEvents(query: AdminEventQuery): Promise<PaginatedResult<IEvent>> {
-    const { page = 1, limit = 10, reviewStatus, search } = query;
+    const { page = 1, limit = 10, reviewStatus, status, categoryId, creatorId, search } = query;
     const filter: Record<string, any> = {};
     if (reviewStatus) filter.reviewStatus = reviewStatus;
+    if (status) filter.status = status;
+    if (categoryId) filter.categoryId = categoryId;
+    if (creatorId) filter.creatorId = creatorId;
     if (search) filter.title = { $regex: escapeRegExp(search), $options: 'i' };
 
     const skip = (page - 1) * limit;
@@ -57,13 +95,74 @@ export class AdminEventRepository {
     return Ticket.find({ eventId }).sort({ createdAt: 1 }).lean();
   }
 
+  async countRegistrationsByEvent(eventId: string): Promise<number> {
+    return Registration.countDocuments({ eventId });
+  }
+
+  async updateEvent(id: string, data: Partial<IEvent>): Promise<IEvent | null> {
+    return Event.findByIdAndUpdate(id, data, { new: true, runValidators: true })
+      .populate('categoryId', 'name slug icon')
+      .populate('creatorId', 'fullName email avatar')
+      .lean();
+  }
+
+  async deleteEventCascade(eventId: string): Promise<IEvent | null> {
+    const registrations = await Registration.find({ eventId }).select('_id').lean();
+    const registrationIds = registrations.map((registration) => registration._id);
+
+    await Promise.all([
+      registrationIds.length > 0 ? Payment.deleteMany({ registrationId: { $in: registrationIds } }) : Promise.resolve(),
+      Registration.deleteMany({ eventId }),
+      Ticket.deleteMany({ eventId }),
+    ]);
+
+    return Event.findByIdAndDelete(eventId).lean();
+  }
+
+  async getStatusTracking(search?: string): Promise<EventStatusTrackingResult> {
+    const filter: Record<string, any> = {};
+    if (search) filter.title = { $regex: escapeRegExp(search), $options: 'i' };
+
+    const [events, totalItems, reviewStatusCounts, lifecycleStatusCounts] = await Promise.all([
+      Event.find(filter)
+        .select('title organizer reviewStatus status categoryId creatorId updatedAt createdAt reviewedAt rejectionReason')
+        .populate('categoryId', 'name slug')
+        .populate('creatorId', 'fullName email')
+        .sort({ updatedAt: -1 })
+        .limit(50)
+        .lean(),
+      Event.countDocuments(filter),
+      Event.aggregate<{ _id: string; count: number }>([
+        { $match: filter },
+        { $group: { _id: '$reviewStatus', count: { $sum: 1 } } },
+      ]),
+      Event.aggregate<{ _id: string; count: number }>([
+        { $match: filter },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const reviewCounts = Object.fromEntries(reviewStatusCounts.map((row) => [row._id, row.count]));
+    const lifecycleCounts = Object.fromEntries(lifecycleStatusCounts.map((row) => [row._id, row.count]));
+
+    return {
+      summary: {
+        total: totalItems,
+        draft: reviewCounts.DRAFT ?? 0,
+        pendingReview: reviewCounts.PENDING_REVIEW ?? 0,
+        published: reviewCounts.PUBLISHED ?? 0,
+        rejected: reviewCounts.REJECTED ?? 0,
+        cancelled: lifecycleCounts.cancelled ?? 0,
+        completed: lifecycleCounts.completed ?? 0,
+      },
+      events: events as unknown as EventStatusTrackingItem[],
+    };
+  }
+
   /**
-   * Atomic PENDING_REVIEW → PUBLISHED transition (AM-01 concurrency rule):
-   * the reviewStatus filter guarantees a record concurrently processed by
-   * another admin (or withdrawn by the organizer) is never overwritten —
-   * the call simply matches nothing and returns null.
+   * Atomic PENDING_REVIEW → PUBLISHED transition (no services / serviceCost=0).
    */
-  async approveEvent(id: string, adminId: string): Promise<IEvent | null> {
+  async approveEventDirect(id: string, adminId: string): Promise<IEvent | null> {
     return Event.findOneAndUpdate(
       { _id: id, reviewStatus: 'PENDING_REVIEW' },
       {
@@ -71,9 +170,37 @@ export class AdminEventRepository {
           reviewStatus: 'PUBLISHED',
           approvedById: new mongoose.Types.ObjectId(adminId),
           reviewedAt: new Date(),
-          // Legacy public-listing visibility flag — homepage/listing/detail
-          // (event module) only serve status='published' events.
           status: 'published',
+        },
+        $unset: { rejectionReason: '' },
+      },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  /**
+   * Atomic PENDING_REVIEW → APPROVED_WAITING_DEPOSIT transition (has services).
+   * Records the admin's service cost quotation and the 20% deposit amount.
+   */
+  async approveEventWithDeposit(
+    id: string,
+    adminId: string,
+    serviceCost: number,
+    depositAmount: number
+  ): Promise<IEvent | null> {
+    const finalPaymentAmount = serviceCost - depositAmount;
+    return Event.findOneAndUpdate(
+      { _id: id, reviewStatus: 'PENDING_REVIEW' },
+      {
+        $set: {
+          reviewStatus: 'APPROVED_WAITING_DEPOSIT',
+          approvedById: new mongoose.Types.ObjectId(adminId),
+          reviewedAt: new Date(),
+          serviceCost,
+          depositAmount,
+          depositStatus: 'UNPAID',
+          finalPaymentAmount,
+          // status stays 'draft' until deposit is paid
         },
         $unset: { rejectionReason: '' },
       },
@@ -92,6 +219,21 @@ export class AdminEventRepository {
           reviewedAt: new Date(),
         },
       },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  /**
+   * Set additional cost for a completed/published event and compute the
+   * final payment amount = (serviceCost * 0.8) + additionalCost.
+   */
+  async setAdditionalCost(id: string, additionalCost: number): Promise<IEvent | null> {
+    const event = await Event.findById(id).lean();
+    if (!event) return null;
+    const finalPaymentAmount = Math.round(event.serviceCost * 0.8) + additionalCost;
+    return Event.findByIdAndUpdate(
+      id,
+      { $set: { additionalCost, finalPaymentAmount } },
       { new: true, runValidators: true }
     ).lean();
   }

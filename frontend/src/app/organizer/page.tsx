@@ -7,13 +7,14 @@ import { NoticeModal } from "@/components/organizer/NoticeModal"
 import { useOrganizerTitle } from "@/components/organizer/OrganizerShellContext"
 import { MyEventCard } from "@/components/organizer/MyEventCard"
 import type { OrganizerEvent, OrgEventStatus } from "@/components/organizer/my-events-data"
-import { fetchMyEvents, submitForReview } from "@/components/organizer/organizer-my-events-api"
+import { fetchMyEvents, submitForReview, payDeposit, payRemaining } from "@/components/organizer/organizer-my-events-api"
 import styles from "./my-events.module.css"
 
 const TABS = [
   { id: "upcoming", label: "Sắp tới" },
   { id: "past", label: "Đã qua" },
   { id: "pending", label: "Chờ duyệt" },
+  { id: "waiting_deposit", label: "Chờ cọc" },
   { id: "draft", label: "Nháp" },
 ] as const
 
@@ -33,6 +34,8 @@ export default function MyEventsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [submittingId, setSubmittingId] = useState<string | null>(null)
+  const [payingDepositId, setPayingDepositId] = useState<string | null>(null)
+  const [payingRemainingId, setPayingRemainingId] = useState<string | null>(null)
 
   // Roving focus for the status tablist (WAI-ARIA tabs keyboard pattern).
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -77,6 +80,33 @@ export default function MyEventsPage() {
       setError(err instanceof Error ? err.message : "Gửi duyệt thất bại")
     } finally {
       setSubmittingId(null)
+    }
+  }
+
+  const handlePayDeposit = async (id: string) => {
+    setPayingDepositId(id)
+    setError(null)
+    try {
+      await payDeposit(id)
+      await reload()
+      setTab("upcoming") // once deposit is paid, reviewStatus becomes PUBLISHED and status becomes upcoming
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Thanh toán cọc thất bại")
+    } finally {
+      setPayingDepositId(null)
+    }
+  }
+
+  const handlePayRemaining = async (id: string) => {
+    setPayingRemainingId(id)
+    setError(null)
+    try {
+      await payRemaining(id)
+      await reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Thanh toán nốt thất bại")
+    } finally {
+      setPayingRemainingId(null)
     }
   }
 
@@ -182,6 +212,10 @@ export default function MyEventsPage() {
                     event={event}
                     onSubmit={submit}
                     submitting={submittingId === event.id}
+                    onPayDeposit={handlePayDeposit}
+                    payingDeposit={payingDepositId === event.id}
+                    onPayRemaining={handlePayRemaining}
+                    payingRemaining={payingRemainingId === event.id}
                   />
                 ))}
               </div>

@@ -157,4 +157,33 @@ export class OrganizerRepository {
     }
     return result;
   }
+
+  /**
+   * APPROVED_WAITING_DEPOSIT → PUBLISHED: marks deposit as paid and publishes
+   * the event so it appears on the public site.
+   */
+  async payDeposit(id: string): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      { _id: id, reviewStatus: 'APPROVED_WAITING_DEPOSIT', depositStatus: 'UNPAID' },
+      {
+        $set: {
+          depositStatus: 'PAID',
+          reviewStatus: 'PUBLISHED',
+          status: 'published',
+        },
+      },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  /**
+   * Mark the final (post-event) payment as paid.
+   */
+  async payRemaining(id: string): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      { _id: id, finalPaymentStatus: 'UNPAID' },
+      { $set: { finalPaymentStatus: 'PAID' } },
+      { new: true, runValidators: true }
+    ).lean();
+  }
 }
