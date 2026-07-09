@@ -104,4 +104,74 @@ export class OrganizerController {
     });
     res.json(ApiResponse.ok(null, 'Xoá loại vé thành công'));
   });
+
+  getTicketInventory = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const inventory = await this.organizerService.getTicketInventory(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(inventory, 'Lấy tồn kho vé thành công'));
+  });
+
+  adjustTicketInventory = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const ticket = await this.organizerService.adjustTicketInventory(
+      req.params.id as string,
+      req.params.ticketId as string,
+      { id: req.user!.id, role: req.user!.role },
+      req.body ?? {}
+    );
+    res.json(ApiResponse.ok(ticket, 'Cập nhật tồn kho vé thành công'));
+  });
+
+  listShows = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const shows = await this.organizerService.listShows(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(shows, 'Lấy lịch trình sự kiện thành công'));
+  });
+
+  configureShows = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { shows } = req.body ?? {};
+    const result = await this.organizerService.configureShows(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      shows
+    );
+    res.json(ApiResponse.ok(result, 'Cấu hình lịch trình thành công'));
+  });
+
+  listPermits = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const permits = await this.organizerService.listPermits(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(permits, 'Lấy hồ sơ giấy phép thành công'));
+  });
+
+  configurePermits = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { permitDocuments } = req.body ?? {};
+    const result = await this.organizerService.configurePermits(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      permitDocuments
+    );
+    res.json(ApiResponse.ok(result, 'Cập nhật hồ sơ giấy phép thành công'));
+  });
+
+  payDeposit = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const event = await this.organizerService.payDeposit(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(event, 'Đã thanh toán cọc 20% — sự kiện đã được công bố'));
+  });
+
+  payRemaining = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const event = await this.organizerService.payRemaining(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(event, 'Đã thanh toán khoản còn lại'));
+  });
 }

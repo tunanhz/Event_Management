@@ -7,7 +7,7 @@
  * `ticketTypes` so there is a single source of truth.
  */
 
-export type OrgEventStatus = "upcoming" | "past" | "pending" | "draft"
+export type OrgEventStatus = "upcoming" | "past" | "pending" | "draft" | "waiting_deposit"
 
 export interface TicketType {
   name: string
@@ -27,9 +27,16 @@ export interface OrganizerEvent {
   status: OrgEventStatus
   ticketTypes?: TicketType[]
   /** Raw backend review state (set for API-loaded events; absent for mocks). */
-  reviewStatus?: "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED"
+  reviewStatus?: "DRAFT" | "PENDING_REVIEW" | "APPROVED_WAITING_DEPOSIT" | "PUBLISHED" | "REJECTED"
   /** Admin's correction note when reviewStatus is REJECTED. */
   rejectionReason?: string
+  /** Service cost & deposit info (populated when reviewStatus involves services). */
+  serviceCost?: number
+  depositAmount?: number
+  depositStatus?: "UNPAID" | "PAID"
+  additionalCost?: number
+  finalPaymentAmount?: number
+  finalPaymentStatus?: "UNPAID" | "PAID"
 }
 
 const img = (id: string) =>

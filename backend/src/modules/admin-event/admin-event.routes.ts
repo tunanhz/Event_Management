@@ -18,5 +18,6 @@ router.post('/:id/cancel', adminEventController.cancelEvent);
 router.post('/:id/approve', adminEventController.approveEvent);
 router.post('/:id/reject', adminEventController.rejectEvent);
 router.delete('/:id', adminEventController.deleteEvent);
+router.post('/:id/additional-cost', adminEventController.setAdditionalCost);
 
 export default router;

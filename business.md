@@ -57,9 +57,8 @@ Tài liệu này định nghĩa chi tiết luồng nghiệp vụ, danh sách cá
     *   **Tạo & Thiết lập Sự kiện:**
         *   *Cấu hình vé (Ticket Configuration):* Tạo nhiều hạng vé khác nhau (VIP, Standard, Early Bird...), số lượng vé phát hành và giá vé cụ thể.
         *   *Sơ đồ chỗ ngồi (Seat Map):* Cấu hình và thiết lập sơ đồ ghế ngồi theo hàng/khối đối với các sự kiện trong khán phòng hoặc có đánh số ghế.
-    *   **Thuê thêm dịch vụ hệ thống (Services Request):** Gửi yêu cầu sử dụng các dịch vụ hỗ trợ từ hệ thống EventBox và chờ Admin duyệt:
-        *   *Xin giấy phép tổ chức (Permits Request).*
-        *   *Hỗ trợ hậu cần & nhân sự (Logistics & Equipment Support).*
+    *   **Thuê thêm dịch vụ hệ thống (Services Request):** Gửi yêu cầu sử dụng các dịch vụ hỗ trợ từ hệ thống EventBox (Dịch vụ trọn gói, Sân khấu, Âm thanh, Ánh sáng, Bàn ghế, Nhân sự, hoặc Dịch vụ khác tự nhập) và chờ Admin duyệt. Phải cọc trước 20% chi phí thuê dịch vụ (sau khi Admin xem xét hồ sơ và báo giá cụ thể).
+    *   **Giấy phép & Sơ đồ sự kiện:** Đính kèm giấy phép tổ chức sự kiện và sơ đồ bố trí không gian sự kiện để Admin/Staff thẩm định.
     *   **Xem & Quản lý hợp đồng (Contracts):** Xem chi tiết các hợp đồng, thỏa thuận chia sẻ doanh số và ký kết thỏa thuận điện tử với EventBox.
     *   **Quản lý bán hàng & Người tham gia:**
         *   Xem danh sách chi tiết những người tham gia đã đăng ký mua vé (thông tin liên hệ, loại vé đã mua).

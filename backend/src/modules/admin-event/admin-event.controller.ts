@@ -75,11 +75,18 @@ export class AdminEventController {
   });
 
   approveEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const serviceCost = typeof (req.body ?? {}).serviceCost === 'number'
+      ? (req.body as { serviceCost: number }).serviceCost
+      : 0;
     const event = await this.adminEventService.approveEvent(
       req.params.id as string,
-      req.user!.id
+      req.user!.id,
+      serviceCost
     );
-    res.json(ApiResponse.ok(event, 'Đã duyệt và công khai sự kiện'));
+    const message = serviceCost > 0
+      ? 'Đã duyệt sự kiện — chờ Organizer cọc 20% để công bố'
+      : 'Đã duyệt và công khai sự kiện';
+    res.json(ApiResponse.ok(event, message));
   });
 
   rejectEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -88,5 +95,16 @@ export class AdminEventController {
       (req.body ?? {}).reason
     );
     res.json(ApiResponse.ok(event, 'Đã từ chối sự kiện và gửi lý do cho organizer'));
+  });
+
+  setAdditionalCost = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const additionalCost = typeof (req.body ?? {}).additionalCost === 'number'
+      ? (req.body as { additionalCost: number }).additionalCost
+      : -1;
+    const event = await this.adminEventService.setAdditionalCost(
+      req.params.id as string,
+      additionalCost
+    );
+    res.json(ApiResponse.ok(event, 'Đã cập nhật chi phí phát sinh'));
   });
 }

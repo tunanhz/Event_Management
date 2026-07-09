@@ -21,4 +21,22 @@ router.put('/events/:id/tickets', organizerController.configureTickets); // EM-1
 router.put('/events/:id/tickets/:ticketId', organizerController.updateTicket);
 router.delete('/events/:id/tickets/:ticketId', organizerController.deleteTicket);
 
+// ─── Ticket inventory management (EM-132) ─────────────────────────────
+// Stock-only view/edit that keeps working after the event is PUBLISHED,
+// unlike the DRAFT/REJECTED-only configuration routes above.
+router.get('/events/:id/tickets/inventory', organizerController.getTicketInventory);
+router.patch('/events/:id/tickets/:ticketId/inventory', organizerController.adjustTicketInventory);
+
+// ─── Schedule management (EM-25) ──────────────────────────────────────
+router.get('/events/:id/shows', organizerController.listShows);
+router.put('/events/:id/shows', organizerController.configureShows); // bulk schedule (shows) configuration
+
+// ─── Permit submission (EM-28 / EM-136) ───────────────────────────────
+router.get('/events/:id/permits', organizerController.listPermits);
+router.put('/events/:id/permits', organizerController.configurePermits); // bulk permit-document submission
+
+// ─── Deposit & settlement (quotation workflow) ────────────────────────
+router.post('/events/:id/pay-deposit', organizerController.payDeposit);
+router.post('/events/:id/pay-remaining', organizerController.payRemaining);
+
 export default router;

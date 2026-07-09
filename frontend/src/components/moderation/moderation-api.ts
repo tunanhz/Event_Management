@@ -1,8 +1,8 @@
 /**
  * Admin event-moderation API layer — wires the moderation screens to the real
  * backend (`/api/admin/events`). Maps the backend review lifecycle
- * (DRAFT/PENDING_REVIEW/PUBLISHED/REJECTED) onto the UI's ModerationStatus
- * (pending/approved/rejected).
+ * (DRAFT/PENDING_REVIEW/APPROVED_WAITING_DEPOSIT/PUBLISHED/REJECTED) onto the
+ * UI's ModerationStatus (pending/approved/rejected/waiting_deposit).
  */
 import { clientApi } from "@/lib/client-api"
 import type { ModerationEvent, ModerationStatus } from "@/types"
@@ -17,11 +17,13 @@ const REVIEW_STATUS_BY_TAB: Record<ModerationStatus, string> = {
   pending: "PENDING_REVIEW",
   approved: "PUBLISHED",
   rejected: "REJECTED",
+  waiting_deposit: "APPROVED_WAITING_DEPOSIT",
 }
 
 function toModerationStatus(reviewStatus: string): ModerationStatus {
   if (reviewStatus === "PUBLISHED") return "approved"
   if (reviewStatus === "REJECTED") return "rejected"
+  if (reviewStatus === "APPROVED_WAITING_DEPOSIT") return "waiting_deposit"
   return "pending"
 }
 
@@ -50,7 +52,14 @@ interface ServerEvent {
   capacity?: number
   rejectionReason?: string
   permitDocuments?: { name: string; url?: string; sizeKb?: number }[]
-  contract?: { repName?: string; signatureUrl?: string }
+  contract?: { repName?: string; signatureUrl?: string; agreed?: boolean; agreedToTerms?: boolean; serviceDepositAgreed?: boolean }
+  logisticsServices?: string[]
+  serviceCost?: number
+  depositAmount?: number
+  depositStatus?: string
+  additionalCost?: number
+  finalPaymentAmount?: number
+  finalPaymentStatus?: string
 }
 
 interface ServerTicket {
@@ -78,7 +87,7 @@ function toModerationEvent(e: ServerEvent): ModerationEvent {
   }
 }
 
-/** List one moderation tab's events (pending / approved / rejected). */
+/** List one moderation tab's events (pending / approved / rejected / waiting_deposit). */
 export async function fetchModerationQueue(tab: ModerationStatus): Promise<ModerationEvent[]> {
   const res = await clientApi.get<{ data: ServerEvent[] }>(
     `/admin/events?reviewStatus=${REVIEW_STATUS_BY_TAB[tab]}&limit=100`
@@ -118,15 +127,34 @@ export async function fetchModerationDetail(id: string): Promise<ModerationEvent
     tickets,
     documents,
     rejectionReason: e.rejectionReason,
+    logisticsServices: e.logisticsServices ?? [],
+    serviceCost: e.serviceCost ?? 0,
+    depositAmount: e.depositAmount ?? 0,
+    depositStatus: (e.depositStatus as "UNPAID" | "PAID") ?? "UNPAID",
+    additionalCost: e.additionalCost ?? 0,
+    finalPaymentAmount: e.finalPaymentAmount ?? 0,
+    finalPaymentStatus: (e.finalPaymentStatus as "UNPAID" | "PAID") ?? "UNPAID",
+    reviewStatus: e.reviewStatus,
+    contract: e.contract ? {
+      repName: e.contract.repName,
+      signatureUrl: e.contract.signatureUrl,
+      agreedToTerms: e.contract.agreed,
+      serviceDepositAgreed: e.contract.agreed,
+    } : undefined,
   }
 }
 
-/** PENDING_REVIEW → PUBLISHED. */
-export async function approveEvent(id: string): Promise<void> {
-  await clientApi.post(`/admin/events/${id}/approve`, {})
+/** PENDING_REVIEW → PUBLISHED (no services) or APPROVED_WAITING_DEPOSIT (with services). */
+export async function approveEvent(id: string, serviceCost: number = 0): Promise<void> {
+  await clientApi.post(`/admin/events/${id}/approve`, { serviceCost })
 }
 
 /** PENDING_REVIEW → REJECTED with a correction reason. */
 export async function rejectEvent(id: string, reason: string): Promise<void> {
   await clientApi.post(`/admin/events/${id}/reject`, { reason })
+}
+
+/** Set additional cost for post-event settlement. */
+export async function setAdditionalCost(id: string, additionalCost: number): Promise<void> {
+  await clientApi.post(`/admin/events/${id}/additional-cost`, { additionalCost })
 }

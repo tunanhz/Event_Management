@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { Event, IEvent } from '../event/event.model';
 import { Ticket, ITicket } from './ticket.model';
+import { Registration } from '../registration/registration.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
 
 export interface OrganizerEventQuery extends PaginationQuery {
@@ -122,5 +123,67 @@ export class OrganizerRepository {
 
   async deleteTicket(ticketId: string): Promise<void> {
     await Ticket.findByIdAndDelete(ticketId);
+  }
+
+  /**
+   * Sold (PAID) vs currently-held (PENDING, not-yet-expired) quantity per
+   * ticket — the breakdown behind Ticket.soldQuantity (which already counts
+   * both combined; see registration.repository.ts reserveTicketStock). Used
+   * for the organizer-facing inventory view (EM-132); stale expired-but-
+   * unswept holds are excluded from `held` since they're already back in the
+   * available pool from the buyer's perspective.
+   */
+  async sumRegistrationsByTicket(
+    ticketIds: string[]
+  ): Promise<Map<string, { sold: number; held: number }>> {
+    const ids = ticketIds.map((id) => new mongoose.Types.ObjectId(id));
+    const rows = await Registration.aggregate([
+      {
+        $match: {
+          ticketId: { $in: ids },
+          $or: [{ status: 'PAID' }, { status: 'PENDING', holdExpiresAt: { $gt: new Date() } }],
+        },
+      },
+      { $group: { _id: { ticketId: '$ticketId', status: '$status' }, qty: { $sum: '$quantity' } } },
+    ]);
+
+    const result = new Map<string, { sold: number; held: number }>();
+    for (const row of rows) {
+      const ticketId = String(row._id.ticketId);
+      const entry = result.get(ticketId) ?? { sold: 0, held: 0 };
+      if (row._id.status === 'PAID') entry.sold = row.qty;
+      else entry.held = row.qty;
+      result.set(ticketId, entry);
+    }
+    return result;
+  }
+
+  /**
+   * APPROVED_WAITING_DEPOSIT → PUBLISHED: marks deposit as paid and publishes
+   * the event so it appears on the public site.
+   */
+  async payDeposit(id: string): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      { _id: id, reviewStatus: 'APPROVED_WAITING_DEPOSIT', depositStatus: 'UNPAID' },
+      {
+        $set: {
+          depositStatus: 'PAID',
+          reviewStatus: 'PUBLISHED',
+          status: 'published',
+        },
+      },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  /**
+   * Mark the final (post-event) payment as paid.
+   */
+  async payRemaining(id: string): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      { _id: id, finalPaymentStatus: 'UNPAID' },
+      { $set: { finalPaymentStatus: 'PAID' } },
+      { new: true, runValidators: true }
+    ).lean();
   }
 }

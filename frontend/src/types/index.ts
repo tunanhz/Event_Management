@@ -36,7 +36,7 @@ export interface DashboardMetrics {
   pendingApprovals: number
 }
 
-export type ModerationStatus = "pending" | "approved" | "rejected"
+export type ModerationStatus = "pending" | "approved" | "rejected" | "waiting_deposit"
 
 export interface ModerationEvent {
   id: string

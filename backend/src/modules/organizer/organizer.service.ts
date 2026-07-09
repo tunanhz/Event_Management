@@ -10,6 +10,8 @@ import {
   ConfigureTicketInput,
   CreateEventInput,
   CreateTicketInput,
+  PermitDocumentInput,
+  ShowInput,
   UpdateEventInput,
   UpdateTicketInput,
 } from './event-wizard-types';
@@ -19,6 +21,7 @@ import {
   resolveCreateSchedule,
   resolveShowTimes,
   ResolvedCreateSchedule,
+  validatePermitDocuments,
   validateTicketInput,
   validateWizardFields,
 } from './event-wizard-validation';
@@ -33,6 +36,31 @@ import {
 interface OrganizerActor {
   id: string;
   role: string;
+}
+
+/** One ticket type's stock snapshot (EM-132 inventory management). */
+export interface TicketInventoryRow {
+  ticketId: string;
+  ticketName: string;
+  price: number;
+  quantity: number;
+  /** Held + paid combined — the atomic counter that guards against oversell. */
+  soldQuantity: number;
+  /** Breakdown of soldQuantity: confirmed-paid quantity. */
+  sold: number;
+  /** Breakdown of soldQuantity: quantity under an active (not-yet-expired) hold. */
+  held: number;
+  available: number;
+  status: 'ACTIVE' | 'SOLD_OUT' | 'HIDDEN';
+  soldPct: number;
+}
+
+/** Stock-only edit (EM-132): unlike configureTickets/updateTicket this is not
+ *  gated to DRAFT/REJECTED — organizers must be able to restock or pause a
+ *  ticket type while the event is already PUBLISHED and on sale. */
+export interface AdjustTicketInventoryInput {
+  quantity?: number;
+  status?: 'ACTIVE' | 'HIDDEN';
 }
 
 export class OrganizerService {
@@ -614,6 +642,175 @@ export class OrganizerService {
     return result;
   }
 
+  /**
+   * Ticket inventory management (EM-132): per-ticket-type stock snapshot —
+   * how many are configured, currently held (pending checkout), confirmed
+   * sold, and still available. Available regardless of reviewStatus (the
+   * organizer must be able to check stock before and after publish).
+   */
+  async getTicketInventory(eventId: string, actor: OrganizerActor): Promise<TicketInventoryRow[]> {
+    await this.getOwnedEvent(eventId, actor);
+    const tickets = await this.organizerRepository.findTicketsByEvent(eventId);
+    const breakdown = await this.organizerRepository.sumRegistrationsByTicket(
+      tickets.map((t) => String(t._id))
+    );
+
+    return tickets.map((t) => {
+      const b = breakdown.get(String(t._id)) ?? { sold: 0, held: 0 };
+      return {
+        ticketId: String(t._id),
+        ticketName: t.ticketName,
+        price: t.price,
+        quantity: t.quantity,
+        soldQuantity: t.soldQuantity,
+        sold: b.sold,
+        held: b.held,
+        available: Math.max(0, t.quantity - t.soldQuantity),
+        status: t.status,
+        soldPct: t.quantity ? Math.round((t.soldQuantity / t.quantity) * 100) : 0,
+      };
+    });
+  }
+
+  /**
+   * Restock or pause/resume a single ticket type's sales — the "manage stock
+   * on a live event" counterpart to configureTickets' "set up types before
+   * publish". Deliberately does not call assertEditable: this must keep
+   * working once the event is PUBLISHED and selling. Only quantity/status
+   * are editable here; renaming, pricing, and schedule changes stay behind
+   * the DRAFT/REJECTED-only configuration endpoints. Still blocked once the
+   * event has started — stock is only adjustable while tickets are on sale
+   * (before the event begins), not while it's under way or over.
+   */
+  async adjustTicketInventory(
+    eventId: string,
+    ticketId: string,
+    actor: OrganizerActor,
+    data: AdjustTicketInventoryInput
+  ): Promise<ITicket> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    this.assertNotStarted(event, 'điều chỉnh kho vé');
+    const ticket = await this.getEventTicket(eventId, ticketId);
+
+    const update: Partial<ITicket> = {};
+    if (data.quantity !== undefined) {
+      if (typeof data.quantity !== 'number' || !Number.isInteger(data.quantity) || data.quantity < 1) {
+        throw new AppError('quantity phải là số nguyên >= 1', 400);
+      }
+      if (data.quantity < ticket.soldQuantity) {
+        throw new AppError(
+          `Không thể đặt quantity (${data.quantity}) thấp hơn số vé đã bán/đang giữ (${ticket.soldQuantity})`,
+          400
+        );
+      }
+      update.quantity = data.quantity;
+    }
+    if (data.status !== undefined) {
+      if (data.status !== 'ACTIVE' && data.status !== 'HIDDEN') {
+        throw new AppError('status chỉ có thể là ACTIVE hoặc HIDDEN', 400);
+      }
+      update.status = data.status;
+    }
+    if (Object.keys(update).length === 0) {
+      throw new AppError('Cần cung cấp quantity hoặc status để cập nhật tồn kho', 400);
+    }
+
+    const updated = await this.organizerRepository.updateTicket(ticketId, update);
+    if (!updated) {
+      throw new AppError('Ticket not found', 404);
+    }
+    await this.syncPriceFields(eventId);
+    return updated;
+  }
+
+  async listShows(eventId: string, actor: OrganizerActor): Promise<IEvent['shows']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    return event.shows;
+  }
+
+  /**
+   * Schedule management (EM-25): replace an event's whole show/schedule list
+   * in one call — same "submit the whole table" shape as configureTickets.
+   * Rows carrying `_id` retime an existing show, rows without one create a
+   * new show, and any existing show left out of the submitted set is removed
+   * (blocked by resolveShowReplacement while a ticket type still references
+   * it). startDate/endDate/time/sessions are recomputed from the new show
+   * list so discovery fields (homepage/listing) stay in sync.
+   */
+  async configureShows(
+    eventId: string,
+    actor: OrganizerActor,
+    shows: ShowInput[]
+  ): Promise<IEvent['shows']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    this.assertEditable(event, 'cấu hình lịch trình');
+
+    const newShows = await this.resolveShowReplacement(event, shows);
+    const { startDate, endDate } = resolveShowTimes(shows);
+
+    const updated = await this.organizerRepository.updateEditableEvent(eventId, {
+      shows: newShows,
+      startDate,
+      endDate,
+      date: startDate,
+      time: deriveTime(startDate),
+      sessions: deriveSessions(newShows, startDate),
+    });
+    if (!updated) {
+      // reviewStatus changed between assertEditable and the atomic write
+      // (e.g. a concurrent submit locked the event into the review queue).
+      throw new AppError(
+        'Chỉ có thể cấu hình lịch trình khi sự kiện đang ở trạng thái nháp hoặc bị từ chối',
+        400
+      );
+    }
+    return updated.shows;
+  }
+
+  async listPermits(eventId: string, actor: OrganizerActor): Promise<IEvent['permitDocuments']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    return event.permitDocuments;
+  }
+
+  /**
+   * Permit submission (EM-136/EM-28): replace an event's whole legal permit
+   * document list in one call — same "submit the whole table" shape as
+   * configureTickets/configureShows. DRAFT/REJECTED-only: these are the
+   * documents admin moderation reviews as part of approval, so they stay
+   * locked once the event enters the review queue, same as everything else
+   * assertEditable guards. An empty list is valid — permits are optional
+   * (only events that requested the platform's permit-support logistics
+   * service need them).
+   */
+  async configurePermits(
+    eventId: string,
+    actor: OrganizerActor,
+    permitDocuments: PermitDocumentInput[]
+  ): Promise<IEvent['permitDocuments']> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    this.assertEditable(event, 'cập nhật hồ sơ giấy phép');
+    validatePermitDocuments(permitDocuments);
+
+    const mapped = permitDocuments.map((d) => ({
+      name: d.name,
+      url: d.url,
+      sizeKb: d.sizeKb,
+    }));
+
+    const updated = await this.organizerRepository.updateEditableEvent(eventId, {
+      permitDocuments: mapped,
+    });
+    if (!updated) {
+      // reviewStatus changed between assertEditable and the atomic write
+      // (e.g. a concurrent submit locked the event into the review queue).
+      throw new AppError(
+        'Chỉ có thể cập nhật hồ sơ giấy phép khi sự kiện đang ở trạng thái nháp hoặc bị từ chối',
+        400
+      );
+    }
+    return updated.permitDocuments;
+  }
+
   async submitForReview(eventId: string, actor: OrganizerActor): Promise<IEvent> {
     const event = await this.getOwnedEvent(eventId, actor);
     // DRAFT: first submission · REJECTED: resubmission after fixing the
@@ -679,6 +876,16 @@ export class OrganizerService {
     }
   }
 
+  // Stock is only adjustable while tickets are on sale — i.e. before the event
+  // begins. Once it has started (ongoing or already over) the stock is frozen.
+  // Uses startDate (fall back to the legacy date) as the cutoff.
+  private assertNotStarted(event: IEvent, action: string): void {
+    const startRef = event.startDate ?? event.date;
+    if (startRef && new Date(startRef).getTime() <= Date.now()) {
+      throw new AppError(`Sự kiện đã bắt đầu — không thể ${action}`, 400);
+    }
+  }
+
   // Loads a ticket and enforces it actually belongs to the given event, so an
   // organizer can't reference another event's ticket id through this event's URL.
   private async getEventTicket(eventId: string, ticketId: string): Promise<ITicket> {
@@ -687,6 +894,42 @@ export class OrganizerService {
       throw new AppError('Ticket not found', 404);
     }
     return ticket;
+  }
+
+  // ── Deposit & settlement ────────────────────────────────────────────────
+  /**
+   * Organizer pays the 20% deposit → event becomes PUBLISHED.
+   * Preconditions: event in APPROVED_WAITING_DEPOSIT + depositStatus UNPAID.
+   */
+  async payDeposit(eventId: string, actor: { id: string; role: string }): Promise<IEvent> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    if (event.reviewStatus !== 'APPROVED_WAITING_DEPOSIT') {
+      throw new AppError('Sự kiện không ở trạng thái chờ cọc', 400);
+    }
+    const updated = await this.organizerRepository.payDeposit(eventId);
+    if (!updated) {
+      throw new AppError('Thanh toán cọc thất bại — vui lòng thử lại', 409);
+    }
+    return updated;
+  }
+
+  /**
+   * Organizer pays remaining balance after event ends.
+   * Remaining = 80% serviceCost + additionalCost.
+   */
+  async payRemaining(eventId: string, actor: { id: string; role: string }): Promise<IEvent> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    if (event.finalPaymentAmount <= 0) {
+      throw new AppError('Không có khoản thanh toán nào còn lại', 400);
+    }
+    if (event.finalPaymentStatus === 'PAID') {
+      throw new AppError('Khoản thanh toán đã được thanh toán trước đó', 400);
+    }
+    const updated = await this.organizerRepository.payRemaining(eventId);
+    if (!updated) {
+      throw new AppError('Thanh toán thất bại — vui lòng thử lại', 409);
+    }
+    return updated;
   }
 
 }

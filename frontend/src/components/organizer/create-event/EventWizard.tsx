@@ -28,11 +28,15 @@ import styles from "@/app/organizer/create-event/create-event.module.css"
 export function EventWizard({
   initialForm,
   eventId: initialEventId,
+  readOnly = false,
 }: {
   initialForm: CreateEventForm
   /** Existing event id (edit flow) — seeds saves to PUT (update) this event
    *  instead of POSTing a new one. Absent for the "Tạo sự kiện" create flow. */
   eventId?: string
+  /** View-only lock (PENDING_REVIEW): renders the filled form but disables every
+   *  field and hides Save/Continue, so an in-review event can be reviewed not edited. */
+  readOnly?: boolean
 }) {
   const [step, setStep] = useState<WizardStep>(1)
   const [form, setForm] = useState<CreateEventForm>(initialForm)
@@ -68,7 +72,8 @@ export function EventWizard({
 
   // Furthest step the organizer may open: up to (and including) the first
   // incomplete step. Everything beyond stays locked until earlier steps pass.
-  const maxStep: WizardStep = firstInvalidStep(form) ?? 6
+  // Read-only view unlocks every tab so the whole event can be browsed.
+  const maxStep: WizardStep = readOnly ? 6 : firstInvalidStep(form) ?? 6
 
   // Steps may pass either a plain patch or an updater reading the latest form
   // (needed by async flows like the permit upload, which must not clobber
@@ -110,7 +115,7 @@ export function EventWizard({
 
   /** Validate every step, then upload assets, map to the payload and save. */
   const save = async () => {
-    if (saving) return
+    if (saving || readOnly) return
     const blocker = firstInvalidStep(form)
     if (blocker) {
       setStep(blocker)
@@ -160,7 +165,14 @@ export function EventWizard({
         onSave={save}
         onNext={goNext}
         saving={saving}
+        readOnly={readOnly}
       />
+
+      {readOnly && (
+        <p role="status" className={styles.saveBanner}>
+          Sự kiện đang chờ duyệt — bạn chỉ có thể xem lại thông tin đã gửi, không thể chỉnh sửa.
+        </p>
+      )}
 
       {saveMsg && (
         <p
@@ -194,6 +206,19 @@ export function EventWizard({
         </div>
       )}
 
+      {/* Read-only lock: a disabled fieldset neutralizes native inputs; the
+          pointer-events guard also covers the custom controls (rich text,
+          image upload, ticket modals). */}
+      <fieldset
+        disabled={readOnly}
+        style={{
+          border: 0,
+          margin: 0,
+          padding: 0,
+          minInlineSize: 0,
+          ...(readOnly ? { pointerEvents: "none", opacity: 0.7 } : {}),
+        }}
+      >
       <div id="wizard-panel" role="tabpanel" aria-labelledby={`wizard-tab-${step}`}>
       {step === 1 && (
         <div className={styles.form}>
@@ -237,6 +262,7 @@ export function EventWizard({
 
       {step === 6 && <PaymentStep form={form} update={update} />}
       </div>
+      </fieldset>
     </div>
   )
 }
