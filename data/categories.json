@@ -1,0 +1,56 @@
+[
+  {
+    "_id": { "$oid": "65f0b0000000000000000001" },
+    "name": "Nhạc sống",
+    "slug": "nhac-song",
+    "icon": "🎵",
+    "order": 1,
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0b0000000000000000002" },
+    "name": "Sân khấu & Nghệ thuật",
+    "slug": "san-khau",
+    "icon": "🎭",
+    "order": 2,
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0b0000000000000000003" },
+    "name": "Thể Thao",
+    "slug": "the-thao",
+    "icon": "⚽",
+    "order": 3,
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0b0000000000000000004" },
+    "name": "Hội thảo & Workshop",
+    "slug": "hoi-thao",
+    "icon": "🎤",
+    "order": 4,
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0b0000000000000000005" },
+    "name": "Tham quan & Trải nghiệm",
+    "slug": "tham-quan",
+    "icon": "✈️",
+    "order": 5,
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0b0000000000000000006" },
+    "name": "Khác",
+    "slug": "khac",
+    "icon": "🎯",
+    "order": 6,
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  }
+]

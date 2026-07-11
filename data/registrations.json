@@ -1,0 +1,29 @@
+[
+  {
+    "_id": { "$oid": "65f100000000000000000001" },
+    "participantId": { "$oid": "65f0a0000000000000000005" },
+    "eventId": { "$oid": "65f0d0000000000000000001" },
+    "ticketId": { "$oid": "65f0f0000000000000000001" },
+    "quantity": 2,
+    "unitPrice": 500000,
+    "totalAmount": 1000000,
+    "registerDate": { "$date": "2026-07-10T09:00:00.000Z" },
+    "status": "PAID",
+    "createdAt": { "$date": "2026-07-10T09:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T09:05:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f100000000000000000002" },
+    "participantId": { "$oid": "65f0a0000000000000000006" },
+    "eventId": { "$oid": "65f0d0000000000000000001" },
+    "ticketId": { "$oid": "65f0f0000000000000000002" },
+    "quantity": 1,
+    "unitPrice": 1500000,
+    "totalAmount": 1500000,
+    "registerDate": { "$date": "2026-07-11T08:00:00.000Z" },
+    "status": "PENDING",
+    "holdExpiresAt": { "$date": "2026-07-11T08:15:00.000Z" },
+    "createdAt": { "$date": "2026-07-11T08:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-11T08:00:00.000Z" }
+  }
+]

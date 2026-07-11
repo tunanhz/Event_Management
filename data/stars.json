@@ -1,0 +1,32 @@
+[
+  {
+    "_id": { "$oid": "65f0c0000000000000000001" },
+    "name": "Hà Anh Tuấn",
+    "slug": "ha-anh-tuan",
+    "imageUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=240&h=240&fit=crop",
+    "verified": true,
+    "order": 1,
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0c0000000000000000002" },
+    "name": "Mỹ Tâm",
+    "slug": "my-tam",
+    "imageUrl": "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=240&h=240&fit=crop",
+    "verified": true,
+    "order": 2,
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0c0000000000000000003" },
+    "name": "Jun Phạm",
+    "slug": "jun-pham",
+    "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=240&h=240&fit=crop",
+    "verified": false,
+    "order": 3,
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  }
+]
