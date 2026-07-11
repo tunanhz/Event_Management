@@ -31,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={beVietnamPro.variable} suppressHydrationWarning>
-      <body>
+      <body suppressHydrationWarning>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <AuthProvider>
           {children}
