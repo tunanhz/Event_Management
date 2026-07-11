@@ -1,0 +1,985 @@
+[
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000001"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000001"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000001"
+    },
+    "ticketName": "Vé Standard",
+    "description": "Khu vực đứng tự do",
+    "price": 500000,
+    "quantity": 200,
+    "soldQuantity": 50,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-01T00:00:00Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-15T10:00:00Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-06-01T00:00:00Z"
+    },
+    "updatedAt": {
+      "$date": "2026-06-01T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000002"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000001"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000001"
+    },
+    "ticketName": "Vé VIP",
+    "description": "Khu vực ghế ngồi gần sân khấu",
+    "price": 1500000,
+    "quantity": 50,
+    "soldQuantity": 10,
+    "minPerOrder": 1,
+    "maxPerOrder": 6,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-01T00:00:00Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-15T10:00:00Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-06-01T00:00:00Z"
+    },
+    "updatedAt": {
+      "$date": "2026-06-01T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000003"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000002"
+    },
+    "ticketName": "Vé tham dự",
+    "description": "Miễn phí, giới hạn số lượng",
+    "price": 0,
+    "quantity": 150,
+    "soldQuantity": 0,
+    "minPerOrder": 1,
+    "maxPerOrder": 2,
+    "image": "",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000004"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000003"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000003"
+    },
+    "ticketName": "Vé cổng",
+    "description": "Bao gồm áo thi đấu và huy chương hoàn thành",
+    "price": 200000,
+    "quantity": 3000,
+    "soldQuantity": 850,
+    "minPerOrder": 1,
+    "maxPerOrder": 5,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-01T00:00:00Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-01T00:00:00Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-06-15T00:00:00Z"
+    },
+    "updatedAt": {
+      "$date": "2026-06-15T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000005"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000004"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000004"
+    },
+    "ticketName": "Vé Standard",
+    "description": "",
+    "price": 350000,
+    "quantity": 3000,
+    "soldQuantity": 600,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-30T13:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000006"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000004"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000004"
+    },
+    "ticketName": "Vé VIP",
+    "description": "",
+    "price": 900000,
+    "quantity": 500,
+    "soldQuantity": 120,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-30T13:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000007"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000005"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000005"
+    },
+    "ticketName": "Vé Standard",
+    "description": "",
+    "price": 300000,
+    "quantity": 800,
+    "soldQuantity": 200,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-05T12:30:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000008"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000006"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000006"
+    },
+    "ticketName": "Vé Standard",
+    "description": "",
+    "price": 890000,
+    "quantity": 4000,
+    "soldQuantity": 1500,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-20T11:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000009"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000006"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000006"
+    },
+    "ticketName": "Vé VIP Fanmeet",
+    "description": "",
+    "price": 2500000,
+    "quantity": 300,
+    "soldQuantity": 80,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-20T11:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000010"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000007"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000007"
+    },
+    "ticketName": "Vé Standard",
+    "description": "",
+    "price": 250000,
+    "quantity": 350,
+    "soldQuantity": 90,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-10T13:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000011"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000008"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000008"
+    },
+    "ticketName": "Vé Standard",
+    "description": "",
+    "price": 450000,
+    "quantity": 600,
+    "soldQuantity": 150,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-12T12:30:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000012"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000008"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000008"
+    },
+    "ticketName": "Vé VIP",
+    "description": "",
+    "price": 900000,
+    "quantity": 150,
+    "soldQuantity": 40,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-12T12:30:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000013"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000009"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000009"
+    },
+    "ticketName": "Vé Standard",
+    "description": "",
+    "price": 350000,
+    "quantity": 500,
+    "soldQuantity": 120,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-22T13:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000014"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000010"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000010"
+    },
+    "ticketName": "Vé Standard",
+    "description": "",
+    "price": 400000,
+    "quantity": 400,
+    "soldQuantity": 80,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-28T12:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000015"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000011"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000011"
+    },
+    "ticketName": "Vé BIB Race",
+    "description": "",
+    "price": 250000,
+    "quantity": 3500,
+    "soldQuantity": 1200,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-08T11:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000016"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000012"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000012"
+    },
+    "ticketName": "Vé Cổ động viên",
+    "description": "",
+    "price": 100000,
+    "quantity": 1800,
+    "soldQuantity": 300,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-14T00:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000017"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000013"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000013"
+    },
+    "ticketName": "Vé Xem Giải",
+    "description": "",
+    "price": 150000,
+    "quantity": 900,
+    "soldQuantity": 200,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-18T01:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000018"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000014"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000014"
+    },
+    "ticketName": "Vé Tham Dự (Miễn phí)",
+    "description": "",
+    "price": 0,
+    "quantity": 500,
+    "soldQuantity": 320,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-12T01:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000019"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000015"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000015"
+    },
+    "ticketName": "Vé Standard",
+    "description": "",
+    "price": 200000,
+    "quantity": 600,
+    "soldQuantity": 180,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-02T01:30:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000020"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000016"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000016"
+    },
+    "ticketName": "Vé Workshop",
+    "description": "",
+    "price": 500000,
+    "quantity": 80,
+    "soldQuantity": 35,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-16T02:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000021"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000017"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000017"
+    },
+    "ticketName": "Vé Trải Nghiệm",
+    "description": "",
+    "price": 300000,
+    "quantity": 40,
+    "soldQuantity": 25,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-24T02:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000022"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000018"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000018"
+    },
+    "ticketName": "Vé Standard 2N1Đ",
+    "description": "",
+    "price": 1990000,
+    "quantity": 180,
+    "soldQuantity": 60,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-14T00:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000023"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000018"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000018"
+    },
+    "ticketName": "Vé Cabin VIP",
+    "description": "",
+    "price": 3200000,
+    "quantity": 20,
+    "soldQuantity": 8,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-14T00:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000024"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000019"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000019"
+    },
+    "ticketName": "Vé Tour",
+    "description": "",
+    "price": 450000,
+    "quantity": 150,
+    "soldQuantity": 70,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-09T10:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000025"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000020"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000020"
+    },
+    "ticketName": "Vé Trọn Gói",
+    "description": "",
+    "price": 650000,
+    "quantity": 100,
+    "soldQuantity": 45,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-29T07:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000026"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000021"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000021"
+    },
+    "ticketName": "Vé Standard 3N2Đ",
+    "description": "",
+    "price": 2990000,
+    "quantity": 100,
+    "soldQuantity": 30,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-18T23:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000027"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000021"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000021"
+    },
+    "ticketName": "Vé Resort VIP",
+    "description": "",
+    "price": 4990000,
+    "quantity": 20,
+    "soldQuantity": 5,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-18T23:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000028"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000022"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000022"
+    },
+    "ticketName": "Vé Trekking Trọn Gói",
+    "description": "",
+    "price": 1590000,
+    "quantity": 60,
+    "soldQuantity": 22,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-24T22:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000029"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000023"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000023"
+    },
+    "ticketName": "Vé Tham Dự (Miễn phí)",
+    "description": "",
+    "price": 0,
+    "quantity": 3000,
+    "soldQuantity": 900,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-06T01:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000030"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000024"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000024"
+    },
+    "ticketName": "Vé Vào Cổng",
+    "description": "",
+    "price": 50000,
+    "quantity": 1500,
+    "soldQuantity": 400,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-08-23T01:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0f0000000000000000031"
+    },
+    "eventId": {
+      "$oid": "65f0d0000000000000000025"
+    },
+    "showId": {
+      "$oid": "65f0d1000000000000000025"
+    },
+    "ticketName": "Vé Vào Cổng",
+    "description": "",
+    "price": 100000,
+    "quantity": 5000,
+    "soldQuantity": 1200,
+    "minPerOrder": 1,
+    "maxPerOrder": 10,
+    "image": "",
+    "saleStart": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "saleEnd": {
+      "$date": "2026-09-06T09:00:00.000Z"
+    },
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  }
+]

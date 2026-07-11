@@ -1,0 +1,2260 @@
+[
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000001"
+    },
+    "title": "Đại Nhạc Hội Mùa Hè 2026",
+    "description": "Đêm nhạc hội tụ dàn nghệ sĩ hàng đầu Việt Nam với sân khấu hoành tráng.",
+    "contentBlocks": [
+      {
+        "type": "heading",
+        "text": "Giới thiệu sự kiện"
+      },
+      {
+        "type": "paragraph",
+        "text": "Một đêm nhạc bùng nổ với âm thanh, ánh sáng đẳng cấp quốc tế."
+      },
+      {
+        "type": "list",
+        "items": [
+          "Mở cửa 17:00",
+          "Biểu diễn 18:00 - 21:00",
+          "Bãi giữ xe miễn phí"
+        ]
+      }
+    ],
+    "date": {
+      "$date": "2026-08-15T11:00:00Z"
+    },
+    "time": "18:00",
+    "sessions": [
+      {
+        "date": {
+          "$date": "2026-08-15T00:00:00Z"
+        },
+        "time": "18:00",
+        "label": "Đêm diễn chính"
+      }
+    ],
+    "location": "Sân vận động Mỹ Đình, Hà Nội",
+    "city": "hanoi",
+    "maxAttendees": 5000,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "Đơn vị tổ chức sự kiện âm nhạc hàng đầu Việt Nam.",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Nhạc sống",
+    "categorySlug": "nhac-song",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1200&h=630&fit=crop",
+    "priceFrom": 500000,
+    "isFree": false,
+    "isFeatured": true,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000001"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-15T11:00:00Z"
+    },
+    "endDate": {
+      "$date": "2026-08-15T14:00:00Z"
+    },
+    "capacity": 5000,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-01T00:00:00Z"
+    },
+    "serviceCost": 20000000,
+    "depositAmount": 10000000,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 10000000,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Sân vận động Mỹ Đình",
+      "province": "Hà Nội",
+      "ward": "Phường Mỹ Đình",
+      "street": "Đường Lê Đức Thọ"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000001"
+        },
+        "startTime": {
+          "$date": "2026-08-15T11:00:00Z"
+        },
+        "endTime": {
+          "$date": "2026-08-15T14:00:00Z"
+        }
+      }
+    ],
+    "slug": "dai-nhac-hoi-mua-he-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-06-01T00:00:00Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-01T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000002"
+    },
+    "title": "Workshop Kỹ Năng Tổ Chức Sự Kiện",
+    "description": "Khóa workshop chuyên sâu dành cho những ai muốn theo đuổi nghề tổ chức sự kiện.",
+    "contentBlocks": [
+      {
+        "type": "paragraph",
+        "text": "Chia sẻ kinh nghiệm thực chiến từ các chuyên gia trong ngành."
+      }
+    ],
+    "date": {
+      "$date": "2026-08-25T02:00:00Z"
+    },
+    "time": "09:00",
+    "sessions": [],
+    "location": "Trung tâm Hội nghị White Palace, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 150,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "Đơn vị tổ chức sự kiện âm nhạc hàng đầu Việt Nam.",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Hội thảo & Workshop",
+    "categorySlug": "hoi-thao",
+    "status": "draft",
+    "imageUrl": "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=1200&h=630&fit=crop",
+    "priceFrom": 0,
+    "isFree": true,
+    "isFeatured": false,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000004"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-25T02:00:00Z"
+    },
+    "endDate": {
+      "$date": "2026-08-25T05:00:00Z"
+    },
+    "capacity": 150,
+    "reviewStatus": "DRAFT",
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "UNPAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "White Palace",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường 7, Quận Phú Nhuận",
+      "street": "194 Hoàng Văn Thụ"
+    },
+    "shows": [],
+    "slug": "workshop-ky-nang-to-chuc-su-kien",
+    "privacy": "public",
+    "enableQuestions": true,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000003"
+    },
+    "title": "Giải Chạy Marathon Thành Phố 2026",
+    "description": "Giải chạy thường niên quy tụ hàng ngàn vận động viên phong trào và chuyên nghiệp.",
+    "contentBlocks": [
+      {
+        "type": "heading",
+        "text": "Cự ly thi đấu"
+      },
+      {
+        "type": "list",
+        "items": [
+          "5km phong trào",
+          "10km bán chuyên",
+          "21km bán marathon"
+        ]
+      }
+    ],
+    "date": {
+      "$date": "2026-09-05T23:00:00Z"
+    },
+    "time": "06:00",
+    "sessions": [
+      {
+        "date": {
+          "$date": "2026-09-06T00:00:00Z"
+        },
+        "time": "06:00",
+        "label": "Xuất phát"
+      }
+    ],
+    "location": "Công viên Thống Nhất, Hà Nội",
+    "city": "hanoi",
+    "maxAttendees": 3000,
+    "organizer": "Công ty Thể Thao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "Đơn vị tổ chức các sự kiện thể thao phong trào toàn quốc.",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000003"
+    },
+    "category": "Thể Thao",
+    "categorySlug": "the-thao",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?w=1200&h=630&fit=crop",
+    "priceFrom": 200000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000003"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000003"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-09-05T23:00:00Z"
+    },
+    "endDate": {
+      "$date": "2026-09-06T03:00:00Z"
+    },
+    "capacity": 3000,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-08T00:00:00Z"
+    },
+    "serviceCost": 8000000,
+    "depositAmount": 4000000,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 4000000,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Công viên Thống Nhất",
+      "province": "Hà Nội",
+      "ward": "Phường Lê Đại Hành",
+      "street": "Đường Trần Nhân Tông"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000003"
+        },
+        "startTime": {
+          "$date": "2026-09-05T23:00:00Z"
+        },
+        "endTime": {
+          "$date": "2026-09-06T03:00:00Z"
+        }
+      }
+    ],
+    "slug": "giai-chay-marathon-thanh-pho-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-06-15T00:00:00Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-08T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000004"
+    },
+    "title": "Lễ Hội Âm Nhạc Điện Tử EDM Festival 2026",
+    "description": "Đại tiệc âm nhạc điện tử với dàn DJ trong nước và quốc tế, sân khấu ánh sáng laser hoành tráng.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-30T13:00:00.000Z"
+    },
+    "time": "20:00",
+    "sessions": [],
+    "location": "Công viên 23/9, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 8000,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Nhạc sống",
+    "categorySlug": "nhac-song",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&h=630&fit=crop",
+    "priceFrom": 350000,
+    "isFree": false,
+    "isFeatured": true,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000001"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-30T13:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-30T16:30:00.000Z"
+    },
+    "capacity": 8000,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Công viên 23/9",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Phạm Ngũ Lão",
+      "street": "Đường Phạm Ngũ Lão"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000004"
+        },
+        "startTime": {
+          "$date": "2026-08-30T13:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-30T16:30:00.000Z"
+        }
+      }
+    ],
+    "slug": "le-hoi-am-nhac-dien-tu-edm-festival-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000005"
+    },
+    "title": "Đêm Nhạc Trịnh Công Sơn – Tình Ca Bất Tận",
+    "description": "Đêm nhạc acoustic tưởng nhớ nhạc sĩ Trịnh Công Sơn với các giọng ca solo cùng ban nhạc live.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-05T12:30:00.000Z"
+    },
+    "time": "19:30",
+    "sessions": [],
+    "location": "Nhà hát Hòa Bình, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 1200,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Nhạc sống",
+    "categorySlug": "nhac-song",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=630&fit=crop",
+    "priceFrom": 300000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000001"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-05T12:30:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-05T14:30:00.000Z"
+    },
+    "capacity": 1200,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Nhà hát Hòa Bình",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường 11, Quận 10",
+      "street": "240 Đường 3/2"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000005"
+        },
+        "startTime": {
+          "$date": "2026-08-05T12:30:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-05T14:30:00.000Z"
+        }
+      }
+    ],
+    "slug": "dem-nhac-trinh-cong-son-tinh-ca-bat-tan",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000006"
+    },
+    "title": "K-Pop Fan Meeting & Live Concert 2026",
+    "description": "Sự kiện giao lưu và biểu diễn trực tiếp cùng các nhóm nhạc Kpop nổi tiếng đang lưu diễn tại Việt Nam.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-09-20T11:00:00.000Z"
+    },
+    "time": "18:00",
+    "sessions": [],
+    "location": "Cung Điền kinh trong nhà Mỹ Đình, Hà Nội",
+    "city": "hanoi",
+    "maxAttendees": 6000,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Nhạc sống",
+    "categorySlug": "nhac-song",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=1200&h=630&fit=crop",
+    "priceFrom": 890000,
+    "isFree": false,
+    "isFeatured": true,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000001"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-09-20T11:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-09-20T15:00:00.000Z"
+    },
+    "capacity": 6000,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Cung Điền kinh trong nhà Mỹ Đình",
+      "province": "Hà Nội",
+      "ward": "Phường Mỹ Đình",
+      "street": "Đường Lê Đức Thọ"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000006"
+        },
+        "startTime": {
+          "$date": "2026-09-20T11:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-09-20T15:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "k-pop-fan-meeting-live-concert-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000007"
+    },
+    "title": "Vở Kịch Lôi Vũ – Sân Khấu Kịch Nói",
+    "description": "Vở kịch kinh điển Lôi Vũ được dàn dựng lại với dàn diễn viên gạo cội của sân khấu kịch nói phía Nam.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-10T13:00:00.000Z"
+    },
+    "time": "20:00",
+    "sessions": [],
+    "location": "Sân khấu kịch IDECAF, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 400,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Sân khấu & Nghệ thuật",
+    "categorySlug": "san-khau",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1503095396549-807759245b35?w=1200&h=630&fit=crop",
+    "priceFrom": 250000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000002"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-10T13:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-10T15:00:00.000Z"
+    },
+    "capacity": 400,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Sân khấu kịch IDECAF",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Bến Nghé",
+      "street": "28 Lê Thánh Tôn"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000007"
+        },
+        "startTime": {
+          "$date": "2026-08-10T13:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-10T15:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "vo-kich-loi-vu-san-khau-kich-noi",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000008"
+    },
+    "title": "Nhạc Kịch Broadway Việt – Chuyện Tình Sài Gòn",
+    "description": "Vở nhạc kịch phong cách Broadway kể câu chuyện tình yêu xuyên suốt các thời kỳ của Sài Gòn.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-09-12T12:30:00.000Z"
+    },
+    "time": "19:30",
+    "sessions": [],
+    "location": "Nhà hát Thành phố, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 800,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Sân khấu & Nghệ thuật",
+    "categorySlug": "san-khau",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1507924538820-ede94a04019d?w=1200&h=630&fit=crop",
+    "priceFrom": 450000,
+    "isFree": false,
+    "isFeatured": true,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000002"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-09-12T12:30:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-09-12T15:00:00.000Z"
+    },
+    "capacity": 800,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Nhà hát Thành phố",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Bến Nghé",
+      "street": "7 Công trường Lam Sơn"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000008"
+        },
+        "startTime": {
+          "$date": "2026-09-12T12:30:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-09-12T15:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "nhac-kich-broadway-viet-chuyen-tinh-sai-gon",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000009"
+    },
+    "title": "Đêm Diễn Múa Đương Đại – Sắc Màu Cảm Xúc",
+    "description": "Chương trình múa đương đại kết hợp ánh sáng và âm nhạc, khắc họa các cung bậc cảm xúc con người.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-22T13:00:00.000Z"
+    },
+    "time": "20:00",
+    "sessions": [],
+    "location": "Nhà hát Lớn Hà Nội",
+    "city": "hanoi",
+    "maxAttendees": 600,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Sân khấu & Nghệ thuật",
+    "categorySlug": "san-khau",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1547153760-18fc86324498?w=1200&h=630&fit=crop",
+    "priceFrom": 350000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000002"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-22T13:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-22T14:30:00.000Z"
+    },
+    "capacity": 600,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Nhà hát Lớn Hà Nội",
+      "province": "Hà Nội",
+      "ward": "Phường Tràng Tiền",
+      "street": "1 Tràng Tiền"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000009"
+        },
+        "startTime": {
+          "$date": "2026-08-22T13:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-22T14:30:00.000Z"
+        }
+      }
+    ],
+    "slug": "dem-dien-mua-duong-dai-sac-mau-cam-xuc",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000010"
+    },
+    "title": "Chương Trình Múa Ballet Hồ Thiên Nga",
+    "description": "Vở ballet kinh điển Hồ Thiên Nga được trình diễn bởi đoàn múa ballet Việt Nam.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-09-28T12:00:00.000Z"
+    },
+    "time": "19:00",
+    "sessions": [],
+    "location": "Nhà hát Bến Thành, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 500,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Sân khấu & Nghệ thuật",
+    "categorySlug": "san-khau",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1518834107812-67b0b7c58434?w=1200&h=630&fit=crop",
+    "priceFrom": 400000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000002"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-09-28T12:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-09-28T14:00:00.000Z"
+    },
+    "capacity": 500,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Nhà hát Bến Thành",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Bến Thành",
+      "street": "6 Mạc Đĩnh Chi"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000010"
+        },
+        "startTime": {
+          "$date": "2026-09-28T12:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-09-28T14:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "chuong-trinh-mua-ballet-ho-thien-nga",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000011"
+    },
+    "title": "Giải Chạy Đêm Night Run TP.HCM 2026",
+    "description": "Giải chạy đêm dọc các tuyến phố trung tâm TP.HCM với cung đường 5km, 10km và 21km.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-08T11:00:00.000Z"
+    },
+    "time": "18:00",
+    "sessions": [],
+    "location": "Phố đi bộ Nguyễn Huệ, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 4000,
+    "organizer": "Công ty Thể Thao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000003"
+    },
+    "category": "Thể Thao",
+    "categorySlug": "the-thao",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=1200&h=630&fit=crop",
+    "priceFrom": 250000,
+    "isFree": false,
+    "isFeatured": true,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000003"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000003"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-08T11:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-08T15:00:00.000Z"
+    },
+    "capacity": 4000,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Phố đi bộ Nguyễn Huệ",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Bến Nghé",
+      "street": "Nguyễn Huệ"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000011"
+        },
+        "startTime": {
+          "$date": "2026-08-08T11:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-08T15:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "giai-chay-dem-night-run-tp-hcm-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000012"
+    },
+    "title": "Giải Điền Kinh Học Đường Toàn Quốc 2026",
+    "description": "Giải đấu điền kinh thường niên dành cho học sinh, sinh viên trên toàn quốc.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-09-14T00:00:00.000Z"
+    },
+    "time": "07:00",
+    "sessions": [],
+    "location": "Sân vận động Quốc gia Mỹ Đình, Hà Nội",
+    "city": "hanoi",
+    "maxAttendees": 2000,
+    "organizer": "Công ty Thể Thao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000003"
+    },
+    "category": "Thể Thao",
+    "categorySlug": "the-thao",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1461897104016-0b3b00cc81ee?w=1200&h=630&fit=crop",
+    "priceFrom": 100000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000003"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000003"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-09-14T00:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-09-14T10:00:00.000Z"
+    },
+    "capacity": 2000,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Sân vận động Quốc gia Mỹ Đình",
+      "province": "Hà Nội",
+      "ward": "Phường Mỹ Đình",
+      "street": "Lê Đức Thọ"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000012"
+        },
+        "startTime": {
+          "$date": "2026-09-14T00:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-09-14T10:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "giai-dien-kinh-hoc-duong-toan-quoc-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000013"
+    },
+    "title": "Giải Bóng Rổ Phong Trào Cúp Mùa Hè",
+    "description": "Giải đấu bóng rổ phong trào 3x3 dành cho các đội tuyển doanh nghiệp và câu lạc bộ.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-18T01:00:00.000Z"
+    },
+    "time": "08:00",
+    "sessions": [],
+    "location": "Nhà thi đấu Phú Thọ, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 1000,
+    "organizer": "Công ty Thể Thao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000003"
+    },
+    "category": "Thể Thao",
+    "categorySlug": "the-thao",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&h=630&fit=crop",
+    "priceFrom": 150000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000003"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000003"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-18T01:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-18T11:00:00.000Z"
+    },
+    "capacity": 1000,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Nhà thi đấu Phú Thọ",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường 15, Quận 11",
+      "street": "1 Lữ Gia"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000013"
+        },
+        "startTime": {
+          "$date": "2026-08-18T01:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-18T11:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "giai-bong-ro-phong-trao-cup-mua-he",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000014"
+    },
+    "title": "Hội Thảo Chuyển Đổi Số Doanh Nghiệp 2026",
+    "description": "Hội thảo chia sẻ chiến lược và công nghệ chuyển đổi số dành cho lãnh đạo doanh nghiệp.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-12T01:00:00.000Z"
+    },
+    "time": "08:00",
+    "sessions": [],
+    "location": "Trung tâm Hội nghị GEM Center, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 500,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Hội thảo & Workshop",
+    "categorySlug": "hoi-thao",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&h=630&fit=crop",
+    "priceFrom": 0,
+    "isFree": true,
+    "isFeatured": true,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000004"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-12T01:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-12T10:00:00.000Z"
+    },
+    "capacity": 500,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "GEM Center",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Bến Nghé",
+      "street": "8 Nguyễn Bỉnh Khiêm"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000014"
+        },
+        "startTime": {
+          "$date": "2026-08-12T01:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-12T10:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "hoi-thao-chuyen-doi-so-doanh-nghiep-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000015"
+    },
+    "title": "Diễn Đàn Khởi Nghiệp Sáng Tạo Việt Nam",
+    "description": "Diễn đàn kết nối nhà đầu tư và startup, chia sẻ kinh nghiệm gọi vốn và phát triển sản phẩm.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-09-02T01:30:00.000Z"
+    },
+    "time": "08:30",
+    "sessions": [],
+    "location": "Trung tâm Hội nghị Quốc gia, Hà Nội",
+    "city": "hanoi",
+    "maxAttendees": 700,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Hội thảo & Workshop",
+    "categorySlug": "hoi-thao",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&h=630&fit=crop",
+    "priceFrom": 200000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000004"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-09-02T01:30:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-09-02T09:30:00.000Z"
+    },
+    "capacity": 700,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Trung tâm Hội nghị Quốc gia",
+      "province": "Hà Nội",
+      "ward": "Phường Mễ Trì",
+      "street": "57 Phạm Hùng"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000015"
+        },
+        "startTime": {
+          "$date": "2026-09-02T01:30:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-09-02T09:30:00.000Z"
+        }
+      }
+    ],
+    "slug": "dien-dan-khoi-nghiep-sang-tao-viet-nam",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000016"
+    },
+    "title": "Workshop Thiết Kế Tư Duy (Design Thinking)",
+    "description": "Workshop thực hành phương pháp Design Thinking để giải quyết vấn đề và sáng tạo sản phẩm.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-16T02:00:00.000Z"
+    },
+    "time": "09:00",
+    "sessions": [],
+    "location": "Toong Coworking Space, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 80,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Hội thảo & Workshop",
+    "categorySlug": "hoi-thao",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=630&fit=crop",
+    "priceFrom": 500000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000004"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-16T02:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-16T09:00:00.000Z"
+    },
+    "capacity": 80,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Toong Coworking Space",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Bến Nghé",
+      "street": "25bis Nguyễn Thị Minh Khai"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000016"
+        },
+        "startTime": {
+          "$date": "2026-08-16T02:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-16T09:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "workshop-thiet-ke-tu-duy-design-thinking",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000017"
+    },
+    "title": "Workshop Làm Gốm Thủ Công Bát Tràng",
+    "description": "Trải nghiệm tự tay nặn gốm cùng nghệ nhân làng gốm Bát Tràng, mang sản phẩm về nhà.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-24T02:00:00.000Z"
+    },
+    "time": "09:00",
+    "sessions": [],
+    "location": "Làng gốm Bát Tràng, Hà Nội",
+    "city": "hanoi",
+    "maxAttendees": 40,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Hội thảo & Workshop",
+    "categorySlug": "hoi-thao",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200&h=630&fit=crop",
+    "priceFrom": 300000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000004"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-24T02:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-24T05:00:00.000Z"
+    },
+    "capacity": 40,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Làng gốm Bát Tràng",
+      "province": "Hà Nội",
+      "ward": "Xã Bát Tràng",
+      "street": "Đường Bát Tràng"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000017"
+        },
+        "startTime": {
+          "$date": "2026-08-24T02:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-24T05:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "workshop-lam-gom-thu-cong-bat-trang",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000018"
+    },
+    "title": "Tour Du Thuyền Khám Phá Vịnh Hạ Long 2N1Đ",
+    "description": "Hành trình 2 ngày 1 đêm trên du thuyền khám phá kỳ quan thiên nhiên Vịnh Hạ Long.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-14T00:00:00.000Z"
+    },
+    "time": "07:00",
+    "sessions": [],
+    "location": "Cảng tàu quốc tế Hạ Long, Quảng Ninh",
+    "city": "other",
+    "maxAttendees": 200,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Tham quan & Trải nghiệm",
+    "categorySlug": "tham-quan",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1528127269322-539801943592?w=1200&h=630&fit=crop",
+    "priceFrom": 1990000,
+    "isFree": false,
+    "isFeatured": true,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000005"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-14T00:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-15T09:00:00.000Z"
+    },
+    "capacity": 200,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Cảng tàu quốc tế Hạ Long",
+      "province": "Quảng Ninh",
+      "ward": "Phường Bãi Cháy",
+      "street": "Đường Hạ Long"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000018"
+        },
+        "startTime": {
+          "$date": "2026-08-14T00:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-15T09:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "tour-du-thuyen-kham-pha-vinh-ha-long-2n1d",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000019"
+    },
+    "title": "Tour Ẩm Thực Đường Phố Sài Gòn Về Đêm",
+    "description": "Khám phá các món ăn đường phố đặc trưng Sài Gòn cùng hướng dẫn viên bản địa.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-09T10:00:00.000Z"
+    },
+    "time": "17:00",
+    "sessions": [],
+    "location": "Chợ Bến Thành, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 150,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Tham quan & Trải nghiệm",
+    "categorySlug": "tham-quan",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1200&h=630&fit=crop",
+    "priceFrom": 450000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000005"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-09T10:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-09T14:00:00.000Z"
+    },
+    "capacity": 150,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Chợ Bến Thành",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Bến Thành",
+      "street": "Lê Lợi"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000019"
+        },
+        "startTime": {
+          "$date": "2026-08-09T10:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-09T14:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "tour-am-thuc-duong-pho-sai-gon-ve-dem",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000020"
+    },
+    "title": "Cắm Trại Ngắm Sao Đà Lạt Cuối Tuần",
+    "description": "Chuyến cắm trại cuối tuần giữa rừng thông Đà Lạt, ngắm sao và đốt lửa trại.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-29T07:00:00.000Z"
+    },
+    "time": "14:00",
+    "sessions": [],
+    "location": "Đồi Robin, Đà Lạt",
+    "city": "dalat",
+    "maxAttendees": 100,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Tham quan & Trải nghiệm",
+    "categorySlug": "tham-quan",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1487730116645-74489c95b41b?w=1200&h=630&fit=crop",
+    "priceFrom": 650000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000005"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-29T07:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-30T03:00:00.000Z"
+    },
+    "capacity": 100,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Đồi Robin",
+      "province": "Lâm Đồng",
+      "ward": "Phường 8",
+      "street": "Đường Đặng Thái Thân"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000020"
+        },
+        "startTime": {
+          "$date": "2026-08-29T07:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-30T03:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "cam-trai-ngam-sao-da-lat-cuoi-tuan",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000021"
+    },
+    "title": "Tour Nghỉ Dưỡng Biển Đảo Phú Quốc 3N2Đ",
+    "description": "Kỳ nghỉ 3 ngày 2 đêm tại đảo ngọc Phú Quốc với resort ven biển và các hoạt động lặn ngắm san hô.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-09-18T23:00:00.000Z"
+    },
+    "time": "06:00",
+    "sessions": [],
+    "location": "Bãi Sao, Phú Quốc",
+    "city": "other",
+    "maxAttendees": 120,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Tham quan & Trải nghiệm",
+    "categorySlug": "tham-quan",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1200&h=630&fit=crop",
+    "priceFrom": 2990000,
+    "isFree": false,
+    "isFeatured": true,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000005"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-09-18T23:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-09-21T10:00:00.000Z"
+    },
+    "capacity": 120,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Bãi Sao",
+      "province": "Kiên Giang",
+      "ward": "Xã An Thới",
+      "street": "Đường Bãi Sao"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000021"
+        },
+        "startTime": {
+          "$date": "2026-09-18T23:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-09-21T10:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "tour-nghi-duong-bien-dao-phu-quoc-3n2d",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000022"
+    },
+    "title": "Trekking Chinh Phục Fansipan – Nóc Nhà Đông Dương",
+    "description": "Hành trình trekking 2 ngày chinh phục đỉnh Fansipan cùng đoàn leo núi chuyên nghiệp.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-09-24T22:00:00.000Z"
+    },
+    "time": "05:00",
+    "sessions": [],
+    "location": "Sa Pa, Lào Cai",
+    "city": "other",
+    "maxAttendees": 60,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Tham quan & Trải nghiệm",
+    "categorySlug": "tham-quan",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1533130061792-64b345e4a833?w=1200&h=630&fit=crop",
+    "priceFrom": 1590000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000005"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-09-24T22:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-09-26T09:00:00.000Z"
+    },
+    "capacity": 60,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Trạm Tôn",
+      "province": "Lào Cai",
+      "ward": "Thị xã Sa Pa",
+      "street": "Đường Trạm Tôn"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000022"
+        },
+        "startTime": {
+          "$date": "2026-09-24T22:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-09-26T09:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "trekking-chinh-phuc-fansipan-noc-nha-dong-duong",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000023"
+    },
+    "title": "Ngày Hội Đọc Sách & Giao Lưu Tác Giả 2026",
+    "description": "Ngày hội sách thường niên với hàng trăm gian hàng, giao lưu cùng các tác giả nổi tiếng.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-06T01:00:00.000Z"
+    },
+    "time": "08:00",
+    "sessions": [],
+    "location": "Đường sách Nguyễn Văn Bình, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 3000,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Khác",
+    "categorySlug": "khac",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=1200&h=630&fit=crop",
+    "priceFrom": 0,
+    "isFree": true,
+    "isFeatured": false,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000006"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-06T01:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-06T13:00:00.000Z"
+    },
+    "capacity": 3000,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Đường sách Nguyễn Văn Bình",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Bến Nghé",
+      "street": "Nguyễn Văn Bình"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000023"
+        },
+        "startTime": {
+          "$date": "2026-08-06T01:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-06T13:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "ngay-hoi-doc-sach-giao-luu-tac-gia-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000024"
+    },
+    "title": "Ngày Hội Thú Cưng – Pet Fest 2026",
+    "description": "Sự kiện dành cho những người yêu thú cưng với các hoạt động triển lãm, thi đấu và tư vấn thú y.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-08-23T01:00:00.000Z"
+    },
+    "time": "08:00",
+    "sessions": [],
+    "location": "Công viên Lê Văn Tám, TP.HCM",
+    "city": "hcm",
+    "maxAttendees": 1500,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Khác",
+    "categorySlug": "khac",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1552053831-71594a27632d?w=1200&h=630&fit=crop",
+    "priceFrom": 50000,
+    "isFree": false,
+    "isFeatured": true,
+    "isTrending": false,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000006"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-08-23T01:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-08-23T10:00:00.000Z"
+    },
+    "capacity": 1500,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Công viên Lê Văn Tám",
+      "province": "TP. Hồ Chí Minh",
+      "ward": "Phường Đa Kao",
+      "street": "Hai Bà Trưng"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000024"
+        },
+        "startTime": {
+          "$date": "2026-08-23T01:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-08-23T10:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "ngay-hoi-thu-cung-pet-fest-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0d0000000000000000025"
+    },
+    "title": "Lễ Hội Ẩm Thực Đường Phố Quốc Tế 2026",
+    "description": "Lễ hội quy tụ hàng chục gian hàng ẩm thực đường phố từ khắp nơi trên thế giới.",
+    "contentBlocks": [],
+    "date": {
+      "$date": "2026-09-06T09:00:00.000Z"
+    },
+    "time": "16:00",
+    "sessions": [],
+    "location": "Công viên Thống Nhất, Hà Nội",
+    "city": "hanoi",
+    "maxAttendees": 5000,
+    "organizer": "Công ty Sự Kiện Sao Việt",
+    "organizerLogoUrl": "",
+    "organizerDescription": "",
+    "organizerId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "category": "Khác",
+    "categorySlug": "khac",
+    "status": "published",
+    "imageUrl": "https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200&h=630&fit=crop",
+    "priceFrom": 100000,
+    "isFree": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "categoryId": {
+      "$oid": "65f0b0000000000000000006"
+    },
+    "creatorId": {
+      "$oid": "65f0a0000000000000000002"
+    },
+    "approvedById": {
+      "$oid": "65f0a0000000000000000001"
+    },
+    "banner": "",
+    "startDate": {
+      "$date": "2026-09-06T09:00:00.000Z"
+    },
+    "endDate": {
+      "$date": "2026-09-06T15:00:00.000Z"
+    },
+    "capacity": 5000,
+    "reviewStatus": "PUBLISHED",
+    "reviewedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "serviceCost": 0,
+    "depositAmount": 0,
+    "depositStatus": "PAID",
+    "additionalCost": 0,
+    "finalPaymentAmount": 0,
+    "finalPaymentStatus": "UNPAID",
+    "posterImage": "",
+    "locationType": "offline",
+    "venue": {
+      "name": "Công viên Thống Nhất",
+      "province": "Hà Nội",
+      "ward": "Phường Lê Đại Hành",
+      "street": "Trần Nhân Tông"
+    },
+    "shows": [
+      {
+        "_id": {
+          "$oid": "65f0d1000000000000000025"
+        },
+        "startTime": {
+          "$date": "2026-09-06T09:00:00.000Z"
+        },
+        "endTime": {
+          "$date": "2026-09-06T15:00:00.000Z"
+        }
+      }
+    ],
+    "slug": "le-hoi-am-thuc-duong-pho-quoc-te-2026",
+    "privacy": "public",
+    "enableQuestions": false,
+    "logisticsServices": [],
+    "permitDocuments": [],
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  }
+]
