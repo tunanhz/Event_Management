@@ -4,6 +4,8 @@ import { IRegistration } from './registration.model';
 import { IPayment } from './payment.model';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult, PaginationQuery } from '../../common/types';
+import { config } from '../../config';
+import { buildPaymentUrl, buildOrderInfo, formatVnpayDate } from '../payment/vnpay.util';
 
 export interface CreateRegistrationInput {
   eventId: string;
@@ -106,6 +108,125 @@ export class RegistrationService {
     });
 
     return { registration, payment };
+  }
+
+  // Builds a VNPAY redirect URL covering one or more held registrations at once (the
+  // ticket-selection UI lets a buyer hold several tiers in one checkout, but VNPAY only
+  // knows about a single order/amount per payment — so all of them are paid together as one
+  // transaction, and vnp_OrderInfo carries the id list back through VNPAY so the return/IPN
+  // handlers know which registrations to mark PAID). Every id must belong to the caller and
+  // still be an active, unexpired hold.
+  async createVnpayPaymentUrl(
+    registrationIds: string[],
+    participantId: string,
+    ipAddr: string
+  ): Promise<string> {
+    if (!config.vnpay.tmnCode || !config.vnpay.hashSecret) {
+      throw new AppError('VNPAY chưa được cấu hình (thiếu VNPAY_TMN_CODE/VNPAY_HASH_SECRET)', 500);
+    }
+    if (!registrationIds.length) {
+      throw new AppError('Không có đăng ký nào để thanh toán', 400);
+    }
+
+    let totalAmount = 0;
+    for (const id of registrationIds) {
+      const registration = await this.getOwnedRegistration(id, participantId);
+      if (registration.status === 'PENDING' && this.isHoldExpired(registration)) {
+        await this.expireHold(registration);
+        throw new AppError('Đã hết thời gian giữ chỗ, vui lòng đặt vé lại', 410);
+      }
+      if (registration.status !== 'PENDING') {
+        throw new AppError('Một trong các đăng ký không ở trạng thái chờ thanh toán', 400);
+      }
+      totalAmount += registration.totalAmount;
+    }
+
+    const params: Record<string, string> = {
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: config.vnpay.tmnCode,
+      // VNPAY amounts are integers in VND x100 (no decimal places).
+      vnp_Amount: String(Math.round(totalAmount * 100)),
+      vnp_CurrCode: 'VND',
+      vnp_TxnRef: `EVB${Date.now()}${Math.floor(Math.random() * 1000)}`,
+      vnp_OrderInfo: buildOrderInfo(registrationIds),
+      vnp_OrderType: 'other',
+      vnp_Locale: 'vn',
+      vnp_ReturnUrl: config.vnpay.returnUrl,
+      vnp_IpAddr: ipAddr,
+      vnp_CreateDate: formatVnpayDate(new Date()),
+    };
+
+    return buildPaymentUrl(config.vnpay.url, params, config.vnpay.hashSecret);
+  }
+
+  // Marks every registration in a VNPAY order as PAID and records one Payment row each.
+  // Called from both the return-redirect and the IPN webhook, which can race or duplicate
+  // (VNPAY retries IPN until it gets a 00 response) — markPaid's atomic PENDING->PAID guard
+  // plus the unique transactionCode make re-running this for an already-settled order a
+  // no-op that returns the existing rows instead of erroring or double-charging state.
+  async finalizeVnpayPayment(
+    registrationIds: string[],
+    params: { transactionNo: string; amountVnd100: number; payDate?: Date }
+  ): Promise<ConfirmPaymentResult[]> {
+    const loaded: IRegistration[] = [];
+    for (const id of registrationIds) {
+      const registration = await this.registrationRepository.findById(id);
+      if (!registration) throw new AppError(`Không tìm thấy đăng ký ${id}`, 404);
+      loaded.push(registration);
+    }
+
+    const expectedAmount = Math.round(loaded.reduce((sum, r) => sum + r.totalAmount, 0) * 100);
+    if (expectedAmount !== params.amountVnd100) {
+      throw new AppError('Số tiền thanh toán không khớp', 400);
+    }
+
+    const results: ConfirmPaymentResult[] = [];
+    for (const registration of loaded) {
+      const id = (registration._id as mongoose.Types.ObjectId).toString();
+
+      if (registration.status === 'PAID') {
+        const existingPayment = await this.registrationRepository.findPaymentByRegistrationId(id);
+        if (existingPayment) {
+          results.push({ registration, payment: existingPayment });
+          continue;
+        }
+      }
+
+      const updated = await this.registrationRepository.markPaid(id);
+      if (!updated) {
+        // Hold expired/was cancelled after VNPAY had already captured the money for it —
+        // can't silently sell an expired hold. Needs manual reconciliation/refund; surfaced
+        // as an error so the caller can report it rather than pretend it succeeded.
+        throw new AppError(`Đăng ký ${id} đã hết hạn hoặc bị hủy trước khi thanh toán hoàn tất`, 409);
+      }
+
+      const transactionCode = `${params.transactionNo}-${id}`;
+      try {
+        const payment = await this.registrationRepository.createPayment({
+          registrationId: updated._id as mongoose.Types.ObjectId,
+          amount: updated.totalAmount,
+          paymentMethod: 'VNPAY',
+          transactionCode,
+          status: 'PAID',
+          paymentDate: params.payDate ?? new Date(),
+        });
+        results.push({ registration: updated, payment });
+      } catch (err: any) {
+        if (err?.code === 11000) {
+          const existingPayment = await this.registrationRepository.findPaymentByTransactionCode(
+            transactionCode
+          );
+          if (existingPayment) {
+            results.push({ registration: updated, payment: existingPayment });
+            continue;
+          }
+        }
+        throw err;
+      }
+    }
+
+    return results;
   }
 
   // Self-service cancel: releases the reserved/sold stock back to the ticket pool.

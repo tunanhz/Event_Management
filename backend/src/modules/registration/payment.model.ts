@@ -17,7 +17,8 @@ const paymentSchema = new Schema<IPayment>(
   {
     registrationId: { type: Schema.Types.ObjectId, ref: 'Registration', required: true },
     amount: { type: Number, required: true, min: 0 },
-    // Always 'MOCK' for now — no real gateway (VNPAY) wired up yet, see docs/business.md §8.
+    // 'VNPAY' for real gateway payments (see modules/payment); 'MOCK' remains the default
+    // for the other still-simulated methods on the payment-method picker (card/e-wallets).
     paymentMethod: { type: String, required: true, default: 'MOCK' },
     transactionCode: { type: String, required: true, unique: true },
     status: { type: String, enum: ['PENDING', 'PAID', 'FAILED'], default: 'PENDING' },

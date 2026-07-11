@@ -8,7 +8,7 @@ import type { EventItem, TicketType } from "@/lib/mockData";
 import { useAuth } from "@/context/AuthContext";
 import { formatVnd } from "@/lib/utils";
 import { buildLines, totalAmount, type Quantities } from "@/lib/booking-selection";
-import { purchaseSelection } from "@/lib/booking-api";
+import { holdSelection, confirmMockPayments, createVnpayPaymentUrl } from "@/lib/booking-api";
 import { formatBookingDate } from "./format-booking-date";
 import styles from "./payment-view.module.css";
 
@@ -55,17 +55,27 @@ export function PaymentView({ event, tickets, quantities }: Props) {
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
 
-  // Hold + confirm (mock payment) one registration per selected tier, then
-  // send the buyer to their tickets. Requires a signed-in PARTICIPANT.
+  // Hold one registration per selected tier, then either redirect to the real
+  // VNPAY gateway (leaves the SPA — the buyer lands back on
+  // /thanh-toan/vnpay-return after paying) or confirm the remaining, still-
+  // simulated methods immediately. Requires a signed-in PARTICIPANT.
   const pay = async () => {
     if (paying || expired || total === 0) return;
     setPaying(true);
     setPayError(null);
     try {
-      await purchaseSelection(
+      const registrationIds = await holdSelection(
         event.id,
         lines.map((l) => ({ ticketId: l.ticket.id, quantity: l.qty }))
       );
+
+      if (method === "vnpay") {
+        const paymentUrl = await createVnpayPaymentUrl(registrationIds);
+        window.location.href = paymentUrl;
+        return;
+      }
+
+      await confirmMockPayments(registrationIds);
       router.push("/ve-cua-toi");
     } catch (err) {
       setPayError(
