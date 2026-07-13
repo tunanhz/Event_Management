@@ -53,11 +53,13 @@ export async function confirmPayment(registrationId: string): Promise<void> {
 }
 
 /**
- * Buy a whole selection: one registration per selected tier, each held then
- * confirmed. Returns the created registration ids. Any tier that fails (e.g.
- * sold out) rejects the whole call with the backend message.
+ * Hold a whole selection: one registration per selected tier. Returns the
+ * created registration ids (each PENDING, 10-min hold) without paying yet —
+ * the caller decides how to pay next (mock confirm, or redirect to VNPAY).
+ * Any tier that fails (e.g. sold out) rejects the whole call with the
+ * backend message.
  */
-export async function purchaseSelection(
+export async function holdSelection(
   eventId: string,
   lines: { ticketId: string; quantity: number }[]
 ): Promise<string[]> {
@@ -65,10 +67,25 @@ export async function purchaseSelection(
   for (const line of lines) {
     if (line.quantity <= 0) continue
     const reg = await createRegistration(eventId, line.ticketId, line.quantity)
-    await confirmPayment(reg._id)
     ids.push(reg._id)
   }
   return ids
+}
+
+/** Confirms a mock payment method for every held registration in the selection. */
+export async function confirmMockPayments(registrationIds: string[]): Promise<void> {
+  for (const id of registrationIds) {
+    await confirmPayment(id)
+  }
+}
+
+/** POST /payments/vnpay/create-payment-url — returns the VNPAY redirect URL. */
+export async function createVnpayPaymentUrl(registrationIds: string[]): Promise<string> {
+  const res = await clientApi.post<ApiEnvelope<{ paymentUrl: string }>>(
+    "/payments/vnpay/create-payment-url",
+    { registrationIds }
+  )
+  return res.data.paymentUrl
 }
 
 const ref = (v: string | PopulatedRef | undefined): PopulatedRef =>
