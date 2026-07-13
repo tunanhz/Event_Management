@@ -37,7 +37,6 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-userSchema.index({ email: 1 });
 
 // Pre-save hook to hash password
 userSchema.pre('save', async function () {

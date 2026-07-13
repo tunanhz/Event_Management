@@ -1,0 +1,74 @@
+[
+  {
+    "_id": { "$oid": "65f0a0000000000000000001" },
+    "fullName": "Nguyễn Văn Admin",
+    "email": "admin@eventbox.vn",
+    "passwordHash": "$2b$10$uG/2PkvwNV5VorVyZIeyLeFqt64itzp9lm27gJtSaBLOwYOItn5N.",
+    "phone": "0901000001",
+    "role": "ADMIN",
+    "accountStatus": "ACTIVE",
+    "avatar": "",
+    "createdAt": { "$date": "2026-01-01T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0a0000000000000000002" },
+    "fullName": "Công ty Sự Kiện Sao Việt",
+    "email": "organizer.music@eventbox.vn",
+    "passwordHash": "$2b$10$uG/2PkvwNV5VorVyZIeyLeFqt64itzp9lm27gJtSaBLOwYOItn5N.",
+    "phone": "0901000002",
+    "role": "ORGANIZER",
+    "accountStatus": "ACTIVE",
+    "avatar": "",
+    "createdAt": { "$date": "2026-01-02T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-02T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0a0000000000000000003" },
+    "fullName": "Công ty Thể Thao Việt",
+    "email": "organizer.sports@eventbox.vn",
+    "passwordHash": "$2b$10$uG/2PkvwNV5VorVyZIeyLeFqt64itzp9lm27gJtSaBLOwYOItn5N.",
+    "phone": "0901000003",
+    "role": "ORGANIZER",
+    "accountStatus": "ACTIVE",
+    "avatar": "",
+    "createdAt": { "$date": "2026-01-03T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-03T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0a0000000000000000004" },
+    "fullName": "Trần Thị Staff",
+    "email": "staff@eventbox.vn",
+    "passwordHash": "$2b$10$uG/2PkvwNV5VorVyZIeyLeFqt64itzp9lm27gJtSaBLOwYOItn5N.",
+    "phone": "0901000004",
+    "role": "STAFF",
+    "accountStatus": "ACTIVE",
+    "avatar": "",
+    "createdAt": { "$date": "2026-01-04T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-04T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0a0000000000000000005" },
+    "fullName": "Lê Văn Cường",
+    "email": "participant1@eventbox.vn",
+    "passwordHash": "$2b$10$uG/2PkvwNV5VorVyZIeyLeFqt64itzp9lm27gJtSaBLOwYOItn5N.",
+    "phone": "0901000005",
+    "role": "PARTICIPANT",
+    "accountStatus": "ACTIVE",
+    "avatar": "",
+    "createdAt": { "$date": "2026-01-05T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-05T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f0a0000000000000000006" },
+    "fullName": "Phạm Thị Dung",
+    "email": "participant2@eventbox.vn",
+    "passwordHash": "$2b$10$uG/2PkvwNV5VorVyZIeyLeFqt64itzp9lm27gJtSaBLOwYOItn5N.",
+    "phone": "0901000006",
+    "role": "PARTICIPANT",
+    "accountStatus": "ACTIVE",
+    "avatar": "",
+    "createdAt": { "$date": "2026-01-06T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-06T00:00:00.000Z" }
+  }
+]
