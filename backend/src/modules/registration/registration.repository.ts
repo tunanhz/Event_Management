@@ -92,4 +92,18 @@ export class RegistrationRepository {
     const payment = new Payment(data);
     return payment.save();
   }
+
+  async findPaymentByRegistrationId(registrationId: string): Promise<IPayment | null> {
+    return Payment.findOne({ registrationId }).sort({ createdAt: -1 });
+  }
+
+  async findPaymentByTransactionCode(transactionCode: string): Promise<IPayment | null> {
+    return Payment.findOne({ transactionCode });
+  }
+
+  // Atomic PENDING -> PAID transition so a racing return-redirect and IPN callback (VNPAY
+  // fires both for the same order) can never both "win" and double-process a payment.
+  async markPaid(id: string): Promise<IRegistration | null> {
+    return Registration.findOneAndUpdate({ _id: id, status: 'PENDING' }, { status: 'PAID' }, { new: true });
+  }
 }
