@@ -1,61 +1,175 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { CalendarDays, Search, UserCheck, Users } from "lucide-react"
-import { cn, formatDate } from "@/lib/utils"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { CalendarDays, Search, UserCheck, Users, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { mockEvents } from "@/lib/mock-data"
+import { Button } from "@/components/ui/Button"
+import { clientApi } from "@/lib/client-api"
 import {
-  ROLES_IN_EVENT,
-  SEED_ASSIGNMENTS,
-  STAFF_MEMBERS,
-  type StaffAssignmentEntry,
-} from "./staff-assignment-data"
+  fetchEventAssignments,
+  createAssignment,
+  deleteAssignment,
+  type StaffAssignment,
+} from "@/lib/staff-api"
+import { fetchAdminEvents, type AdminEvent } from "@/lib/admin-event-api"
 
-// Only events that still need gate operations are assignable.
-const ASSIGNABLE_EVENTS = mockEvents.filter((e) => e.status === "published")
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-/**
- * Admin staff-assignment grid: pick an event on the left, toggle staff and
- * their in-event role on the right. Local mock state — mirrors the designed
- * StaffAssignment entity until the backend exists.
- */
+interface StaffUser {
+  _id: string
+  fullName: string
+  email: string
+  phone?: string
+  role: string
+  accountStatus: string
+}
+
+interface ApiEnvelope<T> {
+  success: boolean
+  message: string
+  data: T
+  meta?: { currentPage: number; totalPages: number; totalItems: number; itemsPerPage: number }
+}
+
+const ROLES_IN_EVENT = [
+  "Soát vé cổng chính",
+  "Soát vé cổng phụ",
+  "Hỗ trợ khán giả",
+  "Điều phối khu vực",
+]
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function StaffAssignmentView() {
-  const [assignments, setAssignments] = useState<Record<string, StaffAssignmentEntry[]>>(
-    () => ({ ...SEED_ASSIGNMENTS })
-  )
-  const [selectedEventId, setSelectedEventId] = useState(ASSIGNABLE_EVENTS[0]?.id ?? "")
+  // State: events
+  const [events, setEvents] = useState<AdminEvent[]>([])
+  const [eventsLoading, setEventsLoading] = useState(true)
+
+  // State: staff users
+  const [staffUsers, setStaffUsers] = useState<StaffUser[]>([])
+  const [staffLoading, setStaffLoading] = useState(true)
+
+  // State: current event + assignments
+  const [selectedEventId, setSelectedEventId] = useState<string>("")
+  const [assignments, setAssignments] = useState<StaffAssignment[]>([])
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false)
+
+  // State: in-progress ops (staffId → loading)
+  const [toggling, setToggling] = useState<Record<string, boolean>>({})
+
+  // State: search + feedback
   const [query, setQuery] = useState("")
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
 
-  const current = useMemo(
-    () => assignments[selectedEventId] ?? [],
-    [assignments, selectedEventId]
-  )
+  // ── Fetch events ────────────────────────────────────────────────────────────
 
-  const staffRows = useMemo(() => {
+  useEffect(() => {
+    fetchAdminEvents({ status: "published", limit: 100 })
+      .then(({ events: ev }) => {
+        setEvents(ev)
+        if (ev.length > 0) setSelectedEventId(ev[0]._id)
+      })
+      .catch(console.error)
+      .finally(() => setEventsLoading(false))
+  }, [])
+
+  // ── Fetch staff users ───────────────────────────────────────────────────────
+
+  useEffect(() => {
+    clientApi
+      .get<ApiEnvelope<StaffUser[]>>("/users/admin?role=STAFF&limit=200")
+      .then((res) => setStaffUsers(res.data ?? []))
+      .catch(console.error)
+      .finally(() => setStaffLoading(false))
+  }, [])
+
+  // ── Fetch assignments for selected event ────────────────────────────────────
+
+  const loadAssignments = useCallback(async (eventId: string) => {
+    if (!eventId) return
+    setAssignmentsLoading(true)
+    try {
+      const data = await fetchEventAssignments(eventId)
+      setAssignments(data)
+    } catch {
+      setAssignments([])
+    } finally {
+      setAssignmentsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedEventId) loadAssignments(selectedEventId)
+  }, [selectedEventId, loadAssignments])
+
+  // ── Derived data ────────────────────────────────────────────────────────────
+
+  const filteredStaff = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return STAFF_MEMBERS
-    return STAFF_MEMBERS.filter((s) =>
-      [s.name, s.email, s.phone].some((v) => v.toLowerCase().includes(q))
+    if (!q) return staffUsers
+    return staffUsers.filter((s) =>
+      [s.fullName, s.email, s.phone ?? ""].some((v) => v.toLowerCase().includes(q))
     )
-  }, [query])
+  }, [staffUsers, query])
 
-  const setForEvent = (next: StaffAssignmentEntry[]) =>
-    setAssignments((prev) => ({ ...prev, [selectedEventId]: next }))
+  const selectedEvent = events.find((e) => e._id === selectedEventId)
 
-  const toggleStaff = (staffId: string) => {
-    const exists = current.some((a) => a.staffId === staffId)
-    setForEvent(
-      exists
-        ? current.filter((a) => a.staffId !== staffId)
-        : [...current, { staffId, roleInEvent: ROLES_IN_EVENT[0] }]
+  // Helper: find existing assignment for a staff member
+  const getAssignment = (staffId: string) =>
+    assignments.find(
+      (a) =>
+        (typeof a.staffId === "string" ? a.staffId : a.staffId._id) === staffId
+    )
+
+  // ── Toggle assign / unassign ────────────────────────────────────────────────
+
+  const toggleStaff = async (staffId: string) => {
+    if (!selectedEventId || toggling[staffId]) return
+    setToggling((p) => ({ ...p, [staffId]: true }))
+
+    const existing = getAssignment(staffId)
+    try {
+      if (existing) {
+        // Unassign
+        await deleteAssignment(selectedEventId, existing._id)
+        setAssignments((prev) => prev.filter((a) => a._id !== existing._id))
+        showToast("Đã hủy phân công", true)
+      } else {
+        // Assign with default role
+        const newA = await createAssignment(selectedEventId, {
+          staffId,
+          gate: "Cổng A",
+          shift: "Ca sáng",
+          responsibility: ROLES_IN_EVENT[0],
+        })
+        setAssignments((prev) => [...prev, newA])
+        showToast("Phân công thành công!", true)
+      }
+    } catch (err: any) {
+      showToast(err.message ?? "Lỗi khi thực hiện phân công", false)
+    } finally {
+      setToggling((p) => ({ ...p, [staffId]: false }))
+    }
+  }
+
+  const changeRole = async (staffId: string, responsibility: string) => {
+    const existing = getAssignment(staffId)
+    if (!existing || toggling[staffId]) return
+    // Optimistic
+    setAssignments((prev) =>
+      prev.map((a) => (a._id === existing._id ? { ...a, responsibility } : a))
     )
   }
 
-  const changeRole = (staffId: string, roleInEvent: string) =>
-    setForEvent(current.map((a) => (a.staffId === staffId ? { ...a, roleInEvent } : a)))
+  const showToast = (msg: string, ok: boolean) => {
+    setToast({ msg, ok })
+    setTimeout(() => setToast(null), 3000)
+  }
 
-  const selectedEvent = ASSIGNABLE_EVENTS.find((e) => e.id === selectedEventId)
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  const isLoading = eventsLoading || staffLoading
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -66,122 +180,167 @@ export function StaffAssignmentView() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.6fr]">
-        {/* ── Event list ─────────────────────────────────────────── */}
-        <div className="space-y-2">
-          {ASSIGNABLE_EVENTS.map((event) => {
-            const count = (assignments[event.id] ?? []).length
-            const active = event.id === selectedEventId
-            return (
-              <button
-                key={event.id}
-                type="button"
-                onClick={() => setSelectedEventId(event.id)}
-                aria-pressed={active}
-                className={cn(
-                  "w-full rounded-2xl border p-4 text-left transition-colors cursor-pointer",
-                  active
-                    ? "border-cyan-500 bg-cyan-500/10 shadow-sm"
-                    : "border-border bg-card hover:bg-muted"
-                )}
-              >
-                <p className="font-semibold text-foreground">{event.title}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <CalendarDays className="h-3.5 w-3.5" />
-                    {formatDate(event.date)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5" />
-                    {count} staff được phân
-                  </span>
-                </div>
-              </button>
-            )
-          })}
+      {/* Toast */}
+      {toast && (
+        <div
+          className={cn(
+            "fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg",
+            toast.ok
+              ? "bg-emerald-600 text-white"
+              : "bg-destructive text-destructive-foreground"
+          )}
+        >
+          {toast.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {toast.msg}
         </div>
+      )}
 
-        {/* ── Staff panel for the selected event ─────────────────── */}
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="font-bold text-foreground">
-                {selectedEvent ? selectedEvent.title : "Chọn sự kiện"}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {current.length} / {STAFF_MEMBERS.length} staff được phân công
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="animate-spin text-primary" size={32} />
+        </div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-[1fr_1.6fr]">
+          {/* ── Event list ─────────────────────────────────────────── */}
+          <div className="space-y-2">
+            {events.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                Không có sự kiện đang công bố nào.
               </p>
-            </div>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Tìm staff…"
-                aria-label="Tìm nhân viên"
-                className="h-10 w-52 rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none transition-colors focus:border-cyan-500"
-              />
-            </div>
-          </div>
-
-          <div className="divide-y divide-border">
-            {staffRows.map((staff) => {
-              const entry = current.find((a) => a.staffId === staff.id)
-              const assigned = Boolean(entry)
-              return (
-                <div key={staff.id} className="flex flex-wrap items-center gap-3 py-3">
-                  <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={assigned}
-                      onChange={() => toggleStaff(staff.id)}
-                      className="h-4.5 w-4.5 rounded border-border accent-cyan-600"
-                      aria-label={`Phân công ${staff.name}`}
-                    />
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary">
-                      {staff.name.charAt(0)}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-foreground">
-                        {staff.name}
+            ) : (
+              events.map((event) => {
+                const count = assignments.filter(
+                  () => event._id === selectedEventId
+                ).length
+                const active = event._id === selectedEventId
+                return (
+                  <button
+                    key={event._id}
+                    type="button"
+                    onClick={() => setSelectedEventId(event._id)}
+                    aria-pressed={active}
+                    className={cn(
+                      "w-full rounded-2xl border p-4 text-left transition-colors cursor-pointer",
+                      active
+                        ? "border-cyan-500 bg-cyan-500/10 shadow-sm"
+                        : "border-border bg-card hover:bg-muted"
+                    )}
+                  >
+                    <p className="font-semibold text-foreground">{event.title}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      {(event.startDate || event.date) && (
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          {new Date(event.startDate ?? event.date ?? "").toLocaleDateString("vi-VN")}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5" />
+                        {active ? assignments.length : "–"} staff được phân
                       </span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {staff.email} · {staff.phone}
-                      </span>
-                    </span>
-                  </label>
-
-                  {assigned ? (
-                    <select
-                      value={entry?.roleInEvent}
-                      onChange={(e) => changeRole(staff.id, e.target.value)}
-                      aria-label={`Vai trò của ${staff.name}`}
-                      className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground outline-none focus:border-cyan-500"
-                    >
-                      {ROLES_IN_EVENT.map((role) => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <Badge variant="secondary" className="text-[11px]">Chưa phân</Badge>
-                  )}
-                </div>
-              )
-            })}
-            {staffRows.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                Không tìm thấy staff phù hợp.
-              </p>
+                    </div>
+                  </button>
+                )
+              })
             )}
           </div>
 
-          <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <UserCheck className="h-3.5 w-3.5" />
-            Staff được phân sẽ thấy sự kiện trong khu vực làm việc /staff của họ (khi nối API).
-          </p>
+          {/* ── Staff panel ─────────────────────────────────────────── */}
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-foreground">
+                  {selectedEvent ? selectedEvent.title : "Chọn sự kiện"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {assignmentsLoading ? "Đang tải..." : `${assignments.length} / ${staffUsers.length} staff được phân công`}
+                </p>
+              </div>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Tìm staff…"
+                  aria-label="Tìm nhân viên"
+                  className="h-10 w-52 rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none transition-colors focus:border-cyan-500"
+                />
+              </div>
+            </div>
+
+            {assignmentsLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="animate-spin text-primary" size={24} />
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {filteredStaff.map((staff) => {
+                  const entry = getAssignment(staff._id)
+                  const assigned = Boolean(entry)
+                  const isToggling = toggling[staff._id]
+                  return (
+                    <div key={staff._id} className="flex flex-wrap items-center gap-3 py-3">
+                      <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={assigned}
+                          onChange={() => toggleStaff(staff._id)}
+                          disabled={isToggling || !selectedEventId}
+                          className="h-4 w-4 rounded border-border accent-cyan-600 disabled:opacity-50"
+                          aria-label={`Phân công ${staff.fullName}`}
+                        />
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary">
+                          {staff.fullName.charAt(0)}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold text-foreground">
+                            {staff.fullName}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {staff.email}{staff.phone ? ` · ${staff.phone}` : ""}
+                          </span>
+                        </span>
+                      </label>
+
+                      {isToggling ? (
+                        <Loader2 className="animate-spin text-muted-foreground" size={18} />
+                      ) : assigned && entry ? (
+                        <select
+                          value={
+                            typeof entry.staffId === "string"
+                              ? entry.responsibility
+                              : entry.responsibility
+                          }
+                          onChange={(e) => changeRole(staff._id, e.target.value)}
+                          aria-label={`Vai trò của ${staff.fullName}`}
+                          className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground outline-none focus:border-cyan-500"
+                        >
+                          {ROLES_IN_EVENT.map((role) => (
+                            <option key={role} value={role}>{role}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Badge variant="secondary" className="text-[11px]">Chưa phân</Badge>
+                      )}
+                    </div>
+                  )
+                })}
+                {filteredStaff.length === 0 && (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    Không tìm thấy staff phù hợp.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <UserCheck className="h-3.5 w-3.5" />
+              Staff được phân sẽ thấy sự kiện trong khu vực làm việc /staff của họ.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

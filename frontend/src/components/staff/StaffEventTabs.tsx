@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ArrowLeft, ScanLine, Users, History, ClipboardCheck } from "lucide-react"
+import { ArrowLeft, ScanLine, Users, History, ClipboardCheck, CreditCard } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 /** Sub-routes of the per-event check-in workspace (/staff/check-in/[eventId]). */
@@ -10,6 +10,7 @@ const TABS = [
   { key: "", name: "Quét vé", icon: ScanLine },
   { key: "/attendees", name: "Người tham dự", icon: Users },
   { key: "/history", name: "Lịch sử", icon: History },
+  { key: "/offline-sale", name: "Bán vé", icon: CreditCard },
   { key: "/summary", name: "Ca trực", icon: ClipboardCheck },
 ]
 
