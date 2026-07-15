@@ -20,6 +20,9 @@ import { paymentRoutes } from './modules/payment';
 import { adminEventRoutes } from './modules/admin-event';
 import { adminTicketRoutes } from './modules/admin-ticket';
 import { uploadRoutes } from './modules/upload';
+import { staffAssignmentRoutes } from './modules/staff-assignment';
+import { checkInRoutes } from './modules/check-in';
+import { incidentRoutes } from './modules/incident';
 
 const app = express();
 
@@ -49,6 +52,9 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/admin/events', adminEventRoutes);
 app.use('/api/admin/tickets', adminTicketRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/staff-assignments', staffAssignmentRoutes);
+app.use('/api/check-in', checkInRoutes);
+app.use('/api/incidents', incidentRoutes);
 
 // Uploaded permit documents — CORP header relaxed so the FE origin can embed them.
 app.use(

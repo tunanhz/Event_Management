@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import {
   ClipboardCheck,
   BadgeCheck,
@@ -10,33 +10,84 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Loader2,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import type { StaffEvent } from "./staff-checkin-data"
-import { getAssignmentByEventId, TIMING_LABELS } from "./staff-assignments-data"
-import { getCheckinHistory } from "./staff-history-data"
+import { useAuth } from "@/context/AuthContext"
+import { getMyAssignments, getCheckInHistory, type StaffAssignment, type CheckInHistoryEntry } from "@/lib/staff-api"
+
+interface StaffShiftSummaryViewProps {
+  eventId: string
+  eventTitle?: string
+}
 
 /**
  * Personal shift recap for handover: my duty details, my scan results for this
  * event (from the gate log) and a handover note for the next shift.
  */
-export function StaffShiftSummaryView({ event }: { event: StaffEvent }) {
-  const assignment = getAssignmentByEventId(event.id)
-  // "Bạn" marks entries scanned by the signed-in staff member in the mock log.
-  const mine = getCheckinHistory(event.id).filter((e) => e.staffName === "Bạn")
-  const success = mine.filter((e) => e.status === "SUCCESS")
+export function StaffShiftSummaryView({ eventId, eventTitle = "Sự kiện" }: StaffShiftSummaryViewProps) {
+  const { user } = useAuth()
+  const [assignment, setAssignment] = useState<StaffAssignment | null>(null)
+  const [history, setHistory] = useState<CheckInHistoryEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [note, setNote] = useState("")
+  const [saved, setSaved] = useState(false)
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [assigns, hist] = await Promise.all([
+        getMyAssignments(),
+        getCheckInHistory(eventId)
+      ])
+      const currentAssign = assigns.find(a => (a.eventId?._id ?? a.eventId) === eventId) || null
+      setAssignment(currentAssign)
+      setHistory(hist)
+    } catch (err: any) {
+      setError(err.message ?? "Không thể tải thông tin ca trực")
+    } finally {
+      setLoading(false)
+    }
+  }, [eventId])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const staffName = user?.fullName || ""
+  
+  // Scans performed by the current staff member
+  const mine = history.filter((e) => e.staffName === staffName)
+  const success = mine.filter((e) => e.status === "SUCCESS" || !e.status) // Assume SUCCESS if status not explicitly set
 
   const byType = new Map<string, number>()
   for (const entry of success) {
     if (entry.ticketType) byType.set(entry.ticketType, (byType.get(entry.ticketType) ?? 0) + 1)
   }
 
-  const [note, setNote] = useState("")
-  const [saved, setSaved] = useState(false)
+  // Calculate stats based on status mapping
+  const duplicateCount = mine.filter((e) => e.status === "DUPLICATE").length
+  const invalidCount = mine.filter((e) => e.status === "INVALID").length
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center">
+        <p className="font-semibold text-destructive">{error}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -47,25 +98,29 @@ export function StaffShiftSummaryView({ event }: { event: StaffEvent }) {
             <ClipboardCheck className="text-primary" size={22} aria-hidden="true" />
             Ca trực của tôi
           </CardTitle>
-          <CardDescription>{event.title}</CardDescription>
+          <CardDescription>{assignment?.eventId?.title || eventTitle}</CardDescription>
         </CardHeader>
         <CardContent>
           {assignment ? (
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-              <span className="inline-flex items-center gap-1.5 text-foreground">
+              <span className="inline-flex items-center gap-1.5 text-foreground font-semibold">
                 <BadgeCheck size={15} className="text-primary" aria-hidden="true" />
-                {assignment.responsibility}
+                {assignment.roleInEvent}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <DoorOpen size={15} aria-hidden="true" />
-                {assignment.gate}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <Clock size={15} aria-hidden="true" />
-                {assignment.shift}
-              </span>
-              <Badge variant={assignment.timing === "today" ? "success" : "secondary"}>
-                {TIMING_LABELS[assignment.timing]}
+              {assignment.gate && (
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <DoorOpen size={15} aria-hidden="true" />
+                  {assignment.gate}
+                </span>
+              )}
+              {assignment.shift && (
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Clock size={15} aria-hidden="true" />
+                  {assignment.shift}
+                </span>
+              )}
+              <Badge variant="success">
+                Đang làm việc
               </Badge>
             </div>
           ) : (
@@ -81,14 +136,14 @@ export function StaffShiftSummaryView({ event }: { event: StaffEvent }) {
         <ShiftStat
           icon={AlertTriangle}
           tone="amber"
-          value={mine.filter((e) => e.status === "FAILED").length}
-          label="Bị từ chối"
+          value={duplicateCount}
+          label="Vé trùng / đã quét"
         />
         <ShiftStat
           icon={XCircle}
           tone="destructive"
-          value={mine.filter((e) => e.status === "INVALID").length}
-          label="Không hợp lệ"
+          value={invalidCount}
+          label="Vé không hợp lệ"
         />
       </div>
 
@@ -142,7 +197,7 @@ export function StaffShiftSummaryView({ event }: { event: StaffEvent }) {
               className="w-full resize-y rounded-xl border border-border bg-muted p-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
             />
             <div className="flex items-center gap-3">
-              <Button className="h-10 rounded-lg" disabled={!note.trim()} onClick={() => setSaved(true)}>
+              <Button className="h-10 rounded-lg cursor-pointer font-semibold" disabled={!note.trim()} onClick={() => setSaved(true)}>
                 Lưu ghi chú
               </Button>
               {saved && (

@@ -1,6 +1,4 @@
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
-import { getStaffEventById } from "@/components/staff/staff-checkin-data"
 import { StaffAttendeesView } from "@/components/staff/StaffAttendeesView"
 
 export const metadata: Metadata = {
@@ -15,8 +13,6 @@ export default async function StaffAttendeesPage({
   params: Promise<{ eventId: string }>
 }) {
   const { eventId } = await params
-  const event = getStaffEventById(eventId)
-  if (!event) notFound()
 
-  return <StaffAttendeesView key={event.id} event={event} />
+  return <StaffAttendeesView key={eventId} eventId={eventId} />
 }

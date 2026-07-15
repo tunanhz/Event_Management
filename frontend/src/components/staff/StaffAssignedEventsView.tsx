@@ -1,22 +1,62 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { CalendarClock, MapPin, Clock, DoorOpen, BadgeCheck, ScanLine, Users, History } from "lucide-react"
+import { CalendarClock, MapPin, Clock, DoorOpen, BadgeCheck, ScanLine, Users, History, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
-import { STAFF_EVENTS, summarizeTickets } from "./staff-checkin-data"
-import { STAFF_ASSIGNMENTS, TIMING_LABELS } from "./staff-assignments-data"
+import { getMyAssignments, type StaffAssignment } from "@/lib/staff-api"
+import { formatDate } from "@/lib/utils"
 
 /**
  * Staff landing page (/staff): every event the staff member is assigned to
  * work, with shift details and a shortcut into the check-in station.
  */
 export function StaffAssignedEventsView() {
-  const rows = STAFF_ASSIGNMENTS.flatMap((assignment) => {
-    const event = STAFF_EVENTS.find((e) => e.id === assignment.eventId)
-    return event ? [{ assignment, event }] : []
-  })
-  const todayCount = rows.filter((r) => r.assignment.timing === "today").length
+  const [assignments, setAssignments] = useState<StaffAssignment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    getMyAssignments()
+      .then(setAssignments)
+      .catch((err) => setError(err.message ?? "Không thể tải danh sách sự kiện"))
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Determine timing based on event dates
+  const getTimingLabel = (event: any) => {
+    if (!event) return { label: "Sắp diễn ra", variant: "secondary" as const }
+    const now = new Date()
+    const start = new Date(event.startDate || event.date)
+    const end = event.endDate ? new Date(event.endDate) : start
+
+    if (now >= start && now <= end) return { label: "Hôm nay", variant: "success" as const }
+    if (start.toDateString() === now.toDateString()) return { label: "Hôm nay", variant: "success" as const }
+    return { label: "Sắp diễn ra", variant: "secondary" as const }
+  }
+
+  const todayCount = assignments.filter((a) => {
+    const event = a.eventId
+    if (!event) return false
+    return getTimingLabel(event).label === "Hôm nay"
+  }).length
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center">
+        <p className="font-semibold text-destructive">{error}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -31,7 +71,7 @@ export function StaffAssignedEventsView() {
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/12 px-3 py-1 text-xs font-semibold text-primary">
             <BadgeCheck size={14} aria-hidden="true" />
-            {rows.length} sự kiện được giao
+            {assignments.length} sự kiện được giao
           </span>
           {todayCount > 0 && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
@@ -43,7 +83,7 @@ export function StaffAssignedEventsView() {
       </div>
 
       {/* ── Assignment cards ────────────────────────────────────────── */}
-      {rows.length === 0 ? (
+      {assignments.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
           <p className="font-semibold text-foreground">Bạn chưa được phân công sự kiện nào.</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -52,47 +92,38 @@ export function StaffAssignedEventsView() {
         </div>
       ) : (
         <div className="space-y-4">
-          {rows.map(({ assignment, event }) => {
-            const stats = summarizeTickets(event.tickets)
-            const base = `/staff/check-in/${event.id}`
+          {assignments.map((assignment) => {
+            const event = assignment.eventId
+            if (!event || !event._id) return null
+            const timing = getTimingLabel(event)
+            const eventId = event._id
+            const base = `/staff/check-in/${eventId}`
+
+            const eventDate = event.startDate || event.date
+            const dateStr = eventDate ? formatDate(eventDate) : "Chưa xác định"
+
             return (
               <article
-                key={event.id}
+                key={assignment._id}
                 className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-bold text-foreground">{event.title}</h2>
-                      <Badge variant={assignment.timing === "today" ? "success" : "secondary"}>
-                        {TIMING_LABELS[assignment.timing]}
+                      <Badge variant={timing.variant}>
+                        {timing.label}
                       </Badge>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                       <span className="inline-flex items-center gap-1.5">
                         <CalendarClock size={15} aria-hidden="true" />
-                        {event.dateTime}
+                        {dateStr}
                       </span>
                       <span className="inline-flex items-center gap-1.5">
                         <MapPin size={15} aria-hidden="true" />
-                        {event.venueName}
+                        {event.location || "Chưa xác định"}
                       </span>
-                    </div>
-                  </div>
-
-                  {/* Check-in progress */}
-                  <div className="w-full shrink-0 sm:w-48">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Đã check-in</span>
-                      <span className="font-semibold tabular-nums text-foreground">
-                        {stats.checkedIn}/{stats.total}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
-                        style={{ width: `${stats.percent}%` }}
-                      />
                     </div>
                   </div>
                 </div>
@@ -101,16 +132,20 @@ export function StaffAssignedEventsView() {
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
                   <span className="inline-flex items-center gap-1.5 text-foreground">
                     <BadgeCheck size={15} className="text-primary" aria-hidden="true" />
-                    {assignment.responsibility}
+                    {assignment.roleInEvent}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                    <DoorOpen size={15} aria-hidden="true" />
-                    {assignment.gate}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                    <Clock size={15} aria-hidden="true" />
-                    Ca trực {assignment.shift}
-                  </span>
+                  {assignment.gate && (
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <DoorOpen size={15} aria-hidden="true" />
+                      {assignment.gate}
+                    </span>
+                  )}
+                  {assignment.shift && (
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <Clock size={15} aria-hidden="true" />
+                      Ca trực {assignment.shift}
+                    </span>
+                  )}
                 </div>
 
                 {/* Actions */}

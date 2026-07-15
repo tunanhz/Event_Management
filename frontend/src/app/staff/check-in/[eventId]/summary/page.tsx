@@ -1,6 +1,4 @@
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
-import { getStaffEventById } from "@/components/staff/staff-checkin-data"
 import { StaffShiftSummaryView } from "@/components/staff/StaffShiftSummaryView"
 
 export const metadata: Metadata = {
@@ -15,8 +13,6 @@ export default async function StaffShiftSummaryPage({
   params: Promise<{ eventId: string }>
 }) {
   const { eventId } = await params
-  const event = getStaffEventById(eventId)
-  if (!event) notFound()
 
-  return <StaffShiftSummaryView key={event.id} event={event} />
+  return <StaffShiftSummaryView key={eventId} eventId={eventId} />
 }

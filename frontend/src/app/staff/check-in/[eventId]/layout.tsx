@@ -11,7 +11,6 @@ export default async function StaffEventCheckInLayout({
   params: Promise<{ eventId: string }>
 }) {
   const { eventId } = await params
-  if (!getStaffEventById(eventId)) notFound()
 
   return (
     <div>

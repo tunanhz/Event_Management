@@ -1,41 +1,90 @@
 "use client"
 
-import { useState } from "react"
-import { History, CheckCircle2, AlertTriangle, XCircle, type LucideIcon } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import { History, CheckCircle2, AlertTriangle, XCircle, Loader2, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import type { StaffEvent } from "./staff-checkin-data"
-import {
-  getCheckinHistory,
-  LOG_STATUS_LABELS,
-  type CheckinLogStatus,
-} from "./staff-history-data"
+import { getCheckInHistory, type CheckInHistoryEntry } from "@/lib/staff-api"
 
-type LogFilter = "ALL" | CheckinLogStatus
+type LogFilter = "ALL" | "SUCCESS" | "DUPLICATE" | "INVALID"
 
-const STATUS_STYLES: Record<CheckinLogStatus, { icon: LucideIcon; chip: string; icon_: string }> = {
+const LOG_STATUS_LABELS: Record<string, string> = {
+  SUCCESS: "Thành công",
+  DUPLICATE: "Trùng lặp / Đã quét",
+  INVALID: "Không hợp lệ",
+}
+
+const STATUS_STYLES: Record<string, { icon: LucideIcon; chip: string; icon_: string }> = {
   SUCCESS: { icon: CheckCircle2, chip: "bg-emerald-500/12", icon_: "text-emerald-600 dark:text-emerald-400" },
-  FAILED: { icon: AlertTriangle, chip: "bg-amber-500/12", icon_: "text-amber-600 dark:text-amber-400" },
+  DUPLICATE: { icon: AlertTriangle, chip: "bg-amber-500/12", icon_: "text-amber-600 dark:text-amber-400" },
   INVALID: { icon: XCircle, chip: "bg-destructive/12", icon_: "text-destructive" },
+}
+
+interface StaffCheckInHistoryViewProps {
+  eventId: string
+  eventTitle?: string
 }
 
 /**
  * Gate scan log for one event: every scan with its outcome, note and the staff
- * member who performed it (accountability per the check-in business rules).
+ * member who performed it.
  */
-export function StaffCheckInHistoryView({ event }: { event: StaffEvent }) {
-  const entries = getCheckinHistory(event.id)
+export function StaffCheckInHistoryView({ eventId, eventTitle = "Sự kiện" }: StaffCheckInHistoryViewProps) {
+  const [entries, setEntries] = useState<CheckInHistoryEntry[]>([])
   const [filter, setFilter] = useState<LogFilter>("ALL")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  const visible = filter === "ALL" ? entries : entries.filter((e) => e.status === filter)
+  const fetchHistory = useCallback(async () => {
+    try {
+      const data = await getCheckInHistory(eventId)
+      setEntries(data)
+    } catch (err: any) {
+      setError(err.message ?? "Không thể tải lịch sử check-in")
+    } finally {
+      setLoading(false)
+    }
+  }, [eventId])
+
+  useEffect(() => {
+    fetchHistory()
+  }, [fetchHistory])
+
+  // Map status from entry or assume SUCCESS since history usually returns successful check-ins,
+  // but if the API returns a status we use it, otherwise fall back to SUCCESS.
+  const getEntryStatus = (entry: any): LogFilter => {
+    return entry.status || "SUCCESS"
+  }
+
+  const visible = filter === "ALL" ? entries : entries.filter((e) => getEntryStatus(e) === filter)
+  
+  const getCount = (status: LogFilter) => {
+    if (status === "ALL") return entries.length
+    return entries.filter((e) => getEntryStatus(e) === status).length
+  }
+
   const filters: { key: LogFilter; label: string; count: number }[] = [
-    { key: "ALL", label: "Tất cả", count: entries.length },
-    ...(Object.keys(LOG_STATUS_LABELS) as CheckinLogStatus[]).map((s) => ({
-      key: s as LogFilter,
-      label: LOG_STATUS_LABELS[s],
-      count: entries.filter((e) => e.status === s).length,
-    })),
+    { key: "ALL", label: "Tất cả", count: getCount("ALL") },
+    { key: "SUCCESS", label: "Thành công", count: getCount("SUCCESS") },
+    { key: "DUPLICATE", label: "Trùng lặp", count: getCount("DUPLICATE") },
+    { key: "INVALID", label: "Không hợp lệ", count: getCount("INVALID") },
   ]
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center">
+        <p className="font-semibold text-destructive">{error}</p>
+      </div>
+    )
+  }
 
   return (
     <Card>
@@ -45,7 +94,7 @@ export function StaffCheckInHistoryView({ event }: { event: StaffEvent }) {
           Lịch sử check-in
         </CardTitle>
         <CardDescription>
-          {event.title} — nhật ký các lượt quét tại cổng, kèm kết quả và nhân viên thực hiện.
+          Nhật ký các lượt quét tại cổng, kèm kết quả và nhân viên thực hiện.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -58,7 +107,7 @@ export function StaffCheckInHistoryView({ event }: { event: StaffEvent }) {
               onClick={() => setFilter(f.key)}
               aria-pressed={filter === f.key}
               className={cn(
-                "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors",
+                "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors cursor-pointer",
                 filter === f.key
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -78,14 +127,15 @@ export function StaffCheckInHistoryView({ event }: { event: StaffEvent }) {
               : "Không có lượt quét nào khớp bộ lọc."}
           </p>
         ) : (
-          <div>
+          <div className="divide-y divide-border">
             {visible.map((entry) => {
-              const style = STATUS_STYLES[entry.status]
+              const entryStatus = getEntryStatus(entry)
+              const style = STATUS_STYLES[entryStatus] || STATUS_STYLES.SUCCESS
               const Icon = style.icon
               return (
                 <div
-                  key={entry.id}
-                  className="flex items-start gap-3 border-t border-border py-3 first:border-t-0"
+                  key={entry.checkInId}
+                  className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
                 >
                   <span
                     className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full", style.chip)}
@@ -96,24 +146,24 @@ export function StaffCheckInHistoryView({ event }: { event: StaffEvent }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                       <span className="text-sm font-semibold text-foreground">
-                        {entry.attendeeName ?? "Mã không xác định"}
+                        {entry.attendeeName}
                       </span>
                       <span className={cn("text-xs font-semibold", style.icon_)}>
-                        {LOG_STATUS_LABELS[entry.status]}
+                        {LOG_STATUS_LABELS[entryStatus] || entryStatus}
                       </span>
                       {entry.ticketType && (
                         <span className="text-xs text-muted-foreground">· {entry.ticketType}</span>
                       )}
                     </div>
                     <div className="mt-0.5 text-xs text-muted-foreground">
-                      Mã <span className="font-mono">{entry.code}</span> · NV: {entry.staffName}
+                      Đơn <span className="font-mono">{entry.registrationId}</span> · NV: {entry.staffName}
                     </div>
-                    {entry.note && (
-                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{entry.note}</p>
-                    )}
                   </div>
                   <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
-                    {entry.time}
+                    {new Date(entry.checkInTime).toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </div>
               )
