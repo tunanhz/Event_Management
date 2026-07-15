@@ -44,7 +44,7 @@ export function StaffCheckInView({ eventId }: { eventId: string }) {
   const [result, setResult] = useState<ScanResult>(null)
   const [recentScans, setRecentScans] = useState<Array<{
     code: string
-    result: CheckInResult
+    result: ApiCheckInResult
     message: string
     checkedInAt?: string
   }>>([])
