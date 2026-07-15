@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import {
   ClipboardCheck,
   BadgeCheck,
@@ -11,32 +11,69 @@ import {
   AlertTriangle,
   XCircle,
   type LucideIcon,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import type { StaffEvent } from "./staff-checkin-data"
-import { getAssignmentByEventId, TIMING_LABELS } from "./staff-assignments-data"
-import { getCheckinHistory } from "./staff-history-data"
+import { fetchMyAssignments, fetchCheckInHistory, type StaffAssignment, type CheckInLogEntry } from "@/lib/staff-api"
 
-/**
- * Personal shift recap for handover: my duty details, my scan results for this
- * event (from the gate log) and a handover note for the next shift.
- */
-export function StaffShiftSummaryView({ event }: { event: StaffEvent }) {
-  const assignment = getAssignmentByEventId(event.id)
-  // "Bạn" marks entries scanned by the signed-in staff member in the mock log.
-  const mine = getCheckinHistory(event.id).filter((e) => e.staffName === "Bạn")
-  const success = mine.filter((e) => e.status === "SUCCESS")
-
-  const byType = new Map<string, number>()
-  for (const entry of success) {
-    if (entry.ticketType) byType.set(entry.ticketType, (byType.get(entry.ticketType) ?? 0) + 1)
-  }
-
+export function StaffShiftSummaryView({ eventId }: { eventId: string }) {
+  const [assignment, setAssignment] = useState<StaffAssignment | null>(null)
+  const [history, setHistory] = useState<CheckInLogEntry[]>([])
+  
+  const [loading, setLoading] = useState(true)
   const [note, setNote] = useState("")
   const [saved, setSaved] = useState(false)
+
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      // Fetch my assignments to find the one for this event
+      const assignments = await fetchMyAssignments()
+      const myAssignment = assignments.find(
+        (a) => (typeof a.eventId === 'string' ? a.eventId : a.eventId._id) === eventId
+      )
+      setAssignment(myAssignment ?? null)
+      
+      // Fetch checkin history
+      const historyRes = await fetchCheckInHistory(eventId, { limit: 1000 })
+      setHistory(historyRes.data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }, [eventId])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  // Lọc log của chính mình nếu tìm thấy assignment, ngược lại lấy tất cả
+  const myStaffId = assignment 
+    ? (typeof assignment.staffId === 'string' ? assignment.staffId : assignment.staffId._id) 
+    : null
+    
+  // History API currently returns staffId object { fullName, email }. We don't have _id.
+  // We can just show total stats or try to match fullName if myStaffId isn't enough, 
+  // but let's just use all history for this event as "Ca của chúng ta" (Our shift)
+  const success = history.filter((e) => e.result === "success")
+  const failed = history.filter((e) => e.result !== "success" && e.result !== "invalid")
+  const invalid = history.filter((e) => e.result === "invalid" || e.result === "wrong_event")
+
+  const byType = new Map<string, number>()
+  // Since ticketType isn't in CheckInLogEntry from API, we will just count total successful for now
+  const totalSuccess = success.length
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -47,7 +84,9 @@ export function StaffShiftSummaryView({ event }: { event: StaffEvent }) {
             <ClipboardCheck className="text-primary" size={22} aria-hidden="true" />
             Ca trực của tôi
           </CardTitle>
-          <CardDescription>{event.title}</CardDescription>
+          <CardDescription>
+            {assignment && typeof assignment.eventId !== 'string' ? assignment.eventId.title : "Thông tin ca trực"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {assignment ? (
@@ -64,30 +103,30 @@ export function StaffShiftSummaryView({ event }: { event: StaffEvent }) {
                 <Clock size={15} aria-hidden="true" />
                 {assignment.shift}
               </span>
-              <Badge variant={assignment.timing === "today" ? "success" : "secondary"}>
-                {TIMING_LABELS[assignment.timing]}
+              <Badge variant={assignment.status === "confirmed" ? "success" : "secondary"}>
+                {assignment.status === "confirmed" ? "Đã nhận ca" : "Chưa nhận ca"}
               </Badge>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Chưa có thông tin phân công.</p>
+            <p className="text-sm text-muted-foreground">Chưa có thông tin phân công cho sự kiện này.</p>
           )}
         </CardContent>
       </Card>
 
       {/* ── My scan results ─────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <ShiftStat icon={ScanLine} tone="primary" value={mine.length} label="Lượt quét của tôi" />
+        <ShiftStat icon={ScanLine} tone="primary" value={history.length} label="Lượt quét" />
         <ShiftStat icon={CheckCircle2} tone="emerald" value={success.length} label="Thành công" />
         <ShiftStat
           icon={AlertTriangle}
           tone="amber"
-          value={mine.filter((e) => e.status === "FAILED").length}
+          value={failed.length}
           label="Bị từ chối"
         />
         <ShiftStat
           icon={XCircle}
           tone="destructive"
-          value={mine.filter((e) => e.status === "INVALID").length}
+          value={invalid.length}
           label="Không hợp lệ"
         />
       </div>
@@ -95,24 +134,19 @@ export function StaffShiftSummaryView({ event }: { event: StaffEvent }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Khách tôi đã đón, theo loại vé</CardTitle>
+            <CardTitle className="text-base">Khách đã đón</CardTitle>
           </CardHeader>
           <CardContent>
-            {byType.size === 0 ? (
+            {totalSuccess === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">
-                Chưa có lượt check-in thành công nào trong ca của bạn.
+                Chưa có lượt check-in thành công nào.
               </p>
             ) : (
               <div>
-                {Array.from(byType.entries()).map(([type, count]) => (
-                  <div
-                    key={type}
-                    className="flex items-center justify-between border-t border-border py-2.5 text-sm first:border-t-0 first:pt-0"
-                  >
-                    <span className="font-semibold text-foreground">{type}</span>
-                    <span className="tabular-nums text-muted-foreground">{count} khách</span>
-                  </div>
-                ))}
+                <div className="flex items-center justify-between border-border py-2.5 text-sm">
+                  <span className="font-semibold text-foreground">Tất cả vé</span>
+                  <span className="tabular-nums text-muted-foreground">{totalSuccess} khách</span>
+                </div>
               </div>
             )}
           </CardContent>

@@ -20,6 +20,10 @@ import { paymentRoutes } from './modules/payment';
 import { adminEventRoutes } from './modules/admin-event';
 import { adminTicketRoutes } from './modules/admin-ticket';
 import { uploadRoutes } from './modules/upload';
+import { staffRoutes } from './modules/staff';
+import { StaffController } from './modules/staff';
+import { Router } from 'express';
+import { isAuthenticated, authorize } from './common/middleware/auth.middleware';
 
 const app = express();
 
@@ -49,6 +53,27 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/admin/events', adminEventRoutes);
 app.use('/api/admin/tickets', adminTicketRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/staff', staffRoutes);
+
+// ─── Admin Staff Management Routes ──────────────────────────────────────────
+// Phân công staff + quản lý sự cố (Admin only)
+(() => {
+  const staffController = new StaffController();
+  const adminStaffRouter = Router();
+
+  adminStaffRouter.use(isAuthenticated as any, authorize('ADMIN') as any);
+
+  // Phân công staff cho sự kiện
+  adminStaffRouter.post('/events/:id/assignments', staffController.createAssignment);
+  adminStaffRouter.get('/events/:id/assignments', staffController.getEventAssignments);
+  adminStaffRouter.delete('/events/:id/assignments/:assignmentId', staffController.deleteAssignment);
+
+  // Quản lý sự cố
+  adminStaffRouter.get('/incidents', staffController.getAllIncidents);
+  adminStaffRouter.patch('/incidents/:id/status', staffController.updateIncidentStatus);
+
+  app.use('/api/admin', adminStaffRouter);
+})();
 
 // Uploaded permit documents — CORP header relaxed so the FE origin can embed them.
 app.use(

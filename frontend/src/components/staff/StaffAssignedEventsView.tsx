@@ -1,22 +1,78 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { CalendarClock, MapPin, Clock, DoorOpen, BadgeCheck, ScanLine, Users, History } from "lucide-react"
+import {
+  CalendarClock, MapPin, Clock, DoorOpen, BadgeCheck, ScanLine,
+  Users, History, CheckCheck, Loader2, AlertCircle, CreditCard
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
-import { STAFF_EVENTS, summarizeTickets } from "./staff-checkin-data"
-import { STAFF_ASSIGNMENTS, TIMING_LABELS } from "./staff-assignments-data"
+import { fetchMyAssignments, confirmAssignment, type StaffAssignment } from "@/lib/staff-api"
 
 /**
  * Staff landing page (/staff): every event the staff member is assigned to
- * work, with shift details and a shortcut into the check-in station.
+ * with shift details and shortcuts into the check-in station.
+ * Now fetches real assignments from the backend.
  */
 export function StaffAssignedEventsView() {
-  const rows = STAFF_ASSIGNMENTS.flatMap((assignment) => {
-    const event = STAFF_EVENTS.find((e) => e.id === assignment.eventId)
-    return event ? [{ assignment, event }] : []
-  })
-  const todayCount = rows.filter((r) => r.assignment.timing === "today").length
+  const [assignments, setAssignments] = useState<StaffAssignment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchMyAssignments()
+      .then(setAssignments)
+      .catch((err) => setError(err.message ?? "Không thể tải danh sách ca trực"))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleConfirm = async (assignmentId: string) => {
+    setConfirming(assignmentId)
+    try {
+      const updated = await confirmAssignment(assignmentId)
+      setAssignments((prev) =>
+        prev.map((a) => (a._id === assignmentId ? updated : a))
+      )
+    } catch (err: any) {
+      alert(err.message ?? "Xác nhận thất bại")
+    } finally {
+      setConfirming(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[300px] items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center">
+        <AlertCircle className="text-destructive" size={32} />
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          Thử lại
+        </Button>
+      </div>
+    )
+  }
+
+  const todayCount = assignments.filter((a) => {
+    const event = typeof a.eventId === "object" ? a.eventId : null
+    if (!event?.startDate) return false
+    const d = new Date(event.startDate)
+    const today = new Date()
+    return (
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate()
+    )
+  }).length
 
   return (
     <div className="space-y-6">
@@ -31,7 +87,7 @@ export function StaffAssignedEventsView() {
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/12 px-3 py-1 text-xs font-semibold text-primary">
             <BadgeCheck size={14} aria-hidden="true" />
-            {rows.length} sự kiện được giao
+            {assignments.length} sự kiện được giao
           </span>
           {todayCount > 0 && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
@@ -43,7 +99,7 @@ export function StaffAssignedEventsView() {
       </div>
 
       {/* ── Assignment cards ────────────────────────────────────────── */}
-      {rows.length === 0 ? (
+      {assignments.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
           <p className="font-semibold text-foreground">Bạn chưa được phân công sự kiện nào.</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -52,47 +108,43 @@ export function StaffAssignedEventsView() {
         </div>
       ) : (
         <div className="space-y-4">
-          {rows.map(({ assignment, event }) => {
-            const stats = summarizeTickets(event.tickets)
-            const base = `/staff/check-in/${event.id}`
+          {assignments.map((assignment) => {
+            const event = typeof assignment.eventId === "object" ? assignment.eventId : null
+            const eventId = event?._id ?? (assignment.eventId as string)
+            const base = `/staff/check-in/${eventId}`
+            const isConfirmed = assignment.status !== "assigned"
+
             return (
               <article
-                key={event.id}
+                key={assignment._id}
                 className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-lg font-bold text-foreground">{event.title}</h2>
-                      <Badge variant={assignment.timing === "today" ? "success" : "secondary"}>
-                        {TIMING_LABELS[assignment.timing]}
+                      <h2 className="text-lg font-bold text-foreground">
+                        {event?.title ?? "Sự kiện"}
+                      </h2>
+                      <Badge variant={isConfirmed ? "success" : "warning"}>
+                        {isConfirmed ? "Đã xác nhận" : "Chờ xác nhận"}
                       </Badge>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-1.5">
-                        <CalendarClock size={15} aria-hidden="true" />
-                        {event.dateTime}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin size={15} aria-hidden="true" />
-                        {event.venueName}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Check-in progress */}
-                  <div className="w-full shrink-0 sm:w-48">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Đã check-in</span>
-                      <span className="font-semibold tabular-nums text-foreground">
-                        {stats.checkedIn}/{stats.total}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
-                        style={{ width: `${stats.percent}%` }}
-                      />
+                      {event?.startDate && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <CalendarClock size={15} aria-hidden="true" />
+                          {new Date(event.startDate).toLocaleString("vi-VN", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          })}
+                        </span>
+                      )}
+                      {event?.location && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <MapPin size={15} aria-hidden="true" />
+                          {event.location}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -133,6 +185,27 @@ export function StaffAssignedEventsView() {
                       Lịch sử
                     </Link>
                   </Button>
+                  <Button asChild variant="outline" className="h-11 gap-2 rounded-xl px-4 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+                    <Link href={`${base}/offline-sale`}>
+                      <CreditCard size={16} aria-hidden="true" />
+                      Bán vé
+                    </Link>
+                  </Button>
+                  {!isConfirmed && (
+                    <Button
+                      variant="outline"
+                      className="h-11 gap-2 rounded-xl border-emerald-500/40 px-4 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-500/10 dark:text-emerald-400"
+                      disabled={confirming === assignment._id}
+                      onClick={() => handleConfirm(assignment._id)}
+                    >
+                      {confirming === assignment._id ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <CheckCheck size={16} aria-hidden="true" />
+                      )}
+                      Xác nhận ca
+                    </Button>
+                  )}
                 </div>
               </article>
             )
