@@ -30,5 +30,8 @@ export const config = {
     // browser sees anything (see modules/payment).
     returnUrl: process.env.VNPAY_RETURN_URL || 'http://localhost:5000/api/payments/vnpay/return',
   },
+  groq: {
+    apiKey: process.env.GROQ_API_KEY || '',
+  },
 };
 

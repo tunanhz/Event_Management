@@ -1,52 +1,87 @@
 "use client"
 
-import { useState } from "react"
-import { Search, Users, CheckCircle2, X } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import { Search, Users, CheckCircle2, X, Loader2, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import { nowHHmm, type StaffEvent, type StaffTicket } from "./staff-checkin-data"
+import { fetchAttendees, manualCheckIn, type AttendeeRow, type PaginationMeta } from "@/lib/staff-api"
 
 type StatusFilter = "all" | "in" | "out"
 
-/**
- * Attendee lookup for the gate: search by name/email/ticket/order code and
- * admit manually when the QR cannot be scanned. Admission is irreversible
- * (business rule), so the row action asks for a second confirming tap.
- */
-export function StaffAttendeesView({ event }: { event: StaffEvent }) {
-  // Working copy so manual admissions mutate without touching the seed data.
-  const [tickets, setTickets] = useState<StaffTicket[]>(() =>
-    event.tickets.map((t) => ({ ...t }))
-  )
+export function StaffAttendeesView({ eventId }: { eventId: string }) {
+  const [attendees, setAttendees] = useState<AttendeeRow[]>([])
+  const [meta, setMeta] = useState<PaginationMeta | null>(null)
+  
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [query, setQuery] = useState("")
+  // Debounced search query
+  const [debouncedQuery, setDebouncedQuery] = useState("")
+  
   const [filter, setFilter] = useState<StatusFilter>("all")
-  /** Ticket code awaiting the confirming second tap, if any. */
-  const [pendingCode, setPendingCode] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
 
-  const q = query.trim().toLowerCase()
-  const visible = tickets.filter((t) => {
-    if (filter === "in" && !t.checkedInAt) return false
-    if (filter === "out" && t.checkedInAt) return false
-    if (!q) return true
-    return [t.attendeeName, t.email, t.code, t.orderCode]
-      .some((field) => field.toLowerCase().includes(q))
-  })
-  const checkedIn = tickets.filter((t) => t.checkedInAt).length
+  /** registrationId awaiting the confirming second tap, if any. */
+  const [pendingId, setPendingId] = useState<string | null>(null)
+  const [admittingId, setAdmittingId] = useState<string | null>(null)
 
-  const admit = (code: string) => {
-    setTickets((prev) =>
-      prev.map((t) => (t.code === code && !t.checkedInAt ? { ...t, checkedInAt: nowHHmm() } : t))
-    )
-    setPendingCode(null)
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query)
+      setPage(1)
+    }, 500)
+    return () => clearTimeout(handler)
+  }, [query])
+
+  // Fetch attendees
+  const loadAttendees = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const checkedIn = filter === "all" ? undefined : filter === "in" ? true : false
+      const result = await fetchAttendees(eventId, {
+        page,
+        limit: 20,
+        search: debouncedQuery || undefined,
+        checkedIn,
+      })
+      setAttendees(result.data)
+      setMeta(result.meta)
+    } catch (err: any) {
+      setError(err.message ?? "Không thể tải danh sách người tham dự.")
+    } finally {
+      setLoading(false)
+    }
+  }, [eventId, page, debouncedQuery, filter])
+
+  useEffect(() => {
+    loadAttendees()
+  }, [loadAttendees])
+
+  const handleFilterChange = (f: StatusFilter) => {
+    setFilter(f)
+    setPage(1)
   }
 
-  const filters: { key: StatusFilter; label: string; count: number }[] = [
-    { key: "all", label: "Tất cả", count: tickets.length },
-    { key: "in", label: "Đã vào", count: checkedIn },
-    { key: "out", label: "Chưa vào", count: tickets.length - checkedIn },
-  ]
+  const admit = async (registrationId: string) => {
+    setAdmittingId(registrationId)
+    try {
+      const updated = await manualCheckIn(eventId, registrationId)
+      // Update local state to reflect the change immediately
+      setAttendees((prev) =>
+        prev.map((a) => (a._id === registrationId ? updated : a))
+      )
+    } catch (err: any) {
+      alert(err.message ?? "Check-in thủ công thất bại")
+    } finally {
+      setAdmittingId(null)
+      setPendingId(null)
+    }
+  }
 
   return (
     <Card>
@@ -56,7 +91,7 @@ export function StaffAttendeesView({ event }: { event: StaffEvent }) {
           Người tham dự
         </CardTitle>
         <CardDescription>
-          {event.title} — tra cứu vé và check-in thủ công khi khách không quét được mã QR.
+          Tra cứu vé và check-in thủ công khi khách không quét được mã QR.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -78,11 +113,17 @@ export function StaffAttendeesView({ event }: { event: StaffEvent }) {
             />
           </div>
           <div className="flex gap-1.5" role="group" aria-label="Lọc theo trạng thái">
-            {filters.map((f) => (
+            {(
+              [
+                { key: "all", label: "Tất cả" },
+                { key: "in", label: "Đã vào" },
+                { key: "out", label: "Chưa vào" },
+              ] as const
+            ).map((f) => (
               <button
                 key={f.key}
                 type="button"
-                onClick={() => setFilter(f.key)}
+                onClick={() => handleFilterChange(f.key)}
                 aria-pressed={filter === f.key}
                 className={cn(
                   "inline-flex h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors",
@@ -92,76 +133,124 @@ export function StaffAttendeesView({ event }: { event: StaffEvent }) {
                 )}
               >
                 {f.label}
-                <span className="tabular-nums opacity-80">{f.count}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Attendee rows */}
-        {visible.length === 0 ? (
+        {/* Loading / Error States */}
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-8 text-destructive">
+            <AlertCircle size={32} className="mb-2" />
+            <p className="text-sm">{error}</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={loadAttendees}>
+              Thử lại
+            </Button>
+          </div>
+        ) : loading && attendees.length === 0 ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="animate-spin text-primary" size={32} />
+          </div>
+        ) : attendees.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             Không tìm thấy người tham dự phù hợp.
           </p>
         ) : (
           <div>
-            {visible.map((t) => (
-              <div
-                key={t.code}
-                className="flex flex-wrap items-center gap-3 border-t border-border py-3 first:border-t-0"
-              >
-                <span
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary"
-                  aria-hidden="true"
+            {attendees.map((row) => {
+              const name = row.participantId?.fullName ?? "Khách vãng lai"
+              const email = row.participantId?.email ?? "Không có email"
+              const ticketName = row.ticketId?.ticketName ?? "Vé chung"
+              const isCheckedIn = !!row.checkedInAt
+              
+              return (
+                <div
+                  key={row._id}
+                  className="flex flex-wrap items-center gap-3 border-t border-border py-3 first:border-t-0"
                 >
-                  {t.attendeeName.charAt(0).toUpperCase()}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate text-sm font-semibold text-foreground">
-                      {t.attendeeName}
-                    </span>
-                    <Badge variant="outline">{t.ticketType}</Badge>
+                  <span
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary"
+                    aria-hidden="true"
+                  >
+                    {name.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-semibold text-foreground">
+                        {name}
+                      </span>
+                      <Badge variant="outline">{ticketName}</Badge>
+                    </div>
+                    <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {email} · Vé <span className="font-mono">{row.ticketCode ?? row._id}</span>
+                    </div>
                   </div>
-                  <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {t.email} · Vé <span className="font-mono">{t.code}</span> · Đơn{" "}
-                    <span className="font-mono">{t.orderCode}</span>
-                  </div>
-                </div>
-
-                {t.checkedInAt ? (
-                  <Badge variant="success" className="gap-1">
-                    <CheckCircle2 size={13} aria-hidden="true" />
-                    Đã vào lúc {t.checkedInAt}
-                  </Badge>
-                ) : pendingCode === t.code ? (
-                  <div className="flex items-center gap-1.5">
-                    <Button size="sm" className="h-10 gap-1.5 rounded-lg" onClick={() => admit(t.code)}>
-                      <CheckCircle2 size={15} aria-hidden="true" />
-                      Xác nhận check-in
-                    </Button>
+  
+                  {isCheckedIn ? (
+                    <Badge variant="success" className="gap-1">
+                      <CheckCircle2 size={13} aria-hidden="true" />
+                      Đã vào lúc {new Date(row.checkedInAt!).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                    </Badge>
+                  ) : pendingId === row._id ? (
+                    <div className="flex items-center gap-1.5">
+                      <Button 
+                        size="sm" 
+                        className="h-10 gap-1.5 rounded-lg" 
+                        onClick={() => admit(row._id)}
+                        disabled={admittingId === row._id}
+                      >
+                        {admittingId === row._id ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} aria-hidden="true" />}
+                        Xác nhận
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-10 rounded-lg"
+                        aria-label="Hủy"
+                        onClick={() => setPendingId(null)}
+                        disabled={admittingId === row._id}
+                      >
+                        <X size={15} aria-hidden="true" />
+                      </Button>
+                    </div>
+                  ) : (
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
                       className="h-10 rounded-lg"
-                      aria-label="Hủy"
-                      onClick={() => setPendingCode(null)}
+                      onClick={() => setPendingId(row._id)}
                     >
-                      <X size={15} aria-hidden="true" />
+                      Check-in thủ công
                     </Button>
-                  </div>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-10 rounded-lg"
-                    onClick={() => setPendingCode(t.code)}
-                  >
-                    Check-in thủ công
-                  </Button>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+        
+        {/* Pagination */}
+        {meta && meta.totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-border pt-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              disabled={page <= 1 || loading}
+              onClick={() => setPage(p => p - 1)}
+            >
+              Trước
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Trang {meta.currentPage} / {meta.totalPages}
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              disabled={page >= meta.totalPages || loading}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Sau
+            </Button>
           </div>
         )}
       </CardContent>

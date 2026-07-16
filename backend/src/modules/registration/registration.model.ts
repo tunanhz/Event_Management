@@ -12,6 +12,12 @@ export interface IRegistration extends Document {
   registerDate: Date;
   status: RegistrationStatus;
   holdExpiresAt?: Date;
+  /** Mã vé duy nhất dùng để check-in (QR / barcode). Sinh sau khi thanh toán thành công. */
+  ticketCode?: string;
+  /** Đã check-in tại cổng sự kiện chưa */
+  checkedIn?: boolean;
+  /** Thời điểm check-in thực tế */
+  checkedInAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +40,9 @@ const registrationSchema = new Schema<IRegistration>(
       default: 'PENDING',
     },
     holdExpiresAt: { type: Date },
+    ticketCode: { type: String, sparse: true, uppercase: true, trim: true },
+    checkedIn: { type: Boolean, default: false },
+    checkedInAt: { type: Date },
   },
   { timestamps: true }
 );
@@ -42,5 +51,7 @@ registrationSchema.index({ participantId: 1, createdAt: -1 });
 registrationSchema.index({ eventId: 1 });
 registrationSchema.index({ ticketId: 1 });
 registrationSchema.index({ status: 1, holdExpiresAt: 1 });
+registrationSchema.index({ ticketCode: 1 }, { sparse: true });
+registrationSchema.index({ eventId: 1, checkedIn: 1 });
 
 export const Registration = mongoose.model<IRegistration>('Registration', registrationSchema);

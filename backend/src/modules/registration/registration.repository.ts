@@ -104,8 +104,14 @@ export class RegistrationRepository {
 
   // Atomic PENDING -> PAID transition so a racing return-redirect and IPN callback (VNPAY
   // fires both for the same order) can never both "win" and double-process a payment.
+  // Assigns a unique ticketCode on first successful transition (used for staff QR check-in).
   async markPaid(id: string): Promise<IRegistration | null> {
-    return Registration.findOneAndUpdate({ _id: id, status: 'PENDING' }, { status: 'PAID' }, { new: true });
+    const ticketCode = `EVB-${id.slice(-6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    return Registration.findOneAndUpdate(
+      { _id: id, status: 'PENDING' },
+      { status: 'PAID', ticketCode },
+      { new: true }
+    );
   }
 
   async createNotification(data: Partial<INotification>): Promise<INotification> {
