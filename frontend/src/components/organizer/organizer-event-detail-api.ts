@@ -12,6 +12,7 @@ import { bucketFor, type ReviewStatus } from "./organizer-my-events-api"
 /** One showing embedded on the event document (subset we read). */
 export interface ServerEventShow {
   _id?: string
+  title?: string
   startTime?: string
   endTime?: string
 }
@@ -38,7 +39,6 @@ export interface ServerEventFull {
   slug?: string
   privacy?: "public" | "private"
   confirmationMessage?: string
-  enableQuestions?: boolean
   logisticsServices?: string[]
   permitDocuments?: { name: string; url: string; sizeKb?: number }[]
   contract?: { repName?: string; agreed?: boolean; signatureUrl?: string }
@@ -90,11 +90,13 @@ export function detailToOrganizerEvent(detail: ServerEventDetail): OrganizerEven
     reviewStatus: event.reviewStatus,
     rejectionReason: event.rejectionReason,
     ticketTypes: tickets.map((t) => ({
+      id: t._id,
       name: t.ticketName,
       price: t.price,
       sold: t.soldQuantity ?? 0,
       total: t.quantity,
       locked: 0,
+      showId: t.showId,
     })),
   }
 }

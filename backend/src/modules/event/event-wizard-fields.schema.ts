@@ -11,6 +11,9 @@ import mongoose, { Schema } from 'mongoose';
 export interface IShow {
   /** Auto-generated on save; optional so service code can build plain rows. */
   _id?: mongoose.Types.ObjectId;
+  /** Organizer-facing label, e.g. "Đêm khai mạc", "Suất chiều". Optional —
+   *  falls back to an auto-numbered "Suất N" wherever it's displayed. */
+  title?: string;
   startTime: Date;
   endTime: Date;
 }
@@ -54,6 +57,7 @@ export interface IPaymentInfo {
 }
 
 export const showSchema = new Schema<IShow>({
+  title: { type: String, trim: true, maxlength: 100 },
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
 });

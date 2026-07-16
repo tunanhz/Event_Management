@@ -1,15 +1,27 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { Info } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { Info, Loader2, AlertTriangle } from "lucide-react"
+import { formatVnd, formatInt } from "../my-events-data"
+import { useWorkspaceEvent } from "../EventWorkspaceContext"
+import { EventShowHeader } from "../shared/EventShowHeader"
 import { AnalyticsStatCard } from "./AnalyticsStatCard"
 import { VisitsChart, type VisitPoint } from "./VisitsChart"
 import { NoDataBox } from "./NoDataBox"
+import {
+  fetchEventAnalytics,
+  type EventAnalytics,
+} from "./organizer-analytics-api"
 import styles from "./analytics.module.css"
 
-/** Build a zero-filled daily visit series between two yyyy-mm-dd dates.
- *  Constructed from local date parts so SSR and CSR produce identical labels. */
-function buildVisitSeries(from: string, to: string): VisitPoint[] {
+/** Zero-filled daily series between two yyyy-mm-dd dates, then overlaid with
+ *  the event's real tickets-per-day figures. Local date parts only so SSR and
+ *  CSR render identical labels. */
+function buildDailySeries(
+  from: string,
+  to: string,
+  byDay: Map<string, number>
+): VisitPoint[] {
   const parse = (s: string) => {
     const [y, m, d] = s.split("-").map(Number)
     return new Date(y, (m || 1) - 1, d || 1)
@@ -21,8 +33,10 @@ function buildVisitSeries(from: string, to: string): VisitPoint[] {
 
   const cur = new Date(start)
   let guard = 0
+  const pad = (n: number) => String(n).padStart(2, "0")
   while (cur <= end && guard < 400) {
-    out.push({ label: `${cur.getDate()}/${cur.getMonth() + 1}`, visits: 0 })
+    const key = `${cur.getFullYear()}-${pad(cur.getMonth() + 1)}-${pad(cur.getDate())}`
+    out.push({ label: `${cur.getDate()}/${cur.getMonth() + 1}`, visits: byDay.get(key) ?? 0 })
     cur.setDate(cur.getDate() + 1)
     guard += 1
   }
@@ -30,30 +44,82 @@ function buildVisitSeries(from: string, to: string): VisitPoint[] {
 }
 
 const DISCLAIMER =
-  "Các số liệu được hiển thị có thể không khớp với số liệu thực tế và chỉ mang tính chất tham khảo do giới hạn của các công cụ theo dõi web."
+  "Số liệu truy cập web chưa được theo dõi (chưa tích hợp công cụ tracking); các số liệu bán vé bên dưới là dữ liệu thật từ hệ thống."
 
-/** Analytics ("Phân tích") — marketing tools & report. No web-tracking data
- *  is wired yet, so metrics read zero and channel/source panels show No data. */
-export function AnalyticsView() {
-  const [from, setFrom] = useState("2026-05-31")
-  const [to, setTo] = useState("2026-06-30")
-  const [applied, setApplied] = useState({ from: "2026-05-31", to: "2026-06-30" })
+/** Analytics ("Phân tích") — real sales statistics from GET /analytics:
+ *  revenue / tickets / orders cards, tickets-per-day chart and a per-ticket
+ *  revenue table, scoped per suất diễn via the shared "Đổi suất diễn"
+ *  switcher. Traffic panels stay "No data" until web tracking exists. */
+export function AnalyticsView({ eventId }: { eventId: string }) {
+  const { selectedShowId } = useWorkspaceEvent()
+  const [data, setData] = useState<EventAnalytics | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [from, setFrom] = useState("")
+  const [to, setTo] = useState("")
+  const [applied, setApplied] = useState({ from: "", to: "" })
 
-  const series = useMemo(
-    () => buildVisitSeries(applied.from, applied.to),
-    [applied]
-  )
+  useEffect(() => {
+    let active = true
+    fetchEventAnalytics(eventId, selectedShowId)
+      .then((a) => {
+        if (!active) return
+        setData(a)
+        // Default range: the event's actual sales window (or the last 30 days
+        // when nothing has been sold yet).
+        const first = a.revenueByDay[0]?.date
+        const last = a.revenueByDay[a.revenueByDay.length - 1]?.date
+        const pad = (n: number) => String(n).padStart(2, "0")
+        const today = new Date()
+        const toStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+        const fallbackTo = toStr(today)
+        const fallbackFromDate = new Date(today)
+        fallbackFromDate.setDate(fallbackFromDate.getDate() - 29)
+        const fallbackFrom = toStr(fallbackFromDate)
+        const range = { from: first ?? fallbackFrom, to: last ?? fallbackTo }
+        setFrom(range.from)
+        setTo(range.to)
+        setApplied(range)
+      })
+      .catch((e) => {
+        if (active) setError(e instanceof Error ? e.message : "Không tải được thống kê")
+      })
+    return () => {
+      active = false
+    }
+  }, [eventId, selectedShowId])
 
-  // No traffic source connected yet → all metrics zero.
-  const visits = 0
-  const users = 0
-  const buyers = 0
-  const conversion = visits > 0 ? `${Math.round((buyers / visits) * 100)} %` : "0 %"
+  const series = useMemo(() => {
+    if (!data || !applied.from || !applied.to) return []
+    const byDay = new Map(data.revenueByDay.map((d) => [d.date, d.tickets]))
+    return buildDailySeries(applied.from, applied.to, byDay)
+  }, [data, applied])
+
+  if (error) {
+    return (
+      <div role="alert" style={{ color: "#ef4444", padding: "1rem 0" }}>
+        <AlertTriangle size={18} aria-hidden="true" style={{ verticalAlign: "middle" }} /> {error}
+      </div>
+    )
+  }
+  if (!data) {
+    return (
+      <p role="status" style={{ color: "var(--muted-foreground)", padding: "1rem 0" }}>
+        <Loader2
+          size={18}
+          aria-hidden="true"
+          style={{ animation: "spin 0.8s linear infinite", verticalAlign: "middle" }}
+        />{" "}
+        Đang tải thống kê bán vé…
+      </p>
+    )
+  }
 
   return (
     <>
+      <EventShowHeader />
+
       <div className={styles.headerRow}>
-        <h2 className={styles.heading}>Công cụ &amp; Báo cáo Marketing</h2>
+        <h2 className={styles.heading}>Thống kê bán vé &amp; Doanh thu</h2>
         <div className={styles.dateControls}>
           <div className={styles.dateRange}>
             <input
@@ -84,21 +150,24 @@ export function AnalyticsView() {
         </div>
       </div>
 
-      {/* Metric cards */}
+      {/* Metric cards — real PAID-registration figures */}
       <div className={styles.statsCard}>
-        <AnalyticsStatCard label="Số lượt truy cập" value={String(visits)} />
-        <AnalyticsStatCard label="Người dùng" value={String(users)} />
-        <AnalyticsStatCard label="Người mua" value={String(buyers)} />
-        <AnalyticsStatCard label="Tỉ lệ chuyển đổi" value={conversion} />
+        <AnalyticsStatCard label="Doanh thu" value={formatVnd(data.totalRevenue)} />
+        <AnalyticsStatCard label="Vé đã bán" value={formatInt(data.soldTickets)} />
+        <AnalyticsStatCard label="Đơn đã thanh toán" value={formatInt(data.paidOrders)} />
+        <AnalyticsStatCard
+          label="Đơn hủy / hết hạn"
+          value={formatInt(data.cancelledOrders)}
+        />
       </div>
 
-      {/* Chart + channel */}
+      {/* Chart + traffic channel */}
       <div className={styles.grid2}>
         <div className={styles.panel}>
           <div className={styles.panelTitleRow}>
-            <h3 className={styles.panelTitle}>Lượt truy cập theo thời gian</h3>
+            <h3 className={styles.panelTitle}>Vé bán ra theo thời gian</h3>
           </div>
-          <VisitsChart data={series} />
+          <VisitsChart data={series} seriesName="Vé bán ra" />
         </div>
 
         <div className={styles.panel}>
@@ -111,21 +180,36 @@ export function AnalyticsView() {
         </div>
       </div>
 
-      {/* Traffic source table */}
+      {/* Revenue per ticket type — real data */}
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th scope="col">Nguồn truy cập</th>
-              <th scope="col">Tổng lượt truy cập</th>
+              <th scope="col">Loại vé</th>
+              <th scope="col">Giá bán</th>
+              <th scope="col">Đã bán / Tổng</th>
+              <th scope="col">Doanh thu</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className={styles.emptyCell} colSpan={2}>
-                <NoDataBox />
-              </td>
-            </tr>
+            {data.salesByTicket.length === 0 ? (
+              <tr>
+                <td className={styles.emptyCell} colSpan={4}>
+                  <NoDataBox />
+                </td>
+              </tr>
+            ) : (
+              data.salesByTicket.map((t) => (
+                <tr key={t.ticketId}>
+                  <td>{t.ticketName}</td>
+                  <td>{formatVnd(t.price)}</td>
+                  <td>
+                    {formatInt(t.sold)} / {formatInt(t.quantity)}
+                  </td>
+                  <td>{formatVnd(t.revenue)}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

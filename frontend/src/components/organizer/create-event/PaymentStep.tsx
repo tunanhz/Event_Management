@@ -14,17 +14,20 @@ interface PaymentStepProps {
 }
 
 /**
- * Step 6 — payout bank account. EventBox settles ticket revenue (minus service
- * fee) to this account. Fields map to the backend `paymentInfo` subdocument.
+ * Step 6 — default payout bank account. Fields map to the backend
+ * `paymentInfo` subdocument; it only pre-fills the "Rút tiền" request form
+ * later (organizer can still edit/correct it there before sending each
+ * request) — it does not itself trigger or target any transfer.
  */
 export function PaymentStep({ form, update }: PaymentStepProps) {
   return (
     <div className={pageStyles.form}>
       <SectionCard title="Thông tin thanh toán (nhận doanh thu)" icon={Landmark}>
         <p className={styles.intro}>
-          Doanh thu bán vé (sau khi trừ phí dịch vụ) sẽ được EventBox đối soát và
-          chuyển về tài khoản ngân hàng dưới đây khi sự kiện kết thúc. Vui lòng
-          nhập chính xác — thông tin này chỉ Ban tổ chức và Admin nhìn thấy.
+          Đây là tài khoản mặc định để nhận doanh thu bán vé. Khi gửi yêu cầu rút
+          tiền cho sự kiện này, form sẽ tự điền sẵn theo thông tin dưới đây — bạn
+          vẫn có thể chỉnh lại tại đó nếu cần đổi tài khoản. Thông tin này chỉ Ban
+          tổ chức và Admin nhìn thấy.
         </p>
 
         <div className={formStyles.field}>

@@ -9,6 +9,8 @@ import styles from "./time-and-tickets.module.css"
 
 interface EventShowCardProps {
   show: EventShow
+  /** 1-based position, used for the "Suất N" fallback when no title is set. */
+  index: number
   /** Whether the delete-show control is shown (hidden for the only show). */
   canDelete: boolean
   onUpdate: (patch: Partial<EventShow>) => void
@@ -20,11 +22,13 @@ interface EventShowCardProps {
 }
 
 /**
- * One show ("Ngày sự kiện"): a collapsible card with a start/end date range and
- * its list of ticket tiers. Rows support drag-to-reorder via native DnD.
+ * One show (suất diễn): a collapsible card with an optional label, its own
+ * start/end date range and its list of ticket tiers. Rows support
+ * drag-to-reorder via native DnD.
  */
 export function EventShowCard({
   show,
+  index,
   canDelete,
   onUpdate,
   onDelete,
@@ -59,9 +63,17 @@ export function EventShowCard({
         >
           {open ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </button>
-        <span className={styles.showTitle}>Ngày sự kiện</span>
+        <input
+          type="text"
+          className={styles.showTitleInput}
+          value={show.title}
+          maxLength={100}
+          placeholder={`Suất ${index}`}
+          aria-label="Tên suất diễn"
+          onChange={(e) => onUpdate({ title: e.target.value })}
+        />
         {canDelete && (
-          <button type="button" className={styles.deleteShowBtn} onClick={onDelete} aria-label="Xóa ngày sự kiện">
+          <button type="button" className={styles.deleteShowBtn} onClick={onDelete} aria-label="Xóa suất diễn">
             <X size={20} />
           </button>
         )}

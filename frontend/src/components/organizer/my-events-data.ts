@@ -10,11 +10,16 @@
 export type OrgEventStatus = "upcoming" | "past" | "pending" | "draft" | "waiting_deposit"
 
 export interface TicketType {
+  /** Backend ticket _id — absent for mock data, present for API-loaded events. */
+  id?: string
   name: string
   price: number // VND
   sold: number
   total: number
   locked: number
+  /** Owning show (suất diễn) — set for API-loaded events with shows, so
+   *  report views can filter per show; absent for mocks/legacy events. */
+  showId?: string
 }
 
 export interface OrganizerEvent {

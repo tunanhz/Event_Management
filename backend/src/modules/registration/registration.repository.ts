@@ -2,6 +2,7 @@ import { Registration, IRegistration, RegistrationStatus } from './registration.
 import { Payment, IPayment } from './payment.model';
 import { Ticket, ITicket } from '../organizer/ticket.model';
 import { Event, IEvent } from '../event/event.model';
+import { Notification, INotification } from '../notification/notification.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
 
 export const HOLD_DURATION_MINUTES = 10;
@@ -105,5 +106,10 @@ export class RegistrationRepository {
   // fires both for the same order) can never both "win" and double-process a payment.
   async markPaid(id: string): Promise<IRegistration | null> {
     return Registration.findOneAndUpdate({ _id: id, status: 'PENDING' }, { status: 'PAID' }, { new: true });
+  }
+
+  async createNotification(data: Partial<INotification>): Promise<INotification> {
+    const notification = new Notification(data);
+    return notification.save();
   }
 }

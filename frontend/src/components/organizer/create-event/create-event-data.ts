@@ -31,6 +31,9 @@ export interface TicketType {
 /** A single showing/occurrence with its own date range and ticket tiers. */
 export interface EventShow {
   id: string
+  /** Organizer-facing label, e.g. "Đêm khai mạc". Optional — views fall back
+   *  to an auto-numbered "Suất N". */
+  title: string
   startTime: string
   endTime: string
   tickets: TicketType[]
@@ -53,13 +56,12 @@ export interface CreateEventForm {
   orgLogo: string | null
   orgName: string
   orgInfo: string
-  /** Step 2 — one or more shows, each with its own ticket tiers. */
+  /** Step 2 — one or more shows (suất diễn), each with its own ticket tiers. */
   shows: EventShow[]
   /** Step 3 — settings. */
   slug: string
   privacy: EventPrivacy
   confirmationMessage: string
-  enableQuestions: boolean
   /** Step 4 — logistics services requested from the platform. */
   logisticsServices: string[]
   /** Step 4 — uploaded legal permit / contract documents (metadata only). */
@@ -172,7 +174,7 @@ export function createEmptyTicket(): TicketType {
 
 /** A blank show with an empty ticket list. */
 export function createEmptyShow(): EventShow {
-  return { id: genId("show"), startTime: "", endTime: "", tickets: [] }
+  return { id: genId("show"), title: "", startTime: "", endTime: "", tickets: [] }
 }
 
 export const WIZARD_STEPS: { id: WizardStep; label: string }[] = [
@@ -196,20 +198,6 @@ export const EVENT_CATEGORIES = [
 // Province/ward options come from the official 34-province dataset in
 // /public/data/vietnam-provinces-wards.json — see use-vietnam-address-data.ts.
 
-/** Pre-filled description template shown in the reference editor. */
-export const DEFAULT_DESCRIPTION_HTML = `<p><strong>Giới thiệu sự kiện:</strong></p>
-<p>[Tóm tắt ngắn gọn về sự kiện: Nội dung chính của sự kiện, điểm đặc sắc nhất và lý do khiến người tham gia không nên bỏ lỡ]</p>
-<p><strong>Chi tiết sự kiện:</strong></p>
-<ul>
-<li><strong>Chương trình chính:</strong> [Liệt kê những hoạt động nổi bật trong sự kiện: các phần trình diễn, khách mời đặc biệt, lịch trình các tiết mục cụ thể nếu có.]</li>
-<li><strong>Khách mời:</strong> [Thông tin về các khách mời đặc biệt, nghệ sĩ, diễn giả sẽ tham gia sự kiện.]</li>
-<li><strong>Trải nghiệm đặc biệt:</strong> [Nếu có các hoạt động đặc biệt khác như workshop, khu trải nghiệm, photo booth, khu vực check-in hay các phần quà/ưu đãi dành riêng cho người tham dự.]</li>
-</ul>
-<p><strong>Điều khoản và điều kiện:</strong></p>
-<p>[TnC] sự kiện</p>
-<p>Lưu ý về điều khoản trẻ em</p>
-<p>Lưu ý về điều khoản VAT</p>`
-
 export const INITIAL_FORM: CreateEventForm = {
   posterImage: null,
   bannerImage: null,
@@ -220,16 +208,20 @@ export const INITIAL_FORM: CreateEventForm = {
   ward: "",
   street: "",
   category: "",
-  description: DEFAULT_DESCRIPTION_HTML,
+  // Empty, not a pre-filled template — RichTextEditor shows a ghost
+  // placeholder via CSS (:empty::before) that vanishes on the first
+  // keystroke, instead of baking example/instruction text in as if it were
+  // the organizer's real content (which also let step-1 validation pass
+  // without anyone ever writing an actual description).
+  description: "",
   orgLogo: null,
   orgName: "",
   orgInfo: "",
   // Seed one show so the organizer lands on a ready-to-fill date range.
-  shows: [{ id: "show-1", startTime: "", endTime: "", tickets: [] }],
+  shows: [{ id: "show-1", title: "", startTime: "", endTime: "", tickets: [] }],
   slug: "",
   privacy: "public",
   confirmationMessage: "",
-  enableQuestions: false,
   logisticsServices: [],
   permitDocuments: [],
   contractRepName: "",

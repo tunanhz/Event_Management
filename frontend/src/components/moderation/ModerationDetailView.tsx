@@ -272,8 +272,8 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {detail.tickets.map((t) => (
-                  <tr key={t.name}>
+                {detail.tickets.map((t, i) => (
+                  <tr key={t.id ?? i}>
                     <td className="py-3 pr-4 font-semibold text-foreground">{t.name}</td>
                     <td className="py-3 pr-4 tabular-nums text-foreground">{t.price === 0 ? "Miễn phí" : formatVnd(t.price)}</td>
                     <td className="py-3 pr-4 tabular-nums text-foreground">{formatNumber(t.quantity)}</td>

@@ -409,7 +409,6 @@ async function run(): Promise<void> {
       isFeatured: seedEvent.featured === true,
       isTrending: seedEvent.trending === true,
       privacy: 'public',
-      enableQuestions: false,
       logisticsServices: [],
       permitDocuments:
         seedEvent.reviewStatus === 'PENDING_REVIEW' || seedEvent.reviewStatus === 'PUBLISHED'

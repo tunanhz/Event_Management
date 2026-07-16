@@ -51,8 +51,8 @@ export function SeatmapPanel({
           <div className={styles.overviewHead}>
             <span>Loại vé</span>
           </div>
-          {types.map((t) => (
-            <div key={t.name} className={styles.overviewRow}>
+          {types.map((t, i) => (
+            <div key={t.id ?? i} className={styles.overviewRow}>
               <span className={styles.overviewName}>{t.name}</span>
               <span className={styles.overviewPrice}>{formatInt(t.price)} đ</span>
             </div>

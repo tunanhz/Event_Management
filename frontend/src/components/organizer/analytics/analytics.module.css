@@ -154,25 +154,43 @@
 
 /* Traffic source table */
 .tableWrap {
+  overflow-x: auto;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  overflow: hidden;
 }
 .table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 640px;
 }
 .table th {
   padding: 1rem 1.5rem;
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--foreground);
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-.table th:last-child {
   text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.table th:first-child {
+  text-align: left;
+}
+.table td {
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
+  color: var(--foreground);
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.table td:first-child {
+  text-align: left;
+  font-weight: 700;
+}
+.table tr:last-child td {
+  border-bottom: none;
 }
 .emptyCell {
   padding: 2.5rem 1.5rem;

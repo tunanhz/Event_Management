@@ -9,6 +9,9 @@ import styles from "./ticket-type-modal.module.css"
 interface TicketTypeModalProps {
   /** Ticket to edit, or null to create a fresh one. */
   ticket: TicketType | null
+  /** End time of the show this tier sells into (datetime-local string) —
+   *  ticket sales can't outlive their suất diễn. */
+  showEndTime: string
   onClose: () => void
   onSave: (ticket: TicketType) => void
 }
@@ -20,7 +23,7 @@ type Errors = Partial<Record<keyof TicketType, string>>
  * price/free, quantity, per-order limits, sale window, description, artwork)
  * and validates the numeric + date constraints on submit.
  */
-export function TicketTypeModal({ ticket, onClose, onSave }: TicketTypeModalProps) {
+export function TicketTypeModal({ ticket, showEndTime, onClose, onSave }: TicketTypeModalProps) {
   const [draft, setDraft] = useState<TicketType>(() => ticket ?? createEmptyTicket())
   const [errors, setErrors] = useState<Errors>({})
   const nameRef = useRef<HTMLInputElement>(null)
@@ -46,9 +49,13 @@ export function TicketTypeModal({ ticket, onClose, onSave }: TicketTypeModalProp
     if (draft.maxPerOrder < draft.minPerOrder) e.maxPerOrder = "Phải ≥ số vé tối thiểu"
     if (draft.maxPerOrder > draft.quantity) e.maxPerOrder = "Không vượt quá tổng số vé"
     if (!draft.saleStart) e.saleStart = "Chọn thời gian bắt đầu"
+    else if (new Date(draft.saleStart).getTime() <= Date.now())
+      e.saleStart = "Thời gian bắt đầu bán vé phải ở tương lai"
     if (!draft.saleEnd) e.saleEnd = "Chọn thời gian kết thúc"
     if (draft.saleStart && draft.saleEnd && draft.saleEnd <= draft.saleStart)
       e.saleEnd = "Phải sau thời gian bắt đầu bán"
+    if (!e.saleEnd && draft.saleEnd && showEndTime && draft.saleEnd > showEndTime)
+      e.saleEnd = "Không được sau thời gian kết thúc suất diễn"
     return e
   }
 
@@ -144,6 +151,7 @@ export function TicketTypeModal({ ticket, onClose, onSave }: TicketTypeModalProp
                 type="datetime-local"
                 style={{ padding: "0 1rem" }}
                 value={draft.saleEnd}
+                max={showEndTime || undefined}
                 onChange={(e) => set("saleEnd", e.target.value)}
               />
             </Field>

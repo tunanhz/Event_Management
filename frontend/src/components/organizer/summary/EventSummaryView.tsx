@@ -9,6 +9,7 @@ import {
   formatInt,
   type OrganizerEvent,
 } from "../my-events-data"
+import { useWorkspaceEvent } from "../EventWorkspaceContext"
 import { EventShowHeader } from "../shared/EventShowHeader"
 import { DonutStatCard } from "../shared/DonutStatCard"
 import { SummaryChart } from "./SummaryChart"
@@ -18,18 +19,32 @@ import styles from "./summary.module.css"
 type RevenueTab = "revenue" | "resale"
 type Range = "24h" | "30d"
 
-/** "Tổng kết" content: header, revenue tabs, overview donuts, chart + detail. */
+/** "Tổng kết" content: header, revenue tabs, overview donuts, chart + detail.
+ *  The "Đổi suất diễn" switcher scopes every figure to one show's tiers. */
 export function EventSummaryView({ event }: { event: OrganizerEvent }) {
+  const { selectedShowId } = useWorkspaceEvent()
   const [tab, setTab] = useState<RevenueTab>("revenue")
   const [range, setRange] = useState<Range>("30d")
 
-  const summary = useMemo(() => summarizeEvent(event), [event])
-  const series = useMemo(() => buildSummarySeries(event, range), [event, range])
-  const types = event.ticketTypes ?? []
+  // Per-show scope: keep only the selected show's tiers before aggregating.
+  const scopedEvent = useMemo<OrganizerEvent>(
+    () =>
+      selectedShowId
+        ? {
+            ...event,
+            ticketTypes: (event.ticketTypes ?? []).filter((t) => t.showId === selectedShowId),
+          }
+        : event,
+    [event, selectedShowId]
+  )
+
+  const summary = useMemo(() => summarizeEvent(scopedEvent), [scopedEvent])
+  const series = useMemo(() => buildSummarySeries(scopedEvent, range), [scopedEvent, range])
+  const types = scopedEvent.ticketTypes ?? []
 
   return (
     <>
-      <EventShowHeader dateText={event.dateTime} />
+      <EventShowHeader />
 
       <h2 className={styles.pageHeading}>Doanh thu</h2>
 

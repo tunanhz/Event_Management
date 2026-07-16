@@ -6,6 +6,7 @@ import {
   type OrganizerEvent,
   type TicketType,
 } from "../my-events-data"
+import { useWorkspaceEvent } from "../EventWorkspaceContext"
 import { EventShowHeader } from "../shared/EventShowHeader"
 import { SeatmapPanel, type SeatmapTab } from "./SeatmapPanel"
 import styles from "./seatmap.module.css"
@@ -16,26 +17,36 @@ const availableOf = (t: TicketType) =>
 
 /** Seat map ("Sơ đồ ghế"): pick ticket quantities to lock or invite. */
 export function SeatmapView({ event }: { event: OrganizerEvent }) {
-  const types = event.ticketTypes ?? []
+  const { selectedShowId } = useWorkspaceEvent()
+  // Scope the ticket list to the show picked in the shared "Đổi suất diễn"
+  // switcher (null = all shows) — the same per-show scoping the other report
+  // tabs already do, so switching shows here actually changes the list.
+  const types = useMemo(() => {
+    const all = event.ticketTypes ?? []
+    return selectedShowId ? all.filter((t) => t.showId === selectedShowId) : all
+  }, [event.ticketTypes, selectedShowId])
+
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [tab, setTab] = useState<SeatmapTab>("overview")
 
+  // Count only the visible show's selections, so a tally from another suất
+  // diễn can't leak in after switching shows.
   const selectedTotal = useMemo(
-    () => Object.values(quantities).reduce((a, n) => a + n, 0),
-    [quantities]
+    () => types.reduce((sum, t, i) => sum + (quantities[t.id ?? String(i)] ?? 0), 0),
+    [types, quantities]
   )
 
-  const setQty = (name: string, next: number, max: number) =>
+  const setQty = (key: string, next: number, max: number) =>
     setQuantities((prev) => ({
       ...prev,
-      [name]: Math.min(max, Math.max(0, next)),
+      [key]: Math.min(max, Math.max(0, next)),
     }))
 
   const clear = () => setQuantities({})
 
   return (
     <>
-      <EventShowHeader dateText={event.dateTime} />
+      <EventShowHeader />
 
       <div className={styles.layout}>
         <div className={styles.left}>
@@ -44,11 +55,12 @@ export function SeatmapView({ event }: { event: OrganizerEvent }) {
             <span className={styles.leftHeadLabel}>Số lượng</span>
           </div>
 
-          {types.map((t) => {
+          {types.map((t, i) => {
+            const key = t.id ?? String(i)
             const available = availableOf(t)
-            const qty = quantities[t.name] ?? 0
+            const qty = quantities[key] ?? 0
             return (
-              <div key={t.name} className={styles.ticketRow}>
+              <div key={key} className={styles.ticketRow}>
                 <div className={styles.ticketInfo}>
                   <span className={styles.ticketName}>{t.name}</span>
                   <span className={styles.ticketEmpty}>
@@ -59,7 +71,7 @@ export function SeatmapView({ event }: { event: OrganizerEvent }) {
                   <button
                     type="button"
                     className={styles.stepBtn}
-                    onClick={() => setQty(t.name, qty - 1, available)}
+                    onClick={() => setQty(key, qty - 1, available)}
                     disabled={qty <= 0}
                     aria-label={`Giảm số lượng ${t.name}`}
                   >
@@ -69,7 +81,7 @@ export function SeatmapView({ event }: { event: OrganizerEvent }) {
                   <button
                     type="button"
                     className={styles.stepBtnPlus}
-                    onClick={() => setQty(t.name, qty + 1, available)}
+                    onClick={() => setQty(key, qty + 1, available)}
                     disabled={qty >= available}
                     aria-label={`Tăng số lượng ${t.name}`}
                   >
