@@ -22,7 +22,7 @@ import { Ticket } from './ticket.model';
 import { Registration } from '../registration/registration.model';
 import { Payment } from '../registration/payment.model';
 import { CheckIn } from '../registration/checkin.model';
-import { StaffAssignment } from './staff-assignment.model';
+import { StaffAssignment } from '../staff/assignment.model';
 import { Withdrawal } from './withdrawal.model';
 import { RevenueReport } from './revenue-report.model';
 
@@ -342,8 +342,10 @@ async function main() {
   await StaffAssignment.create({
     eventId,
     staffId: staff._id,
-    roleInEvent: 'Check-in',
-    status: 'ASSIGNED',
+    gate: 'Cổng A',
+    shift: '08:00 - 12:00',
+    responsibility: 'Check-in',
+    status: 'assigned',
   });
 
   const members1 = await api('GET', `/api/organizer/events/${eventId}/members`, organizerToken);

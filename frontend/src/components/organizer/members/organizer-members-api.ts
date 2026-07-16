@@ -6,7 +6,8 @@
  */
 import { clientApi } from "@/lib/client-api"
 
-export type MemberStatus = "ASSIGNED" | "CONFIRMED" | "CANCELLED"
+// Matches the unified staff-assignment model (develop): lowercase enum.
+export type MemberStatus = "assigned" | "confirmed" | "completed" | "cancelled"
 
 export interface EventMemberApi {
   id: string
@@ -25,19 +26,20 @@ interface Envelope<T> {
 }
 
 export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
-  ASSIGNED: "Đã phân công",
-  CONFIRMED: "Đã xác nhận",
-  CANCELLED: "Đã hủy",
+  assigned: "Đã phân công",
+  confirmed: "Đã xác nhận",
+  completed: "Đã hoàn thành",
+  cancelled: "Đã hủy",
 }
 
 /**
- * Statuses offered in the members filter dropdown. CANCELLED is left out on
+ * Statuses offered in the members filter dropdown. "cancelled" is left out on
  * purpose: the backend list query excludes cancelled assignments
- * (status: { $ne: 'CANCELLED' }), so a "Đã hủy" option would always show 0 and
+ * (status: { $ne: 'cancelled' }), so a "Đã hủy" option would always show 0 and
  * read as "empty" rather than "not returned". The full label map above still
- * covers CANCELLED so the table renders it correctly if the API ever does.
+ * covers "cancelled" so the table renders it correctly if the API ever does.
  */
-export const FILTERABLE_MEMBER_STATUSES: MemberStatus[] = ["ASSIGNED", "CONFIRMED"]
+export const FILTERABLE_MEMBER_STATUSES: MemberStatus[] = ["assigned", "confirmed", "completed"]
 
 export async function fetchEventMembers(eventId: string): Promise<EventMemberApi[]> {
   const res = await clientApi.get<Envelope<EventMemberApi[]>>(

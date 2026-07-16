@@ -150,7 +150,9 @@ export function MembersView({ eventId }: { eventId: string }) {
                     <span className={styles.memberName}>
                       <span
                         className={`${styles.dot} ${
-                          m.status === "CONFIRMED" ? styles.dotOnline : ""
+                          m.status === "confirmed" || m.status === "completed"
+                            ? styles.dotOnline
+                            : ""
                         }`}
                         aria-hidden="true"
                       />

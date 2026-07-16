@@ -983,9 +983,11 @@ export class OrganizerService {
         staffName: staff?.fullName ?? 'Không rõ',
         staffEmail: staff?.email ?? '',
         avatar: staff?.avatar,
-        roleInEvent: a.roleInEvent,
+        // Unified staff model: "Vai trò tại sự kiện" maps to its `responsibility`
+        // ("Soát vé", "Bán vé offline", …); assignment time is the created stamp.
+        roleInEvent: a.responsibility,
         status: a.status,
-        assignedAt: a.assignedAt,
+        assignedAt: a.createdAt,
       };
     });
   }

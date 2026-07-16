@@ -3,7 +3,9 @@ import { Event, IEvent } from '../event/event.model';
 import { Ticket, ITicket } from './ticket.model';
 import { Registration, IRegistration } from '../registration/registration.model';
 import { CheckIn, ICheckIn } from '../registration/checkin.model';
-import { StaffAssignment, IStaffAssignment } from './staff-assignment.model';
+// Unified with the staff module's assignment model (develop) — one 'StaffAssignment'
+// Mongoose model across the app; the organizer side only reads it here.
+import { StaffAssignment, IStaffAssignment } from '../staff/assignment.model';
 import { Withdrawal, IWithdrawal } from './withdrawal.model';
 import { RevenueReport, IRevenueReport } from './revenue-report.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
@@ -403,8 +405,9 @@ export class OrganizerRepository {
   // ─── Staff assignments (organizer read-only "Thành viên") ─────────────
 
   async findAssignmentsByEvent(eventId: string): Promise<IStaffAssignment[]> {
-    return StaffAssignment.find({ eventId, status: { $ne: 'CANCELLED' } })
-      .sort({ assignedAt: 1 })
+    // status/sort follow the unified staff model: lowercase enum, timestamps.
+    return StaffAssignment.find({ eventId, status: { $ne: 'cancelled' } })
+      .sort({ createdAt: 1 })
       .populate('staffId', 'fullName email avatar')
       .lean();
   }
