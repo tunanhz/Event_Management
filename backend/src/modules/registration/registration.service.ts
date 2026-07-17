@@ -65,6 +65,12 @@ export class RegistrationService {
     if (ticket.saleEnd && now > ticket.saleEnd) {
       throw new AppError('Đã hết thời gian bán vé', 400);
     }
+    if (quantity < ticket.minPerOrder || quantity > ticket.maxPerOrder) {
+      throw new AppError(
+        `Số lượng vé phải từ ${ticket.minPerOrder} đến ${ticket.maxPerOrder} mỗi đơn`,
+        400
+      );
+    }
 
     const reserved = await this.registrationRepository.reserveTicketStock(ticketId, quantity);
     if (!reserved) {

@@ -14,6 +14,7 @@ import type {
   EventCity,
   ExploreEvent,
   FeaturedStar,
+  TicketType,
 } from "@/lib/mockData"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
@@ -47,6 +48,8 @@ interface ApiTicket {
   _id: string
   ticketName: string
   price: number
+  minPerOrder: number
+  maxPerOrder: number
 }
 
 interface ApiStar {
@@ -171,7 +174,7 @@ export interface EventDetailData {
   description: ContentBlock[]
   descriptionHtml?: string
   organizer: { name: string; logo: string; description: string }
-  tickets: { id: string; name: string; price: number }[]
+  tickets: TicketType[]
   related: EventItem[]
 }
 
@@ -195,7 +198,13 @@ export async function fetchEventDetail(id: string): Promise<EventDetailData | nu
       logo: e.organizerLogoUrl || "",
       description: e.organizerDescription || "Đơn vị tổ chức trên nền tảng EventBox.",
     },
-    tickets: (data.tickets ?? []).map((t) => ({ id: t._id, name: t.ticketName, price: t.price })),
+    tickets: (data.tickets ?? []).map((t) => ({
+      id: t._id,
+      name: t.ticketName,
+      price: t.price,
+      minPerOrder: t.minPerOrder,
+      maxPerOrder: t.maxPerOrder,
+    })),
     related: (data.related ?? []).map(toEventItem),
   }
 }
