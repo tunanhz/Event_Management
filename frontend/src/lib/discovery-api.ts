@@ -14,6 +14,7 @@ import type {
   EventCity,
   ExploreEvent,
   FeaturedStar,
+  TicketType,
 } from "@/lib/mockData"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
@@ -173,7 +174,7 @@ export interface EventDetailData {
   description: ContentBlock[]
   descriptionHtml?: string
   organizer: { name: string; logo: string; description: string }
-  tickets: { id: string; name: string; price: number }[]
+  tickets: TicketType[]
   related: EventItem[]
 }
 
