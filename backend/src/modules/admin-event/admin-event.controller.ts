@@ -98,13 +98,19 @@ export class AdminEventController {
   });
 
   setAdditionalCost = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const additionalCost = typeof (req.body ?? {}).additionalCost === 'number'
-      ? (req.body as { additionalCost: number }).additionalCost
-      : -1;
-    const event = await this.adminEventService.setAdditionalCost(
-      req.params.id as string,
-      additionalCost
-    );
-    res.json(ApiResponse.ok(event, 'Đã cập nhật chi phí phát sinh'));
+    const { additionalCost } = req.body ?? {};
+    const cost = typeof additionalCost === 'number' ? additionalCost : Number(additionalCost) || 0;
+    const event = await this.adminEventService.setAdditionalCost(req.params.id as string, cost);
+    res.json(ApiResponse.ok(event, 'Cập nhật chi phí phát sinh thành công'));
+  });
+
+  getDashboardStats = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const result = await this.adminEventService.getDashboardStats();
+    res.json(ApiResponse.ok(result, 'Lấy số liệu tổng quan thành công'));
+  });
+
+  getDashboardReports = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const result = await this.adminEventService.getDashboardReports();
+    res.json(ApiResponse.ok(result, 'Lấy báo cáo phân tích thành công'));
   });
 }

@@ -90,7 +90,7 @@ export async function updateAdminEvent(id: string, payload: Partial<AdminEvent>)
 
 export async function forceAdminEventStatus(
   id: string,
-  payload: { status?: LifecycleStatus; reviewStatus?: ReviewStatus; rejectionReason?: string }
+  payload: { status?: LifecycleStatus; reviewStatus?: ReviewStatus; rejectionReason?: string; privacy?: "public" | "private" }
 ) {
   const res = await clientApi.patch<ApiEnvelope<AdminEvent>>(`/admin/events/${id}/status`, payload)
   return res.data

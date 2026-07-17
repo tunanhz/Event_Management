@@ -4,8 +4,10 @@ import {
   AdminEventQuery,
   EventStatusTrackingResult,
 } from './admin-event.repository';
-import { IEvent } from '../event/event.model';
+import { IEvent, Event } from '../event/event.model';
 import { ITicket } from '../organizer/ticket.model';
+import { User } from '../user/user.model';
+import { Registration } from '../registration/registration.model';
 import { CategoryRepository } from '../category/category.repository';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
@@ -39,6 +41,7 @@ export interface AdminEventStatusInput {
   status?: unknown;
   reviewStatus?: unknown;
   rejectionReason?: unknown;
+  privacy?: unknown;
 }
 
 /**
@@ -176,9 +179,10 @@ export class AdminEventService {
 
     const status = this.asOptionalTrimmedString(input.status) as LifecycleStatus | undefined;
     const reviewStatus = this.asOptionalTrimmedString(input.reviewStatus) as ReviewStatus | undefined;
+    const privacy = this.asOptionalTrimmedString(input.privacy) as 'public' | 'private' | undefined;
 
-    if (!status && !reviewStatus) {
-      throw new AppError('Can truyen status hoac reviewStatus', 400);
+    if (!status && !reviewStatus && !privacy) {
+      throw new AppError('Can truyen status, reviewStatus hoac privacy', 400);
     }
     if (status && !LIFECYCLE_STATUSES.includes(status)) {
       throw new AppError(`status chi nhan mot trong: ${LIFECYCLE_STATUSES.join(', ')}`, 400);
@@ -189,6 +193,12 @@ export class AdminEventService {
 
     if (status) update.status = status;
     if (reviewStatus) update.reviewStatus = reviewStatus;
+    if (privacy) {
+      if (privacy !== 'public' && privacy !== 'private') {
+        throw new AppError('privacy chi nhan public hoac private', 400);
+      }
+      update.privacy = privacy;
+    }
 
     if ((reviewStatus ?? (status === 'published' ? 'PUBLISHED' : undefined)) === 'PUBLISHED') {
       update.reviewStatus = 'PUBLISHED';
@@ -361,5 +371,162 @@ export class AdminEventService {
       throw new AppError(`${field} khong hop le`, 400);
     }
     return date;
+  }
+
+  async getDashboardStats() {
+    const totalUsers = await User.countDocuments();
+    const totalEvents = await Event.countDocuments();
+    
+    // Count active events (reviewStatus = 'PUBLISHED')
+    const activeEvents = await Event.countDocuments({ reviewStatus: 'PUBLISHED' });
+    
+    // Count pending review
+    const pendingApprovals = await Event.countDocuments({ reviewStatus: 'PENDING_REVIEW' });
+
+    // Calculate total revenue from PAID registrations
+    const revenueResult = await Registration.aggregate([
+      { $match: { status: 'PAID' } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+    ]);
+    const totalRevenue = revenueResult[0]?.total || 0;
+
+    // Monthly revenue data for year 2026
+    const monthlyRevenueRaw = await Registration.aggregate([
+      {
+        $match: {
+          status: 'PAID',
+          registerDate: {
+            $gte: new Date('2026-01-01T00:00:00.000Z'),
+            $lte: new Date('2026-12-31T23:59:59.999Z')
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { $month: '$registerDate' },
+          revenue: { $sum: '$totalAmount' }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
+
+    // Map monthly revenue raw to 12 months (T1 to T12)
+    const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
+      const monthNum = i + 1;
+      const found = monthlyRevenueRaw.find(m => m._id === monthNum);
+      return {
+        month: `T${monthNum}`,
+        revenue: found ? found.revenue : 0
+      };
+    });
+
+    // Recent 4 pending review events
+    const pendingEvents = await Event.find({ reviewStatus: 'PENDING_REVIEW' })
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .populate('creatorId', 'fullName')
+      .lean();
+
+    return {
+      totalUsers,
+      attendeeGrowth: 15.2, // mock growth percentage
+      totalEvents,
+      activeEvents,
+      totalRevenue,
+      revenueGrowth: 20.1, // mock growth percentage
+      pendingApprovals,
+      monthlyRevenue,
+      pendingEvents: pendingEvents.map((e: any) => ({
+        id: String(e._id),
+        title: e.title,
+        organizer: e.organizer || e.creatorId?.fullName || 'Không xác định',
+        location: e.location || 'Chưa đặt địa điểm',
+        category: e.category || 'Chưa phân loại',
+        submittedAt: e.createdAt
+      }))
+    };
+  }
+
+  async getDashboardReports() {
+    // 1. Monthly revenue
+    const monthlyRevenueRaw = await Registration.aggregate([
+      {
+        $match: {
+          status: 'PAID',
+          registerDate: {
+            $gte: new Date('2026-01-01T00:00:00.000Z'),
+            $lte: new Date('2026-12-31T23:59:59.999Z')
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { $month: '$registerDate' },
+          revenue: { $sum: '$totalAmount' }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
+    const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
+      const monthNum = i + 1;
+      const found = monthlyRevenueRaw.find(m => m._id === monthNum);
+      return {
+        month: `T${monthNum}`,
+        revenue: found ? found.revenue : 0
+      };
+    });
+
+    // 2. Event categories distribution
+    const categoryStatsRaw = await Event.aggregate([
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    const categoryData = categoryStatsRaw.map(c => ({
+      name: c._id || 'Khác',
+      value: c.count
+    }));
+
+    if (categoryData.length === 0) {
+      categoryData.push({ name: 'Chưa có sự kiện', value: 0 });
+    }
+
+    // 3. Top 5 events by revenue
+    const topEventsRaw = await Registration.aggregate([
+      { $match: { status: 'PAID' } },
+      {
+        $group: {
+          _id: '$eventId',
+          ticketsSold: { $sum: '$quantity' },
+          revenue: { $sum: '$totalAmount' }
+        }
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 5 }
+    ]);
+
+    const topEvents = [];
+    for (const item of topEventsRaw) {
+      const ev = await Event.findById(item._id).lean();
+      if (ev) {
+        topEvents.push({
+          id: String(ev._id),
+          title: ev.title,
+          location: ev.location || 'Chưa đặt địa điểm',
+          ticketsSold: item.ticketsSold,
+          capacity: ev.capacity || ev.maxAttendees || 100,
+          revenue: item.revenue
+        });
+      }
+    }
+
+    return {
+      monthlyRevenue,
+      categoryData,
+      topEvents
+    };
   }
 }

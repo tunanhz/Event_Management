@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import {
   BarChart,
   Bar,
@@ -13,28 +14,49 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
+import { Loader2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import { mockRevenueData, mockEvents } from "@/lib/mock-data"
+import { fetchDashboardReports, type DashboardReports } from "@/lib/finance-api"
 import { formatCurrency, formatNumber } from "@/lib/utils"
 
-const CATEGORY_DATA = [
-  { name: "Nhạc sống", value: 42 },
-  { name: "Hội thảo & Workshop", value: 31 },
-  { name: "Thể thao", value: 18 },
-  { name: "Triển lãm", value: 15 },
-  { name: "Khác", value: 18 },
-]
 const PIE_COLORS = ["#0891b2", "#22d3ee", "#34d399", "#fbbf24", "#fb7185"]
 
 export default function ReportsPage() {
-  const topEvents = [...mockEvents].sort((a, b) => b.revenue - a.revenue).slice(0, 5)
+  const [reports, setReports] = useState<DashboardReports | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    fetchDashboardReports()
+      .then(setReports)
+      .catch((err) => setError(err.message ?? "Không thể tải báo cáo phân tích"))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error || !reports) {
+    return (
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center mx-auto max-w-xl">
+        <p className="font-semibold text-destructive">{error || "Lỗi tải báo cáo phân tích"}</p>
+      </div>
+    )
+  }
+
+  const topEvents = reports.topEvents
 
   return (
     <div className="space-y-7 animate-fade-up">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Báo cáo & Thống kê</h2>
+        <h2 className="text-2xl font-bold text-foreground">Báo cáo &amp; Thống kê</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Phân tích doanh thu, thể loại và hiệu quả sự kiện trên toàn hệ thống.
+          Phân tích doanh thu, thể loại và hiệu quả sự kiện thực tế trên toàn hệ thống.
         </p>
       </div>
 
@@ -49,7 +71,7 @@ export default function ReportsPage() {
           <CardContent className="pl-2">
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={mockRevenueData}>
+                <BarChart data={reports.monthlyRevenue}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis dataKey="month" stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis
@@ -90,7 +112,7 @@ export default function ReportsPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={CATEGORY_DATA}
+                    data={reports.categoryData}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -99,7 +121,7 @@ export default function ReportsPage() {
                     outerRadius={90}
                     paddingAngle={3}
                   >
-                    {CATEGORY_DATA.map((entry, i) => (
+                    {reports.categoryData.map((entry, i) => (
                       <Cell key={entry.name} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -123,7 +145,7 @@ export default function ReportsPage() {
       <Card className="rounded-2xl border card-glow" style={{ borderColor: "var(--border)" }}>
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold">Sự kiện doanh thu cao nhất</CardTitle>
-          <CardDescription>Xếp hạng theo doanh thu</CardDescription>
+          <CardDescription>Xếp hạng theo doanh thu thực tế từ bán vé</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -132,26 +154,34 @@ export default function ReportsPage() {
                 <tr className="border-y border-border bg-muted/50 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   <th className="px-6 py-3">#</th>
                   <th className="px-6 py-3">Sự kiện</th>
-                  <th className="px-6 py-3">Vé đã bán</th>
+                  <th className="px-6 py-3">Vé đã bán / Sức chứa</th>
                   <th className="px-6 py-3 text-right">Doanh thu</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-sm">
-                {topEvents.map((event, i) => (
-                  <tr key={event.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="px-6 py-4 font-bold text-muted-foreground">{i + 1}</td>
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-foreground">{event.title}</p>
-                      <p className="text-xs text-muted-foreground">{event.location}</p>
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {formatNumber(event.ticketsSold)} / {formatNumber(event.capacity)}
-                    </td>
-                    <td className="px-6 py-4 text-right font-bold text-foreground">
-                      {formatCurrency(event.revenue)}
+                {topEvents.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                      Chưa ghi nhận doanh thu từ sự kiện nào.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  topEvents.map((event, i) => (
+                    <tr key={event.id} className="hover:bg-muted/40 transition-colors">
+                      <td className="px-6 py-4 font-bold text-muted-foreground">{i + 1}</td>
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-foreground">{event.title}</p>
+                        <p className="text-xs text-muted-foreground">{event.location}</p>
+                      </td>
+                      <td className="px-6 py-4 text-muted-foreground">
+                        {formatNumber(event.ticketsSold)} / {formatNumber(event.capacity)}
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold text-foreground">
+                        {formatCurrency(event.revenue)}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

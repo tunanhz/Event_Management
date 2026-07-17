@@ -184,7 +184,7 @@ export default function AdminEventsPage() {
   const [editEvent, setEditEvent] = useState<AdminEvent | null>(null)
   const [editForm, setEditForm] = useState<EditForm | null>(null)
   const [statusEvent, setStatusEvent] = useState<AdminEvent | null>(null)
-  const [forcedStatus, setForcedStatus] = useState<LifecycleStatus>("draft")
+  const [forcedStatus, setForcedStatus] = useState<LifecycleStatus | "private">("draft")
   const [forcedReviewStatus, setForcedReviewStatus] = useState<ReviewStatus>("DRAFT")
   const [statusReason, setStatusReason] = useState("")
 
@@ -256,7 +256,7 @@ export default function AdminEventsPage() {
 
   const openStatus = (event: AdminEvent) => {
     setStatusEvent(event)
-    setForcedStatus(event.status)
+    setForcedStatus(event.privacy === "private" ? "private" : event.status)
     setForcedReviewStatus(event.reviewStatus)
     setStatusReason(event.rejectionReason ?? "")
   }
@@ -297,11 +297,25 @@ export default function AdminEventsPage() {
     setSaving(true)
     setError(null)
     try {
-      await forceAdminEventStatus(statusEvent._id, {
-        status: forcedStatus,
+      const payload: {
+        status?: LifecycleStatus
+        reviewStatus?: ReviewStatus
+        rejectionReason?: string
+        privacy?: "public" | "private"
+      } = {
         reviewStatus: forcedReviewStatus,
         rejectionReason: statusReason,
-      })
+      }
+
+      if (forcedStatus === "private") {
+        payload.status = "published"
+        payload.privacy = "private"
+      } else {
+        payload.status = forcedStatus
+        payload.privacy = "public"
+      }
+
+      await forceAdminEventStatus(statusEvent._id, payload)
       setStatusEvent(null)
       await load()
     } catch (err) {
@@ -445,7 +459,7 @@ export default function AdminEventsPage() {
                   <th className="px-4 py-3 font-bold">Lịch</th>
                   <th className="px-4 py-3 font-bold">Vòng đời</th>
                   <th className="px-4 py-3 font-bold">Xét duyệt</th>
-                  <th className="px-4 py-3 font-bold">Vận hành</th>
+                  <th className="px-4 py-3 font-bold">Trạng thái</th>
                   <th className="px-4 py-3 font-bold">Thao tác</th>
                 </tr>
               </thead>
@@ -479,11 +493,15 @@ export default function AdminEventsPage() {
                       )}
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex flex-wrap gap-1.5">
-                        {event.isFeatured && <Badge variant="success">Nổi bật</Badge>}
-                        {event.isTrending && <Badge variant="warning">Xu hướng</Badge>}
-                        <Badge variant="secondary">{event.privacy === "private" ? "Riêng tư" : "Công khai"}</Badge>
-                      </div>
+                      {event.status === "cancelled" ? (
+                        <Badge variant="destructive">Đã hủy</Badge>
+                      ) : event.status === "completed" ? (
+                        <Badge variant="secondary">Đã qua</Badge>
+                      ) : event.privacy === "private" ? (
+                        <Badge variant="warning">Riêng tư</Badge>
+                      ) : (
+                        <Badge variant="success">Công khai</Badge>
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">
@@ -576,20 +594,7 @@ export default function AdminEventsPage() {
               Mô tả
               <textarea className="min-h-28 w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground outline-none focus:border-cyan-500 focus:bg-card focus:ring-2 focus:ring-cyan-500/20" value={editForm.description} onChange={(event) => setEditForm({ ...editForm, description: event.target.value })} />
             </label>
-            <div className="flex flex-wrap gap-4 text-sm font-semibold text-foreground">
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={editForm.isFeatured} onChange={(event) => setEditForm({ ...editForm, isFeatured: event.target.checked })} />
-                Nổi bật
-              </label>
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={editForm.isTrending} onChange={(event) => setEditForm({ ...editForm, isTrending: event.target.checked })} />
-                Xu hướng
-              </label>
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={editForm.privacy === "private"} onChange={(event) => setEditForm({ ...editForm, privacy: event.target.checked ? "private" : "public" })} />
-                Riêng tư
-              </label>
-            </div>
+            
             <div className="flex justify-end gap-2 border-t border-border pt-4">
               <Button type="button" variant="outline" onClick={() => setEditEvent(null)}>Hủy</Button>
               <Button type="submit" disabled={saving}>
@@ -606,11 +611,13 @@ export default function AdminEventsPage() {
           <form onSubmit={saveStatus} className="space-y-4 p-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="space-y-1.5 text-sm font-semibold text-foreground">
-                Vòng đời public
-                <select className={inputClass} value={forcedStatus} onChange={(event) => setForcedStatus(event.target.value as LifecycleStatus)}>
-                  {STATUS_OPTIONS.filter((item) => item.value).map((item) => (
-                    <option key={item.value} value={item.value}>{item.label}</option>
-                  ))}
+                Trạng thái sự kiện
+                <select className={inputClass} value={forcedStatus} onChange={(event) => setForcedStatus(event.target.value as any)}>
+                  <option value="draft">Nháp</option>
+                  <option value="published">Công khai</option>
+                  <option value="private">Riêng tư</option>
+                  <option value="completed">Hoàn tất</option>
+                  <option value="cancelled">Đã hủy</option>
                 </select>
               </label>
               <label className="space-y-1.5 text-sm font-semibold text-foreground">
