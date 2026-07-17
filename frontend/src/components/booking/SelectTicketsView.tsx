@@ -28,8 +28,10 @@ export function SelectTicketsView({ event, tickets }: Props) {
     Object.fromEntries(tickets.map((t) => [t.id, 0])),
   );
 
-  const change = (id: string, delta: number) =>
-    setQuantities((q) => ({ ...q, [id]: Math.max(0, (q[id] ?? 0) + delta) }));
+  const change = (id: string, delta: number) => {
+    const max = tickets.find((t) => t.id === id)?.maxPerOrder ?? Infinity;
+    setQuantities((q) => ({ ...q, [id]: Math.min(max, Math.max(0, (q[id] ?? 0) + delta)) }));
+  };
 
   const lines = useMemo(() => buildLines(tickets, quantities), [tickets, quantities]);
   const total = totalAmount(lines);
@@ -80,6 +82,7 @@ export function SelectTicketsView({ event, tickets }: Props) {
                     type="button"
                     className={`${styles.stepBtn} ${styles.stepBtnPlus}`}
                     onClick={() => change(t.id, 1)}
+                    disabled={(quantities[t.id] ?? 0) >= t.maxPerOrder}
                     aria-label={`Tăng số lượng ${t.name}`}
                   >
                     +

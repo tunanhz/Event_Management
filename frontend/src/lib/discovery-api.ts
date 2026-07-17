@@ -47,6 +47,8 @@ interface ApiTicket {
   _id: string
   ticketName: string
   price: number
+  minPerOrder: number
+  maxPerOrder: number
 }
 
 interface ApiStar {
@@ -195,7 +197,13 @@ export async function fetchEventDetail(id: string): Promise<EventDetailData | nu
       logo: e.organizerLogoUrl || "",
       description: e.organizerDescription || "Đơn vị tổ chức trên nền tảng EventBox.",
     },
-    tickets: (data.tickets ?? []).map((t) => ({ id: t._id, name: t.ticketName, price: t.price })),
+    tickets: (data.tickets ?? []).map((t) => ({
+      id: t._id,
+      name: t.ticketName,
+      price: t.price,
+      minPerOrder: t.minPerOrder,
+      maxPerOrder: t.maxPerOrder,
+    })),
     related: (data.related ?? []).map(toEventItem),
   }
 }
