@@ -27,7 +27,7 @@ export default async function BookTicketsPage({
   return (
     <>
       <Header />
-      <SelectTicketsView event={detail.event} tickets={detail.tickets} />
+      <SelectTicketsView event={detail.event} tickets={detail.tickets} shows={detail.shows} />
     </>
   )
 }
