@@ -54,13 +54,16 @@ export function PaymentView({ event, tickets, quantities }: Props) {
   const expired = remaining <= 0;
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
+  const isFree = total === 0;
 
   // Hold one registration per selected tier, then either redirect to the real
   // VNPAY gateway (leaves the SPA — the buyer lands back on
   // /thanh-toan/vnpay-return after paying) or confirm the remaining, still-
-  // simulated methods immediately. Requires a signed-in PARTICIPANT.
+  // simulated methods immediately. Requires a signed-in PARTICIPANT. Free
+  // tickets skip the payment method entirely and go straight to the mock
+  // confirm — there is nothing to charge, so VNPAY/QR/etc make no sense here.
   const pay = async () => {
-    if (paying || expired || total === 0) return;
+    if (paying || expired) return;
     setPaying(true);
     setPayError(null);
     try {
@@ -69,7 +72,7 @@ export function PaymentView({ event, tickets, quantities }: Props) {
         lines.map((l) => ({ ticketId: l.ticket.id, quantity: l.qty }))
       );
 
-      if (method === "vnpay") {
+      if (!isFree && method === "vnpay") {
         const paymentUrl = await createVnpayPaymentUrl(registrationIds);
         window.location.href = paymentUrl;
         return;
@@ -136,29 +139,31 @@ export function PaymentView({ event, tickets, quantities }: Props) {
               </button>
             </section>
 
-            <section className={styles.card}>
-              <h3 className={styles.cardTitle}>Phương thức thanh toán</h3>
-              <ul className={styles.methodList}>
-                {PAYMENT_METHODS.map(({ id, label, Icon, tint }) => (
-                  <li key={id}>
-                    <label className={`${styles.method} ${method === id ? styles.methodActive : ""}`}>
-                      <input
-                        type="radio"
-                        name="payment-method"
-                        value={id}
-                        checked={method === id}
-                        onChange={() => setMethod(id)}
-                        className={styles.radio}
-                      />
-                      <span className={styles.methodIcon} style={{ backgroundColor: tint }}>
-                        <Icon size={16} aria-hidden="true" />
-                      </span>
-                      <span className={styles.methodLabel}>{label}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            {!isFree && (
+              <section className={styles.card}>
+                <h3 className={styles.cardTitle}>Phương thức thanh toán</h3>
+                <ul className={styles.methodList}>
+                  {PAYMENT_METHODS.map(({ id, label, Icon, tint }) => (
+                    <li key={id}>
+                      <label className={`${styles.method} ${method === id ? styles.methodActive : ""}`}>
+                        <input
+                          type="radio"
+                          name="payment-method"
+                          value={id}
+                          checked={method === id}
+                          onChange={() => setMethod(id)}
+                          className={styles.radio}
+                        />
+                        <span className={styles.methodIcon} style={{ backgroundColor: tint }}>
+                          <Icon size={16} aria-hidden="true" />
+                        </span>
+                        <span className={styles.methodLabel}>{label}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </div>
 
           {/* Right column */}
@@ -209,10 +214,16 @@ export function PaymentView({ event, tickets, quantities }: Props) {
               <button
                 type="button"
                 className={styles.payBtn}
-                disabled={expired || total === 0 || paying}
+                disabled={expired || paying}
                 onClick={pay}
               >
-                {expired ? "Hết thời gian giữ vé" : paying ? "Đang xử lý…" : "Thanh toán"}
+                {expired
+                  ? "Hết thời gian giữ vé"
+                  : paying
+                    ? "Đang xử lý…"
+                    : isFree
+                      ? "Đặt vé miễn phí"
+                      : "Thanh toán"}
               </button>
             </section>
           </aside>
