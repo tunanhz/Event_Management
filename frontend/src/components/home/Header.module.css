@@ -89,7 +89,12 @@
   align-items: center;
   justify-content: center;
   color: #9ca3af;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
+.searchIcon:hover { color: #6b7280; }
 
 .searchIcon svg {
   width: 18px;

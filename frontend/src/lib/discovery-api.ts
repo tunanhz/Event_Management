@@ -165,6 +165,12 @@ export async function fetchExploreEvents(): Promise<ExploreEvent[]> {
   return events.map(toExploreEvent)
 }
 
+/** Header search bar — GET /api/events/search?q=..., matches title/description/location/organizer/category. */
+export async function fetchSearchEvents(q: string): Promise<ExploreEvent[]> {
+  const events = await apiGet<ApiEvent[]>(`/events/search?q=${encodeURIComponent(q)}&limit=100`, [])
+  return events.map(toExploreEvent)
+}
+
 export interface EventDetailData {
   event: EventItem
   showDates: string[]
