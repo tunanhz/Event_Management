@@ -318,6 +318,16 @@ export interface TicketType {
   price: number; // VND
   minPerOrder: number;
   maxPerOrder: number;
+  /** Showing this tier is sold for. Absent = valid for every showing. */
+  showId?: string;
+}
+
+/** One showing ("xuất chiếu") of a multi-show event. */
+export interface ShowOption {
+  id: string;
+  label: string;
+  startTime: string; // ISO
+  endTime: string; // ISO
 }
 
 export interface EventDetail {

@@ -4,18 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Calendar, MapPin, CreditCard, QrCode, Wallet, Smartphone, Tag } from "lucide-react";
-import type { EventItem, TicketType } from "@/lib/mockData";
+import type { EventItem, ShowOption, TicketType } from "@/lib/mockData";
 import { useAuth } from "@/context/AuthContext";
 import { formatVnd } from "@/lib/utils";
 import { buildLines, totalAmount, type Quantities } from "@/lib/booking-selection";
 import { holdSelection, confirmMockPayments, createVnpayPaymentUrl } from "@/lib/booking-api";
 import { formatBookingDate } from "./format-booking-date";
+import { formatShowTime } from "./format-show-time";
 import styles from "./payment-view.module.css";
 
 interface Props {
   event: EventItem;
   tickets: TicketType[];
   quantities: Quantities;
+  shows: ShowOption[];
 }
 
 const HOLD_SECONDS = 10 * 60; // 10-minute reservation window (matches backend hold)
@@ -33,11 +35,23 @@ function pad(n: number) {
 }
 
 /** Step 2 of booking — payment. */
-export function PaymentView({ event, tickets, quantities }: Props) {
+export function PaymentView({ event, tickets, quantities, shows }: Props) {
   const { user } = useAuth();
   const router = useRouter();
   const lines = buildLines(tickets, quantities);
   const total = totalAmount(lines);
+
+  // The order is always for a single showing — every line's ticket shares the
+  // same showId — so surface that showing's own time instead of the event's
+  // generic date/time whenever the event runs more than one.
+  const selectedShow =
+    shows.length > 1 ? shows.find((s) => s.id === lines[0]?.ticket.showId) : undefined;
+  const scheduleText = selectedShow
+    ? (() => {
+        const { time, date } = formatShowTime(selectedShow.startTime, selectedShow.endTime);
+        return `${selectedShow.label} · ${time}, ${date}`;
+      })()
+    : `${event.time}, ${formatBookingDate(event.date)}`;
 
   const [remaining, setRemaining] = useState(HOLD_SECONDS);
   const [method, setMethod] = useState<string>(PAYMENT_METHODS[0].id);
@@ -97,7 +111,7 @@ export function PaymentView({ event, tickets, quantities }: Props) {
             <h1 className={styles.eventTitle}>{event.title}</h1>
             <div className={styles.metaRow}>
               <Calendar size={17} className={styles.metaIcon} aria-hidden="true" />
-              <span>{event.time}, {formatBookingDate(event.date)}</span>
+              <span>{scheduleText}</span>
             </div>
             <div className={styles.metaRow}>
               <MapPin size={17} className={styles.metaIcon} aria-hidden="true" />
