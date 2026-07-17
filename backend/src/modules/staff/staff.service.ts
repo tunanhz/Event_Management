@@ -8,6 +8,8 @@ import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
 import { CheckInStats } from './staff.repository';
 
+const ASSIGNMENT_CONFIRMATION_LEAD_MS = 60 * 60 * 1000;
+
 // ─── Input types ─────────────────────────────────────────────────────────────
 
 export interface CreateAssignmentInput {
@@ -69,6 +71,9 @@ export class StaffService {
     const event = await this.staffRepository.findEventById(input.eventId);
     if (!event) throw new AppError('Sự kiện không tồn tại', 404);
     if (event.status === 'cancelled') throw new AppError('Không thể phân công cho sự kiện đã hủy', 400);
+    if (this.isConfirmationDeadlinePassed(event)) {
+      throw new AppError('Đã quá hạn phân công: staff phải xác nhận trước khi sự kiện bắt đầu 1 giờ', 400);
+    }
 
     // Kiểm tra trùng
     const existing = await this.staffRepository.findAssignmentByEventAndStaff(
@@ -93,13 +98,15 @@ export class StaffService {
 
   /** Lấy danh sách sự kiện được phân công (Staff xem ca trực của mình). */
   async getMyAssignments(staffId: string): Promise<IStaffAssignment[]> {
-    return this.staffRepository.findAssignments({ staffId, status: undefined });
+    const assignments = await this.staffRepository.findAssignments({ staffId, status: undefined });
+    return this.expireOverdueAssignments(assignments);
   }
 
   /** Admin xem danh sách staff được phân công cho một sự kiện. */
   async getEventAssignments(eventId: string): Promise<IStaffAssignment[]> {
     this.assertValidObjectId(eventId, 'eventId');
-    return this.staffRepository.findAssignments({ eventId });
+    const assignments = await this.staffRepository.findAssignments({ eventId });
+    return this.expireOverdueAssignments(assignments);
   }
 
   /** Staff xác nhận nhận ca. */
@@ -116,13 +123,38 @@ export class StaffService {
       throw new AppError('Phân công không còn ở trạng thái chờ xác nhận', 400);
     }
 
-    const updated = await this.staffRepository.updateAssignmentStatus(
+    const event = await this.staffRepository.findEventById(assignment.eventId.toString());
+    if (!event) throw new AppError('Sự kiện không tồn tại', 404);
+    if (this.isConfirmationDeadlinePassed(event)) {
+      await this.staffRepository.transitionPendingAssignment(assignmentId, 'expired');
+      throw new AppError('Đã quá hạn xác nhận ca. Bạn được ghi nhận là không làm ca này', 400);
+    }
+
+    const updated = await this.staffRepository.transitionPendingAssignment(
       assignmentId,
       'confirmed',
-      { confirmedAt: new Date() }
+      new Date()
     );
-    if (!updated) throw new AppError('Không thể cập nhật trạng thái phân công', 500);
+    if (!updated) throw new AppError('Trạng thái phân công vừa thay đổi, vui lòng tải lại', 409);
     return updated;
+  }
+
+  /** Staff can operate an event only after confirming the assignment on time. */
+  async assertConfirmedAssignment(eventId: string, staffId: string): Promise<void> {
+    this.assertValidObjectIds(eventId, staffId);
+    const [assignment] = await this.expireOverdueAssignments(
+      await this.staffRepository.findAssignments({ eventId, staffId })
+    );
+
+    if (!assignment) {
+      throw new AppError('Bạn không được phân công làm việc tại sự kiện này', 403);
+    }
+    if (assignment.status === 'expired') {
+      throw new AppError('Ca làm đã quá hạn xác nhận và được ghi nhận là không làm', 403);
+    }
+    if (assignment.status !== 'confirmed') {
+      throw new AppError('Bạn cần xác nhận ca trước khi sử dụng chức năng vận hành', 403);
+    }
   }
 
   /** Admin hủy phân công. */
@@ -360,5 +392,34 @@ export class StaffService {
       throw new AppError(`${fieldName} không được để trống`, 400);
     }
     return value.trim();
+  }
+
+  private async expireOverdueAssignments(
+    assignments: IStaffAssignment[]
+  ): Promise<IStaffAssignment[]> {
+    return Promise.all(assignments.map(async (assignment) => {
+      if (assignment.status !== 'assigned') return assignment;
+
+      const populatedEvent = assignment.eventId as unknown as {
+        _id?: mongoose.Types.ObjectId;
+        startDate?: Date;
+        date?: Date;
+      };
+      const eventId = populatedEvent._id?.toString() ?? assignment.eventId.toString();
+      const event = populatedEvent.startDate || populatedEvent.date
+        ? populatedEvent
+        : await this.staffRepository.findEventById(eventId);
+
+      if (!event || !this.isConfirmationDeadlinePassed(event)) return assignment;
+      return await this.staffRepository.transitionPendingAssignment(
+        (assignment._id as mongoose.Types.ObjectId).toString(),
+        'expired'
+      ) ?? assignment;
+    }));
+  }
+
+  private isConfirmationDeadlinePassed(event: { startDate?: Date; date?: Date }): boolean {
+    const start = event.startDate ?? event.date;
+    return Boolean(start && Date.now() >= new Date(start).getTime() - ASSIGNMENT_CONFIRMATION_LEAD_MS);
   }
 }

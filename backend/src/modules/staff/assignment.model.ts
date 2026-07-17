@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type AssignmentStatus = 'assigned' | 'confirmed' | 'completed' | 'cancelled';
+export type AssignmentStatus = 'assigned' | 'confirmed' | 'completed' | 'cancelled' | 'expired';
 
 export interface IStaffAssignment extends Document {
   eventId: mongoose.Types.ObjectId;
@@ -27,7 +27,7 @@ const assignmentSchema = new Schema<IStaffAssignment>(
     responsibility: { type: String, required: true, trim: true },
     status: {
       type: String,
-      enum: ['assigned', 'confirmed', 'completed', 'cancelled'],
+      enum: ['assigned', 'confirmed', 'completed', 'cancelled', 'expired'],
       default: 'assigned',
     },
     note: { type: String, trim: true },

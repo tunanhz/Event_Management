@@ -82,6 +82,9 @@ event, ticket, marketing, contract, payment, reporting).
 > Quy tắc tài khoản (đã hiện thực — verified `user.service.ts`): chỉ tạo `ADMIN` đầu tiên qua
 > bootstrap; `STAFF` do Admin tạo (không tự đăng ký); self-register chỉ `PARTICIPANT`/`ORGANIZER`.
 > Admin không tự khóa/đổi-role/xóa chính mình.
+>
+> Quy tắc nhận ca: `STAFF` phải xác nhận trước giờ bắt đầu sự kiện ít nhất 1 giờ. Phân công
+> chưa xác nhận khi đến hạn tự chuyển `expired` (không làm) và mất quyền vận hành sự kiện.
 
 ### 2.1 Luồng xác thực & kích hoạt
 

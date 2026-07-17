@@ -22,7 +22,7 @@ export interface PaginationMeta {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type AssignmentStatus = "assigned" | "confirmed" | "completed" | "cancelled";
+export type AssignmentStatus = "assigned" | "confirmed" | "completed" | "cancelled" | "expired";
 
 export interface StaffAssignment {
   _id: string;
@@ -32,6 +32,7 @@ export interface StaffAssignment {
     banner?: string;
     imageUrl?: string;
     location?: string;
+    date?: string;
     startDate?: string;
     endDate?: string;
     status: string;

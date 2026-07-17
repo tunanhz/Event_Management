@@ -279,6 +279,22 @@ export function StaffAssignmentView() {
                   const entry = getAssignment(staff._id)
                   const assigned = Boolean(entry)
                   const isToggling = toggling[staff._id]
+                  const assignmentStatusLabel = entry?.status === "assigned"
+                    ? "Chờ xác nhận"
+                    : entry?.status === "confirmed"
+                      ? "Đã xác nhận"
+                      : entry?.status === "expired"
+                        ? "Không làm"
+                        : entry?.status === "completed"
+                          ? "Hoàn thành"
+                          : "Đã hủy"
+                  const assignmentStatusVariant = entry?.status === "confirmed"
+                    ? "success"
+                    : entry?.status === "assigned"
+                      ? "warning"
+                      : entry?.status === "expired" || entry?.status === "cancelled"
+                        ? "destructive"
+                        : "secondary"
                   return (
                     <div key={staff._id} className="flex flex-wrap items-center gap-3 py-3">
                       <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
@@ -306,20 +322,21 @@ export function StaffAssignmentView() {
                       {isToggling ? (
                         <Loader2 className="animate-spin text-muted-foreground" size={18} />
                       ) : assigned && entry ? (
-                        <select
-                          value={
-                            typeof entry.staffId === "string"
-                              ? entry.responsibility
-                              : entry.responsibility
-                          }
-                          onChange={(e) => changeRole(staff._id, e.target.value)}
-                          aria-label={`Vai trò của ${staff.fullName}`}
-                          className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground outline-none focus:border-cyan-500"
-                        >
-                          {ROLES_IN_EVENT.map((role) => (
-                            <option key={role} value={role}>{role}</option>
-                          ))}
-                        </select>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <Badge variant={assignmentStatusVariant} className="text-[11px]">
+                            {assignmentStatusLabel}
+                          </Badge>
+                          <select
+                            value={entry.responsibility}
+                            onChange={(e) => changeRole(staff._id, e.target.value)}
+                            aria-label={`Vai trò của ${staff.fullName}`}
+                            className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground outline-none focus:border-cyan-500"
+                          >
+                            {ROLES_IN_EVENT.map((role) => (
+                              <option key={role} value={role}>{role}</option>
+                            ))}
+                          </select>
+                        </div>
                       ) : (
                         <Badge variant="secondary" className="text-[11px]">Chưa phân</Badge>
                       )}

@@ -49,7 +49,7 @@ export class StaffRepository {
     if (query.status) filter.status = query.status;
 
     return StaffAssignment.find(filter)
-      .populate('eventId', 'title banner imageUrl location startDate endDate status')
+      .populate('eventId', 'title banner imageUrl location date startDate endDate status')
       .populate('staffId', 'fullName email avatar')
       .sort({ createdAt: -1 })
       .lean();
@@ -101,7 +101,22 @@ export class StaffRepository {
       { status, ...extra },
       { new: true }
     )
-      .populate('eventId', 'title banner imageUrl location startDate endDate status')
+      .populate('eventId', 'title banner imageUrl location date startDate endDate status')
+      .populate('staffId', 'fullName email avatar')
+      .lean();
+  }
+
+  async transitionPendingAssignment(
+    id: string,
+    status: 'confirmed' | 'expired',
+    confirmedAt?: Date
+  ): Promise<IStaffAssignment | null> {
+    return StaffAssignment.findOneAndUpdate(
+      { _id: id, status: 'assigned' },
+      { status, ...(confirmedAt ? { confirmedAt } : {}) },
+      { new: true }
+    )
+      .populate('eventId', 'title banner imageUrl location date startDate endDate status')
       .populate('staffId', 'fullName email avatar')
       .lean();
   }

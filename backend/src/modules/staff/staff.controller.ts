@@ -11,6 +11,12 @@ export class StaffController {
     this.staffService = new StaffService();
   }
 
+  private assertStaffCanWork = async (req: AuthRequest, eventId: string): Promise<void> => {
+    if (req.user!.role === 'STAFF') {
+      await this.staffService.assertConfirmedAssignment(eventId, req.user!.id);
+    }
+  };
+
   // ── Assignments (Staff) ──────────────────────────────────────────────────────
 
   /** GET /api/staff/assignments — Staff xem ca trực của mình */
@@ -63,6 +69,8 @@ export class StaffController {
       return;
     }
 
+    await this.assertStaffCanWork(req, eventId as string);
+
     const result = await this.staffService.checkIn({
       ticketCode: ticketCode as string,
       eventId: eventId as string,
@@ -74,14 +82,18 @@ export class StaffController {
 
   /** GET /api/staff/events/:eventId/checkin-stats — Live stats */
   getCheckInStats = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const stats = await this.staffService.getCheckInStats(req.params.eventId as string);
+    const eventId = req.params.eventId as string;
+    await this.assertStaffCanWork(req, eventId);
+    const stats = await this.staffService.getCheckInStats(eventId);
     res.json(ApiResponse.ok(stats, 'Lấy thống kê check-in thành công'));
   });
 
   /** GET /api/staff/events/:eventId/checkin-history — Lịch sử check-in */
   getCheckInHistory = asyncHandler(async (req: AuthRequest, res: Response) => {
     const { page, limit } = req.query;
-    const result = await this.staffService.getCheckInHistory(req.params.eventId as string, {
+    const eventId = req.params.eventId as string;
+    await this.assertStaffCanWork(req, eventId);
+    const result = await this.staffService.getCheckInHistory(eventId, {
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
     });
@@ -93,8 +105,10 @@ export class StaffController {
   /** GET /api/staff/events/:eventId/attendees — Danh sách người tham dự */
   getAttendees = asyncHandler(async (req: AuthRequest, res: Response) => {
     const { page, limit, search, checkedIn } = req.query;
+    const eventId = req.params.eventId as string;
+    await this.assertStaffCanWork(req, eventId);
 
-    const result = await this.staffService.getAttendees(req.params.eventId as string, {
+    const result = await this.staffService.getAttendees(eventId, {
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
       search: typeof search === 'string' ? search : undefined,
@@ -108,6 +122,7 @@ export class StaffController {
     const staffId = req.user!.id;
     const eventId = req.params.eventId as string;
     const registrationId = req.params.registrationId as string;
+    await this.assertStaffCanWork(req, eventId);
     const updated = await this.staffService.manualCheckIn(registrationId, staffId, eventId);
     res.json(ApiResponse.ok(updated, 'Check-in thủ công thành công'));
   });
@@ -117,6 +132,7 @@ export class StaffController {
   /** POST /api/staff/incidents — Staff tạo báo cáo sự cố */
   createIncident = asyncHandler(async (req: AuthRequest, res: Response) => {
     const staffId = req.user!.id;
+    await this.assertStaffCanWork(req, req.body.eventId as string);
     const incident = await this.staffService.createIncident({ ...req.body, staffId });
     res.status(201).json(ApiResponse.created(incident, 'Gửi báo cáo sự cố thành công'));
   });
