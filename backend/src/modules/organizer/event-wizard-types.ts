@@ -31,6 +31,8 @@ export interface CreateTicketInput {
 export interface ShowInput {
   /** Present on update: matches an existing embedded show `_id`. */
   _id?: string;
+  /** Organizer-facing label, e.g. "Đêm khai mạc". Optional. */
+  title?: string;
   startTime: string | Date;
   endTime: string | Date;
   tickets?: CreateTicketInput[];
@@ -79,7 +81,6 @@ export interface CreateEventInput {
   slug?: string;
   privacy?: 'public' | 'private';
   confirmationMessage?: string;
-  enableQuestions?: boolean;
   // ── Step 4: logistics & legal permits ──
   logisticsServices?: string[];
   permitDocuments?: PermitDocumentInput[];

@@ -21,8 +21,8 @@ interface SettingsStepProps {
 }
 
 /**
- * Step 3 — event settings: custom URL slug, booking privacy, the post-purchase
- * confirmation message, and an opt-in for a later attendee-question builder.
+ * Step 3 — event settings: custom URL slug, booking privacy, and the
+ * post-purchase confirmation message.
  */
 export function SettingsStep({ form, update }: SettingsStepProps) {
   // Read origin on the client only to avoid an SSR/CSR hydration mismatch:
@@ -103,32 +103,6 @@ export function SettingsStep({ form, update }: SettingsStepProps) {
         <div className={formStyles.counterBlock}>
           {form.confirmationMessage.length} / {SETTINGS_LIMITS.confirmationMessage}
         </div>
-      </SectionCard>
-
-      {/* ── Attendee questions toggle ──────────────────────────────── */}
-      <SectionCard title="Tạo bảng câu hỏi cho người tham gia">
-        <div className={styles.qTemplates}>
-          EventBox giúp bạn tạo câu hỏi với 3 mẫu:
-          <ol>
-            <li>Điền câu trả lời</li>
-            <li>Chọn 1 câu trả lời</li>
-            <li>Chọn nhiều câu trả lời</li>
-          </ol>
-        </div>
-        <label className={styles.switch}>
-          <input
-            type="checkbox"
-            className={styles.switchInput}
-            checked={form.enableQuestions}
-            onChange={(e) => update({ enableQuestions: e.target.checked })}
-          />
-          <span className={styles.switchTrack}>
-            <span className={styles.switchKnob} />
-          </span>
-          <span className={styles.switchLabel}>
-            Mở chức năng này (tạo câu hỏi ở bước sau)
-          </span>
-        </label>
       </SectionCard>
     </div>
   )

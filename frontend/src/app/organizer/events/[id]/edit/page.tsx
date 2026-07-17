@@ -17,7 +17,7 @@ import { PublishedInventoryPanel } from "@/components/organizer/inventory/Publis
  * precomputed, so there's no render-time clock read here.
  */
 export default function EventEditPage() {
-  const { event, detail } = useWorkspaceEvent()
+  const { event, detail, refresh } = useWorkspaceEvent()
   const status = detail.event.reviewStatus
 
   if (status === "PUBLISHED") {
@@ -29,6 +29,7 @@ export default function EventEditPage() {
       initialForm={mapDetailToForm(detail)}
       eventId={event.id}
       readOnly={status === "PENDING_REVIEW"}
+      onSaved={refresh}
     />
   )
 }

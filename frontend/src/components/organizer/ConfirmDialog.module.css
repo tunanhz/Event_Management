@@ -1,0 +1,110 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(2, 6, 23, 0.62);
+  animation: fadeIn 0.2s ease both;
+}
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  padding: 1.75rem 1.75rem 1.5rem;
+  animation: popIn 0.22s ease both;
+}
+
+.dangerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  margin-bottom: 0.9rem;
+}
+
+.title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 0.5rem;
+}
+
+.message {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+  margin: 0 0 1.5rem;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.cancelBtn,
+.confirmBtn,
+.confirmBtnDanger {
+  min-width: 96px;
+  height: 40px;
+  padding: 0 1.1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.cancelBtn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+.cancelBtn:hover { background: var(--muted); }
+
+.confirmBtn {
+  border: 1px solid transparent;
+  background: #06b6d4;
+  color: #06202b;
+}
+.confirmBtn:hover { background: #0891b2; }
+
+.confirmBtnDanger {
+  border: 1px solid transparent;
+  background: #ef4444;
+  color: #fff;
+}
+.confirmBtnDanger:hover { background: #dc2626; }
+
+.cancelBtn:disabled,
+.confirmBtn:disabled,
+.confirmBtnDanger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cancelBtn:focus-visible,
+.confirmBtn:focus-visible,
+.confirmBtnDanger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}

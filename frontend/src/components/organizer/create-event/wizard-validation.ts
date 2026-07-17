@@ -84,36 +84,41 @@ function validateStep1(f: CreateEventForm): string[] {
   return e
 }
 
-/** Step 2 — at least one show with a valid future time range and ≥ 1 ticket. */
+/** Step 2 — ≥ 1 show, each with a valid future time range and ≥ 1 ticket type. */
 function validateStep2(f: CreateEventForm): string[] {
   const e: string[] = []
-  const shows = f.shows.filter((s) => s.startTime || s.endTime)
-  if (shows.length === 0) {
-    e.push("Vui lòng tạo ít nhất 1 suất diễn.")
-    return e
-  }
-  f.shows.forEach((s, i) => {
-    const label = `Suất diễn #${i + 1}`
-    if (!s.startTime || !s.endTime) {
-      e.push(`${label}: cần thời gian bắt đầu và kết thúc.`)
-      return
+  if (f.shows.length === 0) e.push("Vui lòng tạo ít nhất 1 suất diễn.")
+  f.shows.forEach((show, i) => {
+    const label = show.title.trim() || `Suất ${i + 1}`
+    if (!show.startTime || !show.endTime) {
+      e.push(`${label}: vui lòng nhập thời gian bắt đầu và kết thúc.`)
+    } else {
+      const start = new Date(show.startTime).getTime()
+      const end = new Date(show.endTime).getTime()
+      if (Number.isNaN(start) || Number.isNaN(end)) e.push(`${label}: thời gian không hợp lệ.`)
+      else {
+        if (start <= Date.now()) e.push(`${label}: thời gian bắt đầu phải ở tương lai.`)
+        if (end <= start) e.push(`${label}: thời gian kết thúc phải sau thời gian bắt đầu.`)
+      }
     }
-    const start = new Date(s.startTime).getTime()
-    const end = new Date(s.endTime).getTime()
-    if (Number.isNaN(start) || Number.isNaN(end)) e.push(`${label}: thời gian không hợp lệ.`)
-    else {
-      if (start <= Date.now()) e.push(`${label}: thời gian bắt đầu phải ở tương lai.`)
-      if (end < start) e.push(`${label}: thời gian kết thúc phải sau thời gian bắt đầu.`)
-    }
-    if (s.tickets.length === 0) e.push(`${label}: cần ít nhất 1 loại vé.`)
-    s.tickets.forEach((t) => {
+    if (show.tickets.length === 0) e.push(`${label}: vui lòng tạo ít nhất 1 loại vé.`)
+    show.tickets.forEach((t) => {
       if (isBlank(t.name)) e.push(`${label}: có loại vé chưa đặt tên.`)
       if (!t.isFree && (typeof t.price !== "number" || t.price < 0))
-        e.push(`${label} · vé "${t.name || "?"}": giá phải ≥ 0.`)
+        e.push(`Vé "${t.name || "?"}" (${label}): giá phải ≥ 0.`)
       if (typeof t.quantity !== "number" || t.quantity < 1)
-        e.push(`${label} · vé "${t.name || "?"}": số lượng phải ≥ 1.`)
+        e.push(`Vé "${t.name || "?"}" (${label}): số lượng phải ≥ 1.`)
       if (t.maxPerOrder < t.minPerOrder)
-        e.push(`${label} · vé "${t.name || "?"}": số vé tối đa/đơn phải ≥ tối thiểu.`)
+        e.push(`Vé "${t.name || "?"}" (${label}): số vé tối đa/đơn phải ≥ tối thiểu.`)
+      // Sale can't start in the past — a draft isn't public yet, so selling
+      // can only begin from now on. Catches stale saleStart values left over
+      // from an earlier draft that has since become past-dated.
+      if (t.saleStart && new Date(t.saleStart).getTime() <= Date.now())
+        e.push(`Vé "${t.name || "?"}" (${label}): thời gian bắt đầu bán vé phải ở tương lai.`)
+      // Catches a ticket left over from before the organizer shortened this
+      // show's end time — its own sale window looked valid when it was saved.
+      if (show.endTime && t.saleEnd && t.saleEnd > show.endTime)
+        e.push(`Vé "${t.name || "?"}" (${label}): thời gian kết thúc bán vé không được sau thời gian kết thúc suất diễn.`)
     })
   })
   return e

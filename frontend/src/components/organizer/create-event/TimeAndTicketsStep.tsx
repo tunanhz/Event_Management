@@ -18,12 +18,18 @@ interface TimeAndTicketsStepProps {
   update: (patch: Partial<CreateEventForm>) => void
 }
 
-/** Which show's modal is open and whether we're editing (ticket) or creating (null). */
+/** Which show's ticket modal is open — editing (ticket set) or creating (null). */
 type ModalState = { showId: string; ticket: TicketType | null } | null
 
+/** Dropdown/display label for one show: its title or an auto-numbered fallback. */
+export function showLabel(show: { title?: string }, index: number): string {
+  return show.title?.trim() || `Suất ${index + 1}`
+}
+
 /**
- * Step 2 of the create-event wizard. Manages the list of shows, their date
- * ranges, and per-show ticket tiers (created/edited via {@link TicketTypeModal}).
+ * Step 2 of the create-event wizard. Manages the list of shows (suất diễn),
+ * each with its own optional label, date range and ticket tiers
+ * (created/edited via {@link TicketTypeModal}).
  */
 export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
   const [modal, setModal] = useState<ModalState>(null)
@@ -63,6 +69,8 @@ export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
   const visibleShows =
     filter === "all" ? form.shows : form.shows.filter((s) => s.id === filter)
 
+  const modalShow = modal ? form.shows.find((s) => s.id === modal.showId) : undefined
+
   return (
     <div className={pageStyles.form}>
       <div className={styles.stepHeader}>
@@ -82,7 +90,7 @@ export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
               <option value="all">Tất cả</option>
               {form.shows.map((s, i) => (
                 <option key={s.id} value={s.id}>
-                  Ngày sự kiện {i + 1}
+                  {showLabel(s, i)}
                 </option>
               ))}
             </select>
@@ -101,6 +109,7 @@ export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
             <EventShowCard
               key={show.id}
               show={show}
+              index={form.shows.findIndex((s) => s.id === show.id) + 1}
               canDelete={form.shows.length > 1}
               onUpdate={(patch) => patchShow(show.id, patch)}
               onDelete={() => deleteShow(show.id)}
@@ -116,6 +125,7 @@ export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
       {modal && (
         <TicketTypeModal
           ticket={modal.ticket}
+          showEndTime={modalShow?.endTime ?? ""}
           onClose={() => setModal(null)}
           onSave={saveTicket}
         />

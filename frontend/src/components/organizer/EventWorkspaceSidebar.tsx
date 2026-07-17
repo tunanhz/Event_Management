@@ -12,6 +12,8 @@ import {
   Pencil,
   Armchair,
   Wallet,
+  CalendarClock,
+  FileText,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -38,6 +40,8 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Cài đặt sự kiện",
     items: [
+      { key: "schedule", name: "Lịch trình", icon: CalendarClock },
+      { key: "permits", name: "Giấy phép", icon: FileText },
       { key: "members", name: "Thành viên", icon: User },
       { key: "edit", name: "Chỉnh sửa", icon: Pencil },
       { key: "seatmap", name: "Sơ đồ ghế", icon: Armchair },

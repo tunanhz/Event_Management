@@ -108,6 +108,7 @@ async function buildPayload(form: CreateEventForm) {
     sentShows.map(async (s) => ({
       // Only real server ids ride along; FE-generated ids mean "new show".
       _id: MONGO_ID.test(s.id) ? s.id : undefined,
+      title: s.title.trim() || undefined,
       startTime: new Date(s.startTime).toISOString(),
       endTime: new Date(s.endTime).toISOString(),
       tickets: await Promise.all(s.tickets.map(mapTicket)),
@@ -134,56 +135,55 @@ async function buildPayload(form: CreateEventForm) {
     sentShowIds: sentShows.map((s) => s.id),
     assetPatch,
     payload: {
-    title: form.name.trim(),
-    description: form.description,
-    categoryId: form.category,
-    capacity,
-    banner,
-    posterImage,
-    locationType: form.locationType,
-    ...(form.locationType === "offline"
-      ? {
-          venue: {
-            name: form.venueName.trim(),
-            province: form.province,
-            ward: form.ward,
-            street: form.street.trim(),
-          },
-        }
-      : { location: form.street.trim() }),
-    orgName: form.orgName.trim() || undefined,
-    orgLogo,
-    orgInfo: form.orgInfo.trim() || undefined,
-    shows,
-    // Send exactly what the settings step previews (slugified form).
-    slug: slugify(form.slug.trim()) || undefined,
-    privacy: form.privacy,
-    confirmationMessage: form.confirmationMessage.trim() || undefined,
-    enableQuestions: form.enableQuestions,
-    logisticsServices: form.logisticsServices,
-    permitDocuments: form.permitDocuments.map((d) => ({
-      name: d.name,
-      url: d.url,
-      sizeKb: d.sizeKb,
-    })),
-    ...(form.contractRepName.trim() || form.contractAgreed
-      ? {
-          contract: {
-            repName: form.contractRepName.trim() || undefined,
-            agreed: form.contractAgreed,
-            signatureUrl,
-          },
-        }
-      : {}),
-    ...(form.bankName || form.bankAccountNumber || form.bankAccountHolder
-      ? {
-          paymentInfo: {
-            bankName: form.bankName || undefined,
-            accountNumber: form.bankAccountNumber || undefined,
-            accountHolder: form.bankAccountHolder.trim() || undefined,
-          },
-        }
-      : {}),
+      title: form.name.trim(),
+      description: form.description,
+      categoryId: form.category,
+      capacity,
+      banner,
+      posterImage,
+      locationType: form.locationType,
+      ...(form.locationType === "offline"
+        ? {
+            venue: {
+              name: form.venueName.trim(),
+              province: form.province,
+              ward: form.ward,
+              street: form.street.trim(),
+            },
+          }
+        : { location: form.street.trim() }),
+      orgName: form.orgName.trim() || undefined,
+      orgLogo,
+      orgInfo: form.orgInfo.trim() || undefined,
+      shows,
+      // Send exactly what the settings step previews (slugified form).
+      slug: slugify(form.slug.trim()) || undefined,
+      privacy: form.privacy,
+      confirmationMessage: form.confirmationMessage.trim() || undefined,
+      logisticsServices: form.logisticsServices,
+      permitDocuments: form.permitDocuments.map((d) => ({
+        name: d.name,
+        url: d.url,
+        sizeKb: d.sizeKb,
+      })),
+      ...(form.contractRepName.trim() || form.contractAgreed
+        ? {
+            contract: {
+              repName: form.contractRepName.trim() || undefined,
+              agreed: form.contractAgreed,
+              signatureUrl,
+            },
+          }
+        : {}),
+      ...(form.bankName || form.bankAccountNumber || form.bankAccountHolder
+        ? {
+            paymentInfo: {
+              bankName: form.bankName || undefined,
+              accountNumber: form.bankAccountNumber || undefined,
+              accountHolder: form.bankAccountHolder.trim() || undefined,
+            },
+          }
+        : {}),
     },
   }
 }

@@ -23,25 +23,59 @@
   color: var(--primary);
   flex-shrink: 0;
 }
-.changeShowBtn {
+.showBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* "Đổi suất diễn" switcher — a native select dressed as the reference button */
+.changeShowWrap {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   height: 40px;
-  padding: 0 1rem;
+  padding: 0 2.2rem 0 1rem;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: transparent;
   color: var(--foreground);
-  font-family: inherit;
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast);
 }
-.changeShowBtn:hover {
+.changeShowWrap:hover,
+.changeShowWrap:focus-within {
   border-color: var(--primary);
   color: var(--primary);
+}
+.changeShowLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.changeShowSelect {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.changeShowChevron {
+  position: absolute;
+  right: 0.75rem;
+  pointer-events: none;
 }
 
 /* Donut stat card (value + caption + amber percentage ring) */

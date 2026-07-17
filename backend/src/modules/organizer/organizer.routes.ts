@@ -27,10 +27,6 @@ router.delete('/events/:id/tickets/:ticketId', organizerController.deleteTicket)
 router.get('/events/:id/tickets/inventory', organizerController.getTicketInventory);
 router.patch('/events/:id/tickets/:ticketId/inventory', organizerController.adjustTicketInventory);
 
-// ─── Schedule management (EM-25) ──────────────────────────────────────
-router.get('/events/:id/shows', organizerController.listShows);
-router.put('/events/:id/shows', organizerController.configureShows); // bulk schedule (shows) configuration
-
 // ─── Permit submission (EM-28 / EM-136) ───────────────────────────────
 router.get('/events/:id/permits', organizerController.listPermits);
 router.put('/events/:id/permits', organizerController.configurePermits); // bulk permit-document submission
@@ -38,5 +34,28 @@ router.put('/events/:id/permits', organizerController.configurePermits); // bulk
 // ─── Deposit & settlement (quotation workflow) ────────────────────────
 router.post('/events/:id/pay-deposit', organizerController.payDeposit);
 router.post('/events/:id/pay-remaining', organizerController.payRemaining);
+
+// ─── Attendee tracker / orders ("Đơn hàng") ───────────────────────────
+router.get('/events/:id/registrations', organizerController.listEventRegistrations);
+
+// ─── Check-in attendance report (reads CheckIn written by staff flow) ──
+router.get('/events/:id/checkins', organizerController.getEventCheckIns);
+
+// ─── Members — staff assigned by ADMIN, organizer reads ───────────────
+router.get('/events/:id/members', organizerController.getEventMembers);
+
+// ─── Sales analytics (PAID registrations, no web tracking) ────────────
+router.get('/events/:id/analytics', organizerController.getEventAnalytics);
+
+// ─── Post-event withdrawal requests ───────────────────────────────────
+router.get('/events/:id/withdrawals', organizerController.getWithdrawalOverview);
+router.post('/events/:id/withdrawals', organizerController.createWithdrawal);
+
+// ─── Revenue reports ("Quản lý báo cáo") ──────────────────────────────
+router.get('/reports', organizerController.listMyReports);
+router.post('/reports', organizerController.generateReport);
+router.get('/reports/:id/export', organizerController.exportReport); // ?format=xlsx|pdf
+router.post('/reports/bulk-delete', organizerController.bulkDeleteReports); // body: { ids: string[] }
+router.delete('/reports/:id', organizerController.deleteReport);
 
 export default router;

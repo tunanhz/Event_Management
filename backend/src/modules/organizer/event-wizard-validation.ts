@@ -19,7 +19,13 @@ const PERMIT_URL_REGEX = /^\/uploads\/permits\/[A-Za-z0-9._-]+\.(pdf|docx|png)$/
 const SIGNATURE_URL_REGEX = /^\/uploads\/signatures\/[A-Za-z0-9._-]+\.png$/i;
 const LIMITS = { orgName: 80, orgInfo: 500, confirmationMessage: 500, contractRepName: 80 };
 
-export function validateTicketInput(ticket: CreateTicketInput): void {
+/**
+ * @param saleEndCap The show (or event, for the legacy flat payload) end
+ *   time this ticket sells into — selling must stop once that show/event is
+ *   over, so `saleEnd` may not land after it. Undefined when the caller has
+ *   no end time to check against yet.
+ */
+export function validateTicketInput(ticket: CreateTicketInput, saleEndCap?: Date): void {
   if (!ticket.ticketName) {
     throw new AppError('ticketName là bắt buộc cho mỗi loại vé', 400);
   }
@@ -37,11 +43,26 @@ export function validateTicketInput(ticket: CreateTicketInput): void {
   if (typeof maxPerOrder !== 'number' || maxPerOrder < minPerOrder) {
     throw new AppError('maxPerOrder của vé phải >= minPerOrder', 400);
   }
+  if (ticket.saleStart) {
+    const start = new Date(ticket.saleStart);
+    // A draft isn't public yet, so selling can only begin from now on — reject
+    // a sale window that starts in the past. (Only DRAFT/REJECTED events reach
+    // this validator, so a past saleStart is always stale, never live sales.)
+    if (!Number.isNaN(start.getTime()) && start.getTime() <= Date.now()) {
+      throw new AppError('Thời gian bắt đầu bán vé phải ở tương lai', 400);
+    }
+  }
   if (ticket.saleStart && ticket.saleEnd) {
     const start = new Date(ticket.saleStart);
     const end = new Date(ticket.saleEnd);
-    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end < start) {
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end <= start) {
       throw new AppError('saleEnd phải sau saleStart', 400);
+    }
+  }
+  if (ticket.saleEnd && saleEndCap && !Number.isNaN(saleEndCap.getTime())) {
+    const end = new Date(ticket.saleEnd);
+    if (!Number.isNaN(end.getTime()) && end.getTime() > saleEndCap.getTime()) {
+      throw new AppError('saleEnd không được sau thời điểm kết thúc sự kiện/suất diễn', 400);
     }
   }
   if (ticket.status && ticket.status !== 'ACTIVE' && ticket.status !== 'HIDDEN') {
@@ -77,9 +98,12 @@ export function validatePermitDocuments(docs: PermitDocumentInput[]): void {
 
 interface ShowTimes {
   _id?: string;
+  title?: string;
   startTime: Date;
   endTime: Date;
 }
+
+const SHOW_TITLE_MAX_LENGTH = 100;
 
 /** Parse + validate one show's time range (future start, end not before start). */
 function parseShowTimes(show: ShowInput, index: number): ShowTimes {
@@ -92,10 +116,17 @@ function parseShowTimes(show: ShowInput, index: number): ShowTimes {
   if (startTime.getTime() <= Date.now()) {
     throw new AppError(`Thời gian bắt đầu của ${label} phải ở tương lai`, 400);
   }
-  if (endTime.getTime() < startTime.getTime()) {
+  if (endTime.getTime() <= startTime.getTime()) {
     throw new AppError(`Thời gian kết thúc của ${label} phải sau thời gian bắt đầu`, 400);
   }
-  return { _id: show._id, startTime, endTime };
+  if (show.title !== undefined && typeof show.title !== 'string') {
+    throw new AppError(`title của ${label} phải là chuỗi`, 400);
+  }
+  const title = typeof show.title === 'string' ? show.title.trim() : undefined;
+  if (title && title.length > SHOW_TITLE_MAX_LENGTH) {
+    throw new AppError(`Tên của ${label} tối đa ${SHOW_TITLE_MAX_LENGTH} ký tự`, 400);
+  }
+  return { _id: show._id, title: title || undefined, startTime, endTime };
 }
 
 /** Validate show rows (used by update, where tickets ride separately) and
@@ -116,7 +147,7 @@ export function resolveShowTimes(shows: ShowInput[]): {
 
 export interface ResolvedCreateSchedule {
   /** Empty for the legacy flat payload (event carries no shows). */
-  shows: { startTime: Date; endTime: Date; tickets: CreateTicketInput[] }[];
+  shows: { title?: string; startTime: Date; endTime: Date; tickets: CreateTicketInput[] }[];
   /** Flat tier list for the legacy payload; empty when shows are used. */
   flatTickets: CreateTicketInput[];
   startDate: Date;
@@ -132,6 +163,7 @@ export function resolveCreateSchedule(input: CreateEventInput): ResolvedCreateSc
   if (Array.isArray(input.shows) && input.shows.length > 0) {
     const { rows, startDate, endDate } = resolveShowTimes(input.shows);
     const shows = rows.map((r, i) => ({
+      title: r.title,
       startTime: r.startTime,
       endTime: r.endTime,
       tickets: input.shows![i].tickets ?? [],
@@ -140,7 +172,7 @@ export function resolveCreateSchedule(input: CreateEventInput): ResolvedCreateSc
     if (allTickets.length === 0) {
       throw new AppError('Cần cấu hình ít nhất 1 loại vé', 400);
     }
-    allTickets.forEach(validateTicketInput);
+    shows.forEach((s) => s.tickets.forEach((t) => validateTicketInput(t, s.endTime)));
     return { shows, flatTickets: [], startDate, endDate };
   }
 
@@ -148,7 +180,6 @@ export function resolveCreateSchedule(input: CreateEventInput): ResolvedCreateSc
   if (!Array.isArray(input.tickets) || input.tickets.length === 0) {
     throw new AppError('Cần cấu hình ít nhất 1 loại vé', 400);
   }
-  input.tickets.forEach(validateTicketInput);
   const startDate = new Date(input.startDate as any);
   const endDate = new Date(input.endDate as any);
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
@@ -160,6 +191,7 @@ export function resolveCreateSchedule(input: CreateEventInput): ResolvedCreateSc
   if (endDate.getTime() < startDate.getTime()) {
     throw new AppError('Ngày kết thúc phải sau ngày bắt đầu', 400);
   }
+  input.tickets.forEach((t) => validateTicketInput(t, endDate));
   return { shows: [], flatTickets: input.tickets, startDate, endDate };
 }
 

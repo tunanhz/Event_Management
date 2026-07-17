@@ -29,6 +29,7 @@ export function EventWizard({
   initialForm,
   eventId: initialEventId,
   readOnly = false,
+  onSaved,
 }: {
   initialForm: CreateEventForm
   /** Existing event id (edit flow) — seeds saves to PUT (update) this event
@@ -37,6 +38,10 @@ export function EventWizard({
   /** View-only lock (PENDING_REVIEW): renders the filled form but disables every
    *  field and hides Save/Continue, so an in-review event can be reviewed not edited. */
   readOnly?: boolean
+  /** Called after a successful save (edit flow only — the create flow has no
+   *  shared workspace context to refresh). Lets sibling tabs (Lịch trình,
+   *  Tổng kết, …) pick up the change instead of serving stale first-load data. */
+  onSaved?: () => void
 }) {
   const [step, setStep] = useState<WizardStep>(1)
   const [form, setForm] = useState<CreateEventForm>(initialForm)
@@ -146,6 +151,7 @@ export function EventWizard({
         type: "ok",
         text: "Đã lưu nháp sự kiện thành công. Bạn có thể tiếp tục chỉnh sửa hoặc gửi duyệt từ trang quản lý.",
       })
+      onSaved?.()
     } catch (err) {
       setSaveMsg({
         type: "err",
