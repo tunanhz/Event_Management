@@ -11,7 +11,7 @@ import {
 } from "./organizer-event-detail-api"
 
 interface WorkspaceValue {
-  /** Display shape consumed by summary / seatmap / check-in / orders. */
+  /** Display shape consumed by summary / check-in / orders. */
   event: OrganizerEvent
   /** Raw detail (event + tickets) — used by the edit wizard to rebuild the form. */
   detail: ServerEventDetail

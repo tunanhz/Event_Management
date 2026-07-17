@@ -47,6 +47,9 @@ router.get('/events/:id/members', organizerController.getEventMembers);
 // ─── Sales analytics (PAID registrations, no web tracking) ────────────
 router.get('/events/:id/analytics', organizerController.getEventAnalytics);
 
+// ─── Summary sales chart — real PAID sales per day (30d) / hour (24h) ──
+router.get('/events/:id/sales-series', organizerController.getEventSalesSeries);
+
 // ─── Post-event withdrawal requests ───────────────────────────────────
 router.get('/events/:id/withdrawals', organizerController.getWithdrawalOverview);
 router.post('/events/:id/withdrawals', organizerController.createWithdrawal);

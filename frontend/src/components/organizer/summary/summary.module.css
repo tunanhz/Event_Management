@@ -30,36 +30,6 @@
   margin-bottom: 0.9rem;
 }
 
-/* Revenue / resale toggle */
-.tabs {
-  display: inline-flex;
-  gap: 0.5rem;
-  margin-bottom: 1.75rem;
-}
-.tab,
-.tabActive {
-  height: 40px;
-  padding: 0 1.1rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted-foreground);
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast),
-    border-color var(--transition-fast);
-}
-.tab:hover {
-  color: var(--foreground);
-}
-.tabActive {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-foreground);
-}
-
 .sectionLabel {
   font-size: 1.1rem;
   font-weight: 700;

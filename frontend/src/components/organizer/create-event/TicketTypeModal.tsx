@@ -9,10 +9,14 @@ import styles from "./ticket-type-modal.module.css"
 interface TicketTypeModalProps {
   /** Ticket to edit, or null to create a fresh one. */
   ticket: TicketType | null
-  /** End time of the show this tier sells into (datetime-local string) —
-   *  ticket sales can't outlive their suất diễn. */
+  /** For create mode: a previously-dismissed draft to resume from, so an
+   *  accidental close doesn't wipe what was already filled in. */
+  initialDraft?: TicketType | null
+  /** End of the show this tier sells into (datetime-local string) — sales can
+   *  run right up to it, but not past it. */
   showEndTime: string
-  onClose: () => void
+  /** Called on any dismissal with the current draft, so the parent can keep it. */
+  onClose: (draft: TicketType) => void
   onSave: (ticket: TicketType) => void
 }
 
@@ -23,14 +27,20 @@ type Errors = Partial<Record<keyof TicketType, string>>
  * price/free, quantity, per-order limits, sale window, description, artwork)
  * and validates the numeric + date constraints on submit.
  */
-export function TicketTypeModal({ ticket, showEndTime, onClose, onSave }: TicketTypeModalProps) {
-  const [draft, setDraft] = useState<TicketType>(() => ticket ?? createEmptyTicket())
+export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, onSave }: TicketTypeModalProps) {
+  const [draft, setDraft] = useState<TicketType>(() => ticket ?? initialDraft ?? createEmptyTicket())
   const [errors, setErrors] = useState<Errors>({})
   const nameRef = useRef<HTMLInputElement>(null)
+  // Keep the latest draft reachable from the keydown listener without
+  // re-binding it on every keystroke.
+  const draftRef = useRef(draft)
+  useEffect(() => {
+    draftRef.current = draft
+  }, [draft])
 
   useEffect(() => {
     nameRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose(draftRef.current)
     document.addEventListener("keydown", onKey)
     return () => document.removeEventListener("keydown", onKey)
   }, [onClose])
@@ -52,9 +62,9 @@ export function TicketTypeModal({ ticket, showEndTime, onClose, onSave }: Ticket
     else if (new Date(draft.saleStart).getTime() <= Date.now())
       e.saleStart = "Thời gian bắt đầu bán vé phải ở tương lai"
     if (!draft.saleEnd) e.saleEnd = "Chọn thời gian kết thúc"
-    if (draft.saleStart && draft.saleEnd && draft.saleEnd <= draft.saleStart)
+    else if (draft.saleStart && draft.saleEnd <= draft.saleStart)
       e.saleEnd = "Phải sau thời gian bắt đầu bán"
-    if (!e.saleEnd && draft.saleEnd && showEndTime && draft.saleEnd > showEndTime)
+    else if (showEndTime && draft.saleEnd > showEndTime)
       e.saleEnd = "Không được sau thời gian kết thúc suất diễn"
     return e
   }
@@ -74,13 +84,13 @@ export function TicketTypeModal({ ticket, showEndTime, onClose, onSave }: Ticket
   }
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="ticket-modal-title" onClick={onClose}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="ticket-modal-title" onClick={() => onClose(draft)}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h2 id="ticket-modal-title" className={styles.title}>
             {ticket ? "Chỉnh sửa loại vé" : "Tạo loại vé mới"}
           </h2>
-          <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Đóng">
+          <button type="button" className={styles.closeBtn} onClick={() => onClose(draft)} aria-label="Đóng">
             <X size={22} />
           </button>
         </div>

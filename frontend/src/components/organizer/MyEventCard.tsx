@@ -7,7 +7,6 @@ import {
   PieChart,
   Users,
   Receipt,
-  Armchair,
   Pencil,
   Send,
   Loader2,
@@ -26,7 +25,6 @@ const ACTIONS = [
   { key: "summary", label: "Tổng quan", Icon: PieChart, href: (id: string) => `/organizer/events/${id}/summary` },
   { key: "members", label: "Thành viên", Icon: Users, href: (id: string) => `/organizer/events/${id}/members` },
   { key: "orders", label: "Đơn hàng", Icon: Receipt, href: (id: string) => `/organizer/events/${id}/orders` },
-  { key: "seatmap", label: "Sơ đồ ghế", Icon: Armchair, href: (id: string) => `/organizer/events/${id}/seatmap` },
   { key: "edit", label: "Chỉnh sửa", Icon: Pencil, href: (id: string) => `/organizer/events/${id}/edit` },
 ] as const
 

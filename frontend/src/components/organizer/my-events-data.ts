@@ -165,48 +165,12 @@ export function summarizeEvent(event: OrganizerEvent): EventSummary {
   }
 }
 
+/** One point on the summary sales chart. Real data comes from the backend
+ *  (`fetchEventSalesSeries`); this type is the shape {@link SummaryChart} renders. */
 export interface SummaryPoint {
   label: string
   revenue: number
   tickets: number
-}
-
-/**
- * Deterministic revenue / ticket time series for the summary chart. Sold totals
- * are spread across the period with a ramp weighting (all zeros when nothing is
- * sold, e.g. a pending event) — no Math.random / Date, so SSR and CSR match.
- */
-export function buildSummarySeries(
-  event: OrganizerEvent,
-  range: "24h" | "30d"
-): SummaryPoint[] {
-  const { soldTickets, soldRevenue } = summarizeEvent(event)
-  const n = range === "24h" ? 24 : 30
-  const labels =
-    range === "24h"
-      ? Array.from({ length: n }, (_, i) => `${i}:00`)
-      : Array.from({ length: n }, (_, i) => `${i + 1}/6`)
-
-  const weights = Array.from({ length: n }, (_, i) => i + 1)
-  const wsum = weights.reduce((a, b) => a + b, 0)
-
-  let accTickets = 0
-  let accRevenue = 0
-  return labels.map((label, i) => {
-    let tickets: number
-    let revenue: number
-    if (i === n - 1) {
-      // Last point absorbs rounding remainder so totals stay exact.
-      tickets = soldTickets - accTickets
-      revenue = soldRevenue - accRevenue
-    } else {
-      tickets = Math.round((soldTickets * weights[i]) / wsum)
-      revenue = Math.round((soldRevenue * weights[i]) / wsum)
-      accTickets += tickets
-      accRevenue += revenue
-    }
-    return { label, revenue: Math.max(0, revenue), tickets: Math.max(0, tickets) }
-  })
 }
 
 /** Full VND amount with Vietnamese grouping, e.g. 1011111100 → "1.011.111.100đ". */

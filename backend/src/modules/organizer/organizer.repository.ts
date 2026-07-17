@@ -371,6 +371,42 @@ export class OrganizerRepository {
     return rows.map((r) => ({ date: r._id as string, revenue: r.revenue, tickets: r.tickets }));
   }
 
+  /**
+   * PAID revenue + tickets per GMT+7 time bucket since `from`. `granularity`
+   * controls the bucket key: 'day' → '%Y-%m-%d', 'hour' → '%Y-%m-%dT%H'.
+   * Only buckets that actually have sales are returned; the caller zero-fills
+   * the rest. Powers the summary chart's 30-day / 24-hour windows.
+   */
+  async paidSalesSeries(
+    eventId: string,
+    ticketIds: string[] | undefined,
+    from: Date,
+    granularity: 'day' | 'hour'
+  ): Promise<{ bucket: string; revenue: number; tickets: number }[]> {
+    const match: Record<string, any> = {
+      eventId: new mongoose.Types.ObjectId(eventId),
+      status: 'PAID',
+      registerDate: { $gte: from },
+    };
+    if (ticketIds) {
+      match.ticketId = { $in: ticketIds.map((id) => new mongoose.Types.ObjectId(id)) };
+    }
+    const format = granularity === 'hour' ? '%Y-%m-%dT%H' : '%Y-%m-%d';
+    const rows = await Registration.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format, date: '$registerDate', timezone: 'Asia/Ho_Chi_Minh' },
+          },
+          revenue: { $sum: '$totalAmount' },
+          tickets: { $sum: '$quantity' },
+        },
+      },
+    ]);
+    return rows.map((r) => ({ bucket: r._id as string, revenue: r.revenue, tickets: r.tickets }));
+  }
+
   /** PAID revenue + ticket quantity per ticket type. */
   async paidStatsByTicket(
     eventId: string,

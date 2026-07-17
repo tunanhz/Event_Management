@@ -35,17 +35,46 @@ export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
   const [modal, setModal] = useState<ModalState>(null)
   // "all" shows everything; otherwise a single show id.
   const [filter, setFilter] = useState<string>("all")
+  // In-progress "Tạo loại vé mới" drafts kept per show, so dismissing the
+  // create modal (e.g. an accidental click on the backdrop) and reopening it
+  // restores what the organizer already filled in. Cleared once saved.
+  const [newTicketDrafts, setNewTicketDrafts] = useState<Record<string, TicketType>>({})
 
   const setShows = (shows: EventShow[]) => update({ shows })
 
   const patchShow = (showId: string, patch: Partial<EventShow>) =>
     setShows(form.shows.map((s) => (s.id === showId ? { ...s, ...patch } : s)))
 
-  const addShow = () => setShows([...form.shows, createEmptyShow()])
+  const addShow = () => {
+    const next = createEmptyShow()
+    // Suggest the slot right after the last show ends, so suất diễn stay
+    // sequential by default (organizer can still adjust it).
+    const last = form.shows[form.shows.length - 1]
+    if (last?.endTime) next.startTime = last.endTime
+    setShows([...form.shows, next])
+  }
+
+  const dropDraft = (showId: string) =>
+    setNewTicketDrafts((m) => {
+      if (!(showId in m)) return m
+      const next = { ...m }
+      delete next[showId]
+      return next
+    })
 
   const deleteShow = (showId: string) => {
     setShows(form.shows.filter((s) => s.id !== showId))
     if (filter === showId) setFilter("all")
+    dropDraft(showId)
+  }
+
+  // Dismissing the modal without saving. Preserve an unsaved *new* ticket so
+  // reopening restores it; edits to an existing ticket are discarded on close.
+  const closeModal = (draft: TicketType) => {
+    if (modal && modal.ticket === null) {
+      setNewTicketDrafts((m) => ({ ...m, [modal.showId]: draft }))
+    }
+    setModal(null)
   }
 
   const saveTicket = (ticket: TicketType) => {
@@ -57,6 +86,8 @@ export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
       ? show.tickets.map((t) => (t.id === ticket.id ? ticket : t))
       : [...show.tickets, ticket]
     patchShow(modal.showId, { tickets })
+    // Committed now — drop the create-draft so the next "Tạo loại vé mới" is blank.
+    if (modal.ticket === null) dropDraft(modal.showId)
     setModal(null)
   }
 
@@ -125,8 +156,9 @@ export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
       {modal && (
         <TicketTypeModal
           ticket={modal.ticket}
+          initialDraft={modal.ticket === null ? newTicketDrafts[modal.showId] ?? null : null}
           showEndTime={modalShow?.endTime ?? ""}
-          onClose={() => setModal(null)}
+          onClose={closeModal}
           onSave={saveTicket}
         />
       )}
