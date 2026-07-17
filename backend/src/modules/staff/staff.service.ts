@@ -1,13 +1,12 @@
 import mongoose from 'mongoose';
 import { StaffRepository } from './staff.repository';
-import { IStaffAssignment, AssignmentStatus } from './assignment.model';
+import { IStaffAssignment } from './assignment.model';
 import { ICheckInLog } from './checkin-log.model';
 import { IIncidentReport, IncidentStatus } from './incident.model';
 import { IRegistration } from '../registration/registration.model';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
 import { CheckInStats } from './staff.repository';
-import { ITicket } from '../organizer/ticket.model';
 
 // ─── Input types ─────────────────────────────────────────────────────────────
 
@@ -271,74 +270,6 @@ export class StaffService {
     });
 
     return updated;
-  }
-
-  // ── Offline Sales ─────────────────────────────────────────────────────────────
-
-  async getEventTickets(eventId: string): Promise<ITicket[]> {
-    this.assertValidObjectId(eventId, 'eventId');
-    return this.staffRepository.getEventTickets(eventId);
-  }
-
-  async sellOfflineTicket(input: {
-    eventId: string;
-    ticketId: string;
-    staffId: string;
-    quantity: number;
-    participantInfo: { fullName: string; email: string; phone?: string };
-  }): Promise<{ ticketCode: string; registrationId: string }> {
-    this.assertValidObjectIds(input.eventId, input.ticketId, input.staffId);
-    if (input.quantity <= 0) throw new AppError('Số lượng phải lớn hơn 0', 400);
-    this.requireString(input.participantInfo.fullName, 'Họ tên khách hàng');
-    this.requireString(input.participantInfo.email, 'Email khách hàng');
-
-    // 1. Get ticket
-    const ticket = await this.staffRepository.findTicketById(input.ticketId);
-    if (!ticket) throw new AppError('Loại vé không tồn tại', 404);
-    if (ticket.eventId.toString() !== input.eventId) {
-      throw new AppError('Vé không thuộc sự kiện này', 400);
-    }
-    if (ticket.status !== 'ACTIVE') {
-      throw new AppError('Vé hiện không được bán', 400);
-    }
-    if (ticket.soldQuantity + input.quantity > ticket.quantity) {
-      throw new AppError('Số lượng vé còn lại không đủ', 400);
-    }
-
-    // 2. Find or create user
-    let user = await this.staffRepository.findUserByEmail(input.participantInfo.email);
-    if (!user) {
-      user = await this.staffRepository.createUser({
-        fullName: input.participantInfo.fullName,
-        email: input.participantInfo.email,
-        phone: input.participantInfo.phone,
-      });
-    }
-
-    // 3. Generate ticketCode (e.g. OFF-123456)
-    const ticketCode = `OFF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-    // 4. Sell ticket (Transaction)
-    try {
-      const reg = await this.staffRepository.sellOfflineTicket({
-        eventId: input.eventId,
-        ticketId: input.ticketId,
-        participantId: (user._id as mongoose.Types.ObjectId).toString(),
-        quantity: input.quantity,
-        unitPrice: ticket.price,
-        ticketCode,
-      });
-
-      return {
-        ticketCode: reg.ticketCode!,
-        registrationId: (reg._id as mongoose.Types.ObjectId).toString(),
-      };
-    } catch (err: any) {
-      if (err.message.includes('không đủ số lượng')) {
-        throw new AppError('Vé đã bán hết hoặc không đủ số lượng', 400);
-      }
-      throw err;
-    }
   }
 
   // ── Incidents ─────────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   CalendarClock, MapPin, Clock, DoorOpen, BadgeCheck, ScanLine,
-  Users, History, CheckCheck, Loader2, AlertCircle, CreditCard
+  Users, History, CheckCheck, Loader2, AlertCircle
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
@@ -112,7 +112,21 @@ export function StaffAssignedEventsView() {
             const event = typeof assignment.eventId === "object" ? assignment.eventId : null
             const eventId = event?._id ?? (assignment.eventId as string)
             const base = `/staff/check-in/${eventId}`
-            const isConfirmed = assignment.status !== "assigned"
+            const isAwaitingConfirmation = assignment.status === "assigned"
+            const statusLabel = assignment.status === "assigned"
+              ? "Chờ xác nhận"
+              : assignment.status === "confirmed"
+                ? "Đã xác nhận"
+                : assignment.status === "completed"
+                  ? "Đã hoàn thành"
+                  : "Đã hủy"
+            const statusVariant = assignment.status === "assigned"
+              ? "warning"
+              : assignment.status === "cancelled"
+                ? "destructive"
+                : assignment.status === "confirmed"
+                  ? "success"
+                  : "secondary"
 
             return (
               <article
@@ -125,8 +139,8 @@ export function StaffAssignedEventsView() {
                       <h2 className="text-lg font-bold text-foreground">
                         {event?.title ?? "Sự kiện"}
                       </h2>
-                      <Badge variant={isConfirmed ? "success" : "warning"}>
-                        {isConfirmed ? "Đã xác nhận" : "Chờ xác nhận"}
+                      <Badge variant={statusVariant}>
+                        {statusLabel}
                       </Badge>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -185,13 +199,7 @@ export function StaffAssignedEventsView() {
                       Lịch sử
                     </Link>
                   </Button>
-                  <Button asChild variant="outline" className="h-11 gap-2 rounded-xl px-4 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
-                    <Link href={`${base}/offline-sale`}>
-                      <CreditCard size={16} aria-hidden="true" />
-                      Bán vé
-                    </Link>
-                  </Button>
-                  {!isConfirmed && (
+                  {isAwaitingConfirmation && (
                     <Button
                       variant="outline"
                       className="h-11 gap-2 rounded-xl border-emerald-500/40 px-4 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-500/10 dark:text-emerald-400"

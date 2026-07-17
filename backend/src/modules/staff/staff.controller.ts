@@ -112,35 +112,6 @@ export class StaffController {
     res.json(ApiResponse.ok(updated, 'Check-in thủ công thành công'));
   });
 
-  // ── Offline Sales ──────────────────────────────────────────────────────────────
-
-  /** GET /api/staff/events/:eventId/tickets — Danh sách vé đang mở bán của sự kiện */
-  getEventTickets = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const tickets = await this.staffService.getEventTickets(req.params.eventId as string);
-    res.json(ApiResponse.ok(tickets, 'Lấy danh sách vé thành công'));
-  });
-
-  /** POST /api/staff/events/:eventId/offline-sale — Bán vé offline tại quầy */
-  sellOfflineTicket = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const staffId = req.user!.id;
-    const eventId = req.params.eventId as string;
-    const { ticketId, quantity, participantInfo } = req.body;
-
-    if (!ticketId || !quantity || !participantInfo) {
-      res.status(400).json(ApiResponse.error('Thiếu thông tin bắt buộc (ticketId, quantity, participantInfo)'));
-      return;
-    }
-
-    const result = await this.staffService.sellOfflineTicket({
-      eventId,
-      ticketId,
-      staffId,
-      quantity,
-      participantInfo,
-    });
-    res.status(201).json(ApiResponse.created(result, 'Bán vé offline thành công'));
-  });
-
   // ── Incidents ────────────────────────────────────────────────────────────────
 
   /** POST /api/staff/incidents — Staff tạo báo cáo sự cố */

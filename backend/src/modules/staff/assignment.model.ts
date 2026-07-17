@@ -9,7 +9,7 @@ export interface IStaffAssignment extends Document {
   gate: string;
   /** Khung giờ làm việc: "08:00 - 12:00" */
   shift: string;
-  /** Nhiệm vụ chính: "Soát vé", "Bán vé offline", "Hỗ trợ khách" */
+  /** Nhiệm vụ chính: "Soát vé", "Hỗ trợ khách", "Điều phối cổng" */
   responsibility: string;
   status: AssignmentStatus;
   note?: string;

@@ -48,7 +48,6 @@ Tài liệu này định nghĩa chi tiết luồng nghiệp vụ, danh sách cá
     *   **Xem sự kiện được giao (Assigned Events):** Xem danh sách chi tiết các sự kiện mà mình được phân công hỗ trợ.
     *   **Xem lịch làm việc (Work Schedule):** Theo dõi lịch phân ca, ca làm việc cụ thể tương ứng với các sự kiện được chỉ định.
     *   **Kiểm tra vé tại sự kiện (Attendee Check-in):** Quét mã QR code/mã vé của người tham gia khi họ đến cửa sự kiện và cập nhật trạng thái check-in thời gian thực lên hệ thống.
-    *   **Bán vé offline tại sự kiện (Offline Ticket Sales):** Hỗ trợ bán vé trực tiếp tại quầy của sự kiện cho khách hàng vãng lai chưa mua vé trước. Cập nhật dữ liệu bán vé offline về hệ thống.
     *   **Báo cáo vấn đề sự kiện (Issue Management):** Gửi báo cáo, cảnh báo sự cố hoặc vấn đề phát sinh tại sự kiện về cho Admin/Ban quản lý để kịp thời xử lý.
 
 ### 2.3. ORGANIZER (Nhà Tổ chức Sự kiện)

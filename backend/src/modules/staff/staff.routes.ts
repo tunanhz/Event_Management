@@ -60,20 +60,6 @@ router.post(
   staffController.manualCheckIn
 );
 
-/** Danh sách vé mở bán của sự kiện (để bán offline) */
-router.get(
-  '/events/:eventId/tickets',
-  authorize('STAFF', 'ADMIN') as any,
-  staffController.getEventTickets
-);
-
-/** Bán vé offline tại quầy */
-router.post(
-  '/events/:eventId/offline-sale',
-  authorize('STAFF', 'ADMIN') as any,
-  staffController.sellOfflineTicket
-);
-
 /** Tạo báo cáo sự cố */
 router.post(
   '/incidents',

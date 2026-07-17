@@ -76,7 +76,7 @@ SRS định nghĩa 6 actor; ánh xạ sang 4 `role` trong code (`Guest`/`User` l
 **Hệ thống ngoài** (context diagram): **Google Services** (SSO cho Guest/User) và **VNPAY**
 (payment request/status). Luồng dữ liệu chính: Organizer ↔ hệ thống (event data, ticket config,
 contract, withdrawal, permit) · Participant ↔ hệ thống (event data, payment) · Staff ↔ hệ thống
-(assignment, check-in data, issue, offline ticket sale) · Admin ↔ hệ thống (governance: account,
+(assignment, check-in data, issue) · Admin ↔ hệ thống (governance: account,
 event, ticket, marketing, contract, payment, reporting).
 
 > Quy tắc tài khoản (đã hiện thực — verified `user.service.ts`): chỉ tạo `ADMIN` đầu tiên qua
