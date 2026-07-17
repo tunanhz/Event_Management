@@ -51,7 +51,6 @@ registrationSchema.index({ participantId: 1, createdAt: -1 });
 registrationSchema.index({ eventId: 1 });
 registrationSchema.index({ ticketId: 1 });
 registrationSchema.index({ status: 1, holdExpiresAt: 1 });
-registrationSchema.index({ ticketCode: 1 }, { sparse: true });
 registrationSchema.index({ eventId: 1, checkedIn: 1 });
 
 export const Registration = mongoose.model<IRegistration>('Registration', registrationSchema);

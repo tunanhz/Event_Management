@@ -189,6 +189,11 @@ export class StaffService {
       return { result: 'invalid', message: 'Mã vé không hợp lệ hoặc không tồn tại' };
     }
 
+    const participant = regAny.participantId as unknown as { fullName?: string };
+    const ticket = regAny.ticketId as unknown as { ticketName?: string };
+    const attendeeName = participant.fullName ?? 'Người tham dự';
+    const ticketName = ticket.ticketName ?? 'Vé sự kiện';
+
     if (regAny.eventId.toString() !== eventId) {
       // Vé thuộc sự kiện khác
       await this.staffRepository.createCheckInLog({
@@ -226,6 +231,8 @@ export class StaffService {
       return {
         result: 'duplicate',
         message: 'Vé này đã được check-in trước đó',
+        attendeeName,
+        ticketName,
         previousCheckedInAt: regAny.checkedInAt,
       };
     }
@@ -244,6 +251,8 @@ export class StaffService {
       return {
         result: 'duplicate',
         message: 'Vé này vừa được check-in bởi trạm khác',
+        attendeeName,
+        ticketName,
       };
     }
 
@@ -256,6 +265,8 @@ export class StaffService {
     return {
       result: 'success',
       message: 'Check-in thành công!',
+      attendeeName,
+      ticketName,
       checkedInAt: updated.checkedInAt,
     };
   }

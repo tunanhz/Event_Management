@@ -151,7 +151,10 @@ export class StaffRepository {
   ): Promise<IRegistration | null> {
     return Registration.findOne({
       ticketCode: ticketCode.trim().toUpperCase(),
-    }).lean();
+    })
+      .populate('participantId', 'fullName email')
+      .populate('ticketId', 'ticketName price')
+      .lean();
   }
 
   /** Mark registration as checked-in atomically; returns null if already checked. */

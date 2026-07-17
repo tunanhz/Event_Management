@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import type { IScannerControls } from "@zxing/browser"
 import { CameraOff, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 
@@ -28,38 +29,70 @@ interface CameraQrScannerProps {
 export function CameraQrScanner({ onScan }: CameraQrScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const controlsRef = useRef<IScannerControls | null>(null)
+  const onScanRef = useRef(onScan)
   const lastScanRef = useRef<{ code: string; at: number }>({ code: "", at: 0 })
   const [state, setState] = useState<CameraState>("starting")
 
+  useEffect(() => {
+    onScanRef.current = onScan
+  }, [onScan])
+
+  const emitScan = useCallback((rawValue: string) => {
+    const raw = rawValue.trim()
+    if (!raw) return
+    const now = Date.now()
+    if (lastScanRef.current.code === raw && now - lastScanRef.current.at < 3000) return
+    lastScanRef.current = { code: raw, at: now }
+    onScanRef.current(raw)
+  }, [])
+
   const stopCamera = useCallback(() => {
+    controlsRef.current?.stop()
+    controlsRef.current = null
     streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
   }, [])
 
   const startCamera = useCallback(async () => {
-    const Detector = (globalThis as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector
-    if (!navigator.mediaDevices?.getUserMedia || !Detector) {
+    if (!navigator.mediaDevices?.getUserMedia) {
       setState("unsupported")
       return
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      })
+      stopCamera()
       const video = videoRef.current
-      if (!video) {
-        stream.getTracks().forEach((track) => track.stop())
-        return
+      if (!video) return
+
+      const Detector = (globalThis as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector
+      if (Detector) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        })
+        streamRef.current = stream
+        video.srcObject = stream
+        await video.play()
+      } else {
+        const { BrowserQRCodeReader } = await import("@zxing/browser")
+        const reader = new BrowserQRCodeReader(undefined, {
+          delayBetweenScanAttempts: 250,
+          delayBetweenScanSuccess: 1000,
+        })
+        controlsRef.current = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: "environment" } }, audio: false },
+          video,
+          (result) => {
+            if (result) emitScan(result.getText())
+          }
+        )
       }
-      streamRef.current = stream
-      video.srcObject = stream
-      await video.play()
       setState("active")
     } catch (err) {
-      setState(err instanceof DOMException && err.name === "NotAllowedError" ? "denied" : "error")
+      const errorName = err instanceof DOMException ? err.name : (err as { name?: string })?.name
+      setState(errorName === "NotAllowedError" ? "denied" : "error")
     }
-  }, [])
+  }, [emitScan, stopCamera])
 
   // Open the camera on mount, release it on unmount / mode switch. The sync
   // "unsupported" state set is intentional one-shot init: camera capability is
@@ -82,25 +115,20 @@ export function CameraQrScanner({ onScan }: CameraQrScannerProps) {
       if (!video || video.readyState < 2) return
       try {
         const codes = await detector.detect(video)
-        const raw = codes[0]?.rawValue?.trim()
-        if (!raw) return
-        // Throttle: the same QR held in front of the lens fires only once per 3s.
-        const now = Date.now()
-        if (lastScanRef.current.code === raw && now - lastScanRef.current.at < 3000) return
-        lastScanRef.current = { code: raw, at: now }
-        onScan(raw)
+        const raw = codes[0]?.rawValue
+        if (raw) emitScan(raw)
       } catch {
         // Transient decode errors (frame not ready) — ignore and retry.
       }
     }, 400)
 
     return () => window.clearInterval(intervalId)
-  }, [state, onScan])
+  }, [emitScan, state])
 
   if (state === "unsupported" || state === "denied" || state === "error") {
     const message =
       state === "unsupported"
-        ? "Trình duyệt này chưa hỗ trợ quét QR bằng camera. Hãy dùng chế độ nhập mã, hoặc mở bằng Chrome/Edge trên điện thoại."
+        ? "Không truy cập được camera. Hãy mở trang bằng HTTPS hoặc localhost trên thiết bị có camera."
         : state === "denied"
           ? "Bạn đã từ chối quyền camera. Cấp lại quyền trong cài đặt trình duyệt rồi thử lại."
           : "Không mở được camera. Kiểm tra thiết bị có camera sau hoạt động rồi thử lại."
