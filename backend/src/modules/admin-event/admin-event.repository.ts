@@ -16,35 +16,6 @@ export interface AdminEventQuery extends PaginationQuery {
   search?: string;
 }
 
-export interface EventStatusTrackingItem {
-  _id: string;
-  title: string;
-  organizer?: string;
-  reviewStatus: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
-  status: 'draft' | 'published' | 'cancelled' | 'completed';
-  updatedAt: Date;
-  createdAt: Date;
-  reviewedAt?: Date;
-  rejectionReason?: string;
-  categoryId?: { _id: string; name?: string; slug?: string } | string;
-  creatorId?: { _id: string; fullName?: string; email?: string } | string;
-}
-
-export interface EventStatusTrackingSummary {
-  total: number;
-  draft: number;
-  pendingReview: number;
-  published: number;
-  rejected: number;
-  cancelled: number;
-  completed: number;
-}
-
-export interface EventStatusTrackingResult {
-  summary: EventStatusTrackingSummary;
-  events: EventStatusTrackingItem[];
-}
-
 /** Escape user input before embedding it in a RegExp (title search). */
 function escapeRegExp(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -117,46 +88,6 @@ export class AdminEventRepository {
     ]);
 
     return Event.findByIdAndDelete(eventId).lean();
-  }
-
-  async getStatusTracking(search?: string): Promise<EventStatusTrackingResult> {
-    const filter: Record<string, any> = {};
-    if (search) filter.title = { $regex: escapeRegExp(search), $options: 'i' };
-
-    const [events, totalItems, reviewStatusCounts, lifecycleStatusCounts] = await Promise.all([
-      Event.find(filter)
-        .select('title organizer reviewStatus status categoryId creatorId updatedAt createdAt reviewedAt rejectionReason')
-        .populate('categoryId', 'name slug')
-        .populate('creatorId', 'fullName email')
-        .sort({ updatedAt: -1 })
-        .limit(50)
-        .lean(),
-      Event.countDocuments(filter),
-      Event.aggregate<{ _id: string; count: number }>([
-        { $match: filter },
-        { $group: { _id: '$reviewStatus', count: { $sum: 1 } } },
-      ]),
-      Event.aggregate<{ _id: string; count: number }>([
-        { $match: filter },
-        { $group: { _id: '$status', count: { $sum: 1 } } },
-      ]),
-    ]);
-
-    const reviewCounts = Object.fromEntries(reviewStatusCounts.map((row) => [row._id, row.count]));
-    const lifecycleCounts = Object.fromEntries(lifecycleStatusCounts.map((row) => [row._id, row.count]));
-
-    return {
-      summary: {
-        total: totalItems,
-        draft: reviewCounts.DRAFT ?? 0,
-        pendingReview: reviewCounts.PENDING_REVIEW ?? 0,
-        published: reviewCounts.PUBLISHED ?? 0,
-        rejected: reviewCounts.REJECTED ?? 0,
-        cancelled: lifecycleCounts.cancelled ?? 0,
-        completed: lifecycleCounts.completed ?? 0,
-      },
-      events: events as unknown as EventStatusTrackingItem[],
-    };
   }
 
   /**

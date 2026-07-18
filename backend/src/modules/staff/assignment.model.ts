@@ -30,7 +30,7 @@ const assignmentSchema = new Schema<IStaffAssignment>(
       enum: ['assigned', 'confirmed', 'completed', 'cancelled', 'expired'],
       default: 'assigned',
     },
-    note: { type: String, trim: true },
+    note: { type: String, trim: true, maxlength: 500 },
     confirmedAt: { type: Date },
   },
   { timestamps: true }

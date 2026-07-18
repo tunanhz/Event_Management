@@ -1,6 +1,11 @@
 import { clientApi } from "@/lib/client-api"
 
-export type ReviewStatus = "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED"
+export type ReviewStatus =
+  | "DRAFT"
+  | "PENDING_REVIEW"
+  | "APPROVED_WAITING_DEPOSIT"
+  | "PUBLISHED"
+  | "REJECTED"
 export type LifecycleStatus = "draft" | "published" | "cancelled" | "completed"
 
 export interface PopulatedRef {
@@ -81,19 +86,6 @@ export async function fetchAdminEvents(params: AdminEventListParams) {
     events: res.data ?? [],
     meta: res.meta ?? { currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: params.limit ?? 10 },
   }
-}
-
-export async function updateAdminEvent(id: string, payload: Partial<AdminEvent>) {
-  const res = await clientApi.put<ApiEnvelope<AdminEvent>>(`/admin/events/${id}`, payload)
-  return res.data
-}
-
-export async function forceAdminEventStatus(
-  id: string,
-  payload: { status?: LifecycleStatus; reviewStatus?: ReviewStatus; rejectionReason?: string }
-) {
-  const res = await clientApi.patch<ApiEnvelope<AdminEvent>>(`/admin/events/${id}/status`, payload)
-  return res.data
 }
 
 export async function cancelAdminEvent(id: string, reason?: string) {

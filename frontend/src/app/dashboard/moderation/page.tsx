@@ -13,20 +13,20 @@ import {
 } from "@/components/moderation/moderation-api"
 import type { ModerationEvent, ModerationStatus } from "@/types"
 
-const TABS: { id: ModerationStatus; label: string }[] = [
+type ReviewQueueTab = Extract<ModerationStatus, "pending" | "waiting_deposit">
+
+const TABS: { id: ReviewQueueTab; label: string }[] = [
   { id: "pending", label: "Chờ duyệt" },
   { id: "waiting_deposit", label: "Chờ cọc" },
-  { id: "approved", label: "Đã duyệt" },
-  { id: "rejected", label: "Từ chối" },
 ]
 
-type Buckets = Record<ModerationStatus, ModerationEvent[]>
-const EMPTY: Buckets = { pending: [], approved: [], rejected: [], waiting_deposit: [] }
+type Buckets = Record<ReviewQueueTab, ModerationEvent[]>
+const EMPTY: Buckets = { pending: [], waiting_deposit: [] }
 
 /** Admin moderation queue — wired to /api/admin/events. */
 export default function ModerationPage() {
   const [data, setData] = useState<Buckets>(EMPTY)
-  const [tab, setTab] = useState<ModerationStatus>("pending")
+  const [tab, setTab] = useState<ReviewQueueTab>("pending")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -36,13 +36,11 @@ export default function ModerationPage() {
     setLoading(true)
     setError(null)
     try {
-      const [pending, approved, rejected, waiting_deposit] = await Promise.all([
+      const [pending, waiting_deposit] = await Promise.all([
         fetchModerationQueue("pending"),
-        fetchModerationQueue("approved"),
-        fetchModerationQueue("rejected"),
         fetchModerationQueue("waiting_deposit"),
       ])
-      setData({ pending, approved, rejected, waiting_deposit })
+      setData({ pending, waiting_deposit })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được danh sách kiểm duyệt")
     } finally {
@@ -81,7 +79,7 @@ export default function ModerationPage() {
     }
   }
 
-  const count = (s: ModerationStatus) => data[s].length
+  const count = (status: ReviewQueueTab) => data[status].length
   const rows = data[tab]
 
   return (

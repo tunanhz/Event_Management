@@ -106,9 +106,10 @@ async function run(): Promise<void> {
     { eventId: event._id, staffId: staff._id },
     {
       $set: {
-        gate: 'Cổng Demo',
+        gate: 'Không phân cổng',
         shift: `${startDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
-        responsibility: 'Soát vé cổng demo',
+        responsibility: 'Theo phân công',
+        note: 'Quét mã và hỗ trợ check-in khách tham dự',
         status: 'confirmed',
         confirmedAt: new Date(),
       },

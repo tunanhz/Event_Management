@@ -1,14 +1,14 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CalendarDays, Search, UserCheck, Users, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/Button"
 import { clientApi } from "@/lib/client-api"
 import {
   fetchEventAssignments,
   createAssignment,
+  updateAssignmentNote,
   deleteAssignment,
   type StaffAssignment,
 } from "@/lib/staff-api"
@@ -32,13 +32,6 @@ interface ApiEnvelope<T> {
   meta?: { currentPage: number; totalPages: number; totalItems: number; itemsPerPage: number }
 }
 
-const ROLES_IN_EVENT = [
-  "Soát vé cổng chính",
-  "Soát vé cổng phụ",
-  "Hỗ trợ khán giả",
-  "Điều phối khu vực",
-]
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function StaffAssignmentView() {
@@ -57,6 +50,8 @@ export function StaffAssignmentView() {
 
   // State: in-progress ops (staffId → loading)
   const [toggling, setToggling] = useState<Record<string, boolean>>({})
+  const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({})
+  const savedNotesRef = useRef<Record<string, string>>({})
 
   // State: search + feedback
   const [query, setQuery] = useState("")
@@ -92,6 +87,9 @@ export function StaffAssignmentView() {
     try {
       const data = await fetchEventAssignments(eventId)
       setAssignments(data)
+      savedNotesRef.current = Object.fromEntries(
+        data.map((assignment) => [assignment._id, assignment.note ?? ""])
+      )
     } catch {
       setAssignments([])
     } finally {
@@ -134,16 +132,16 @@ export function StaffAssignmentView() {
         // Unassign
         await deleteAssignment(selectedEventId, existing._id)
         setAssignments((prev) => prev.filter((a) => a._id !== existing._id))
+        delete savedNotesRef.current[existing._id]
         showToast("Đã hủy phân công", true)
       } else {
-        // Assign with default role
+        // Phân công trước; admin có thể nhập ghi chú nhiệm vụ ngay sau đó.
         const newA = await createAssignment(selectedEventId, {
           staffId,
-          gate: "Cổng A",
-          shift: "Ca sáng",
-          responsibility: ROLES_IN_EVENT[0],
+          note: "",
         })
         setAssignments((prev) => [...prev, newA])
+        savedNotesRef.current[newA._id] = newA.note ?? ""
         showToast("Phân công thành công!", true)
       }
     } catch (err: any) {
@@ -153,13 +151,44 @@ export function StaffAssignmentView() {
     }
   }
 
-  const changeRole = async (staffId: string, responsibility: string) => {
-    const existing = getAssignment(staffId)
-    if (!existing || toggling[staffId]) return
-    // Optimistic
+  const changeNote = (assignmentId: string, note: string) => {
     setAssignments((prev) =>
-      prev.map((a) => (a._id === existing._id ? { ...a, responsibility } : a))
+      prev.map((assignment) =>
+        assignment._id === assignmentId ? { ...assignment, note } : assignment
+      )
     )
+  }
+
+  const saveNote = async (staffId: string, note: string) => {
+    const existing = getAssignment(staffId)
+    if (!existing || toggling[staffId] || savingNotes[staffId]) return
+
+    const normalizedNote = note.trim()
+    if (normalizedNote === (savedNotesRef.current[existing._id] ?? "")) {
+      if (normalizedNote !== note) changeNote(existing._id, normalizedNote)
+      return
+    }
+
+    setSavingNotes((prev) => ({ ...prev, [staffId]: true }))
+    try {
+      const updated = await updateAssignmentNote(
+        selectedEventId,
+        existing._id,
+        normalizedNote
+      )
+      savedNotesRef.current[existing._id] = updated.note ?? ""
+      setAssignments((prev) =>
+        prev.map((assignment) =>
+          assignment._id === existing._id ? updated : assignment
+        )
+      )
+      showToast("Đã lưu ghi chú nhiệm vụ", true)
+    } catch (err: any) {
+      changeNote(existing._id, savedNotesRef.current[existing._id] ?? "")
+      showToast(err.message ?? "Không thể lưu ghi chú nhiệm vụ", false)
+    } finally {
+      setSavingNotes((prev) => ({ ...prev, [staffId]: false }))
+    }
   }
 
   const showToast = (msg: string, ok: boolean) => {
@@ -176,7 +205,7 @@ export function StaffAssignmentView() {
       <div>
         <h2 className="text-2xl font-bold text-foreground">Phân công staff</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gán nhân viên check-in vào các sự kiện đã công bố và chỉ định vai trò tại hiện trường.
+          Gán nhân viên check-in vào sự kiện và ghi chú nhiệm vụ cần thực hiện.
         </p>
       </div>
 
@@ -209,9 +238,6 @@ export function StaffAssignmentView() {
               </p>
             ) : (
               events.map((event) => {
-                const count = assignments.filter(
-                  () => event._id === selectedEventId
-                ).length
                 const active = event._id === selectedEventId
                 return (
                   <button
@@ -326,16 +352,25 @@ export function StaffAssignmentView() {
                           <Badge variant={assignmentStatusVariant} className="text-[11px]">
                             {assignmentStatusLabel}
                           </Badge>
-                          <select
-                            value={entry.responsibility}
-                            onChange={(e) => changeRole(staff._id, e.target.value)}
-                            aria-label={`Vai trò của ${staff.fullName}`}
-                            className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground outline-none focus:border-cyan-500"
-                          >
-                            {ROLES_IN_EVENT.map((role) => (
-                              <option key={role} value={role}>{role}</option>
-                            ))}
-                          </select>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={entry.note ?? ""}
+                              onChange={(event) => changeNote(entry._id, event.target.value)}
+                              onBlur={(event) => saveNote(staff._id, event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") event.currentTarget.blur()
+                              }}
+                              maxLength={500}
+                              disabled={savingNotes[staff._id]}
+                              placeholder="Ghi chú nhiệm vụ..."
+                              aria-label={`Ghi chú nhiệm vụ của ${staff.fullName}`}
+                              className="h-9 w-56 rounded-lg border border-border bg-background px-2.5 pr-8 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-cyan-500 disabled:opacity-60"
+                            />
+                            {savingNotes[staff._id] && (
+                              <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <Badge variant="secondary" className="text-[11px]">Chưa phân</Badge>

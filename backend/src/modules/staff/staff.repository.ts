@@ -91,6 +91,24 @@ export class StaffRepository {
     return doc.save();
   }
 
+  async updateAssignmentNote(
+    id: string,
+    eventId: string,
+    note: string
+  ): Promise<IStaffAssignment | null> {
+    return StaffAssignment.findOneAndUpdate(
+      {
+        _id: new mongoose.Types.ObjectId(id),
+        eventId: new mongoose.Types.ObjectId(eventId),
+      },
+      { note },
+      { new: true }
+    )
+      .populate('eventId', 'title banner imageUrl location date startDate endDate status')
+      .populate('staffId', 'fullName email avatar')
+      .lean();
+  }
+
   async updateAssignmentStatus(
     id: string,
     status: AssignmentStatus,

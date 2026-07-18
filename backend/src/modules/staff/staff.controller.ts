@@ -48,6 +48,16 @@ export class StaffController {
     res.json(ApiResponse.ok(assignments, 'Lấy danh sách phân công thành công'));
   });
 
+  /** PATCH /api/admin/events/:id/assignments/:assignmentId — Cập nhật ghi chú nhiệm vụ */
+  updateAssignmentNote = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const assignment = await this.staffService.updateAssignmentNote(
+      req.params.assignmentId as string,
+      req.params.id as string,
+      req.body.note
+    );
+    res.json(ApiResponse.ok(assignment, 'Cập nhật ghi chú nhiệm vụ thành công'));
+  });
+
   /** DELETE /api/admin/events/:id/assignments/:assignmentId — Admin hủy phân công */
   deleteAssignment = asyncHandler(async (req: AuthRequest, res: Response) => {
     await this.staffService.deleteAssignment(

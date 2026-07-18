@@ -990,9 +990,9 @@ export class OrganizerService {
         staffName: staff?.fullName ?? 'Không rõ',
         staffEmail: staff?.email ?? '',
         avatar: staff?.avatar,
-        // Unified staff model: "Vai trò tại sự kiện" maps to its `responsibility`
-        // ("Soát vé", "Bán vé offline", …); assignment time is the created stamp.
-        roleInEvent: a.responsibility,
+        // Phân công mới dùng note làm nội dung nhiệm vụ; responsibility chỉ
+        // được giữ lại để tương thích với những bản ghi cũ.
+        roleInEvent: a.note || a.responsibility || 'Staff sự kiện',
         status: a.status,
         assignedAt: a.createdAt,
       };
