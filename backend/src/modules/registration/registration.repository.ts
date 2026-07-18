@@ -2,6 +2,7 @@ import { Registration, IRegistration, RegistrationStatus } from './registration.
 import { Payment, IPayment } from './payment.model';
 import { Ticket, ITicket } from '../organizer/ticket.model';
 import { Event, IEvent } from '../event/event.model';
+import { Notification, INotification } from '../notification/notification.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
 
 export const HOLD_DURATION_MINUTES = 10;
@@ -111,5 +112,10 @@ export class RegistrationRepository {
       { status: 'PAID', ticketCode },
       { new: true }
     );
+  }
+
+  async createNotification(data: Partial<INotification>): Promise<INotification> {
+    const notification = new Notification(data);
+    return notification.save();
   }
 }

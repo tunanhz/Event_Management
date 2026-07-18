@@ -58,6 +58,38 @@
 }
 .topbarSpacer { display: block; }
 
+/* ── Show ("xuất chiếu") picker — only rendered when an event has 2+ showings ── */
+.showPicker { margin-bottom: 1.75rem; }
+.showPickerLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--bk-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.75rem;
+}
+.showList { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.showPill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  border: 1px solid var(--bk-line);
+  background: transparent;
+  color: var(--bk-text);
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.showPill:hover { border-color: var(--bk-accent); }
+.showPill:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.5); }
+.showPillActive { border-color: var(--bk-accent); background: rgba(8, 145, 178, 0.15); }
+.showPillTime { font-size: 0.9rem; font-weight: 700; }
+.showPillDate { font-size: 0.78rem; color: var(--bk-muted); }
+
 .ticketList { list-style: none; margin: 0; padding: 0; }
 .ticketRow {
   display: flex;

@@ -16,6 +16,13 @@ const Header: React.FC = () => {
   // Hide on scroll-down (past a small threshold), reveal on scroll-up.
   const hidden = dir === "down" && y > 120;
 
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    router.push(`/su-kien?q=${encodeURIComponent(q)}`);
+  };
+
   return (
     <>
       {/* ═══════ Desktop Header ═══════ */}
@@ -34,13 +41,13 @@ const Header: React.FC = () => {
             </Link>
 
             {/* Search Bar */}
-            <div className={styles.searchBar}>
-              <span className={styles.searchIcon}>
+            <form className={styles.searchBar} onSubmit={submitSearch} role="search">
+              <button type="submit" className={styles.searchIcon} aria-label="Tìm kiếm">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-              </span>
+              </button>
               <input
                 type="search"
                 className={styles.searchInput}
@@ -56,7 +63,7 @@ const Header: React.FC = () => {
                 </svg>
                 TP. Hồ Chí Minh
               </button>
-            </div>
+            </form>
 
             {/* Right Actions */}
             <div className={styles.actions}>

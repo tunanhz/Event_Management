@@ -23,6 +23,14 @@ const eslintConfig = defineConfig([
       "react-hooks/immutability": "warn",
     },
   },
+  // Node tooling scripts (predev, v.v.) chạy CommonJS vì package.json không đặt
+  // "type": "module" -> require() ở đây là hợp lệ, không phải nợ style.
+  {
+    files: ["scripts/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

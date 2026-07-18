@@ -18,9 +18,11 @@ interface EventsExplorerProps {
   initialCategory?: string;
   /** Pin a collection (featured | trending | upcoming) from the URL. */
   initialCollection?: string;
+  /** Header search-bar text (e.g. /su-kien?q=jazz) — `events` is already the search result pool. */
+  searchQuery?: string;
 }
 
-export default function EventsExplorer({ events, initialCategory, initialCollection }: EventsExplorerProps) {
+export default function EventsExplorer({ events, initialCategory, initialCollection, searchQuery }: EventsExplorerProps) {
   // A valid collection is fixed for this page mount (the URL key remounts on change).
   const collection = initialCollection && collectionLabels[initialCollection] ? initialCollection : null;
 
@@ -73,7 +75,7 @@ export default function EventsExplorer({ events, initialCategory, initialCollect
   return (
     <div className={styles.wrapper}>
       <EventsToolbar
-        heading={collection ? collectionLabels[collection] : undefined}
+        heading={searchQuery ? `Kết quả tìm kiếm cho “${searchQuery}”` : collection ? collectionLabels[collection] : undefined}
         filters={filters}
         dateFilter={dateFilter}
         today={today}

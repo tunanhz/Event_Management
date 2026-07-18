@@ -63,6 +63,7 @@ interface ServerEvent {
 }
 
 interface ServerTicket {
+  _id: string
   ticketName: string
   price: number
   quantity: number
@@ -102,6 +103,7 @@ export async function fetchModerationDetail(id: string): Promise<ModerationEvent
   )
   const e = res.data.event
   const tickets: ModerationTicketType[] = (res.data.tickets ?? []).map((t) => ({
+    id: t._id,
     name: t.ticketName,
     price: t.price,
     quantity: t.quantity,

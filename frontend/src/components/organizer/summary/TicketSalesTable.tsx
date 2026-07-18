@@ -20,10 +20,10 @@ export function TicketSalesTable({ types }: { types: TicketType[] }) {
           </tr>
         </thead>
         <tbody>
-          {types.map((t) => {
+          {types.map((t, i) => {
             const pct = t.total ? Math.round((t.sold / t.total) * 100) : 0
             return (
-              <tr key={t.name}>
+              <tr key={t.id ?? i}>
                 <td className={styles.ticketName}>{t.name}</td>
                 <td>{formatVnd(t.price)}</td>
                 <td>

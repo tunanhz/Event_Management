@@ -14,6 +14,8 @@ import type {
   EventCity,
   ExploreEvent,
   FeaturedStar,
+  ShowOption,
+  TicketType,
 } from "@/lib/mockData"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
@@ -40,6 +42,7 @@ interface ApiEvent {
   description?: string
   contentBlocks?: ContentBlock[]
   sessions?: { date?: string; time?: string; label?: string }[]
+  shows?: { _id: string; title?: string; startTime: string; endTime: string }[]
   organizer?: string
   organizerLogoUrl?: string
   organizerDescription?: string
@@ -49,6 +52,9 @@ interface ApiTicket {
   _id: string
   ticketName: string
   price: number
+  minPerOrder: number
+  maxPerOrder: number
+  showId?: string
 }
 
 interface ApiStar {
@@ -96,6 +102,19 @@ function formatPrice(priceFrom?: number, isFree?: boolean): string {
 }
 
 const eventImage = (e: ApiEvent) => e.imageUrl || e.banner || DEFAULT_EVENT_IMAGE
+
+/** Event.shows[] → presentational options, oldest first, auto-labelled when the
+ *  organizer didn't name the showing ("Suất chiều" etc). */
+function toShowOptions(shows: ApiEvent["shows"]): ShowOption[] {
+  return [...(shows ?? [])]
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+    .map((s, i) => ({
+      id: s._id,
+      label: s.title?.trim() || `Suất ${i + 1}`,
+      startTime: s.startTime,
+      endTime: s.endTime,
+    }))
+}
 
 // ── Mappers ─────────────────────────────────────────────────────────
 function toEventItem(e: ApiEvent): EventItem {
@@ -167,13 +186,20 @@ export async function fetchExploreEvents(): Promise<ExploreEvent[]> {
   return events.map(toExploreEvent)
 }
 
+/** Header search bar — GET /api/events/search?q=..., matches title/description/location/organizer/category. */
+export async function fetchSearchEvents(q: string): Promise<ExploreEvent[]> {
+  const events = await apiGet<ApiEvent[]>(`/events/search?q=${encodeURIComponent(q)}&limit=100`, [])
+  return events.map(toExploreEvent)
+}
+
 export interface EventDetailData {
   event: EventItem
   showDates: string[]
   description: ContentBlock[]
   descriptionHtml?: string
   organizer: { name: string; logo: string; description: string }
-  tickets: { id: string; name: string; price: number }[]
+  shows: ShowOption[]
+  tickets: TicketType[]
   related: EventItem[]
 }
 
@@ -197,7 +223,15 @@ export async function fetchEventDetail(id: string): Promise<EventDetailData | nu
       logo: e.organizerLogoUrl || DEFAULT_AVATAR_IMAGE,
       description: e.organizerDescription || "Đơn vị tổ chức trên nền tảng EventBox.",
     },
-    tickets: (data.tickets ?? []).map((t) => ({ id: t._id, name: t.ticketName, price: t.price })),
+    shows: toShowOptions(e.shows),
+    tickets: (data.tickets ?? []).map((t) => ({
+      id: t._id,
+      name: t.ticketName,
+      price: t.price,
+      minPerOrder: t.minPerOrder,
+      maxPerOrder: t.maxPerOrder,
+      showId: t.showId,
+    })),
     related: (data.related ?? []).map(toEventItem),
   }
 }
