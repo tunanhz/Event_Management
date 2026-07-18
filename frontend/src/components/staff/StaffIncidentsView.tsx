@@ -88,12 +88,13 @@ export function StaffIncidentsView() {
       fetchMyIncidents({ limit: 30 }),
     ])
       .then(([myAssignments, { data }]) => {
-        setAssignments(myAssignments)
+        const confirmedAssignments = myAssignments.filter((assignment) => assignment.status === "confirmed")
+        setAssignments(confirmedAssignments)
         setIncidents(data)
-        if (myAssignments[0]) {
-          const ev = typeof myAssignments[0].eventId === "object"
-            ? myAssignments[0].eventId._id
-            : myAssignments[0].eventId as string
+        if (confirmedAssignments[0]) {
+          const ev = typeof confirmedAssignments[0].eventId === "object"
+            ? confirmedAssignments[0].eventId._id
+            : confirmedAssignments[0].eventId as string
           setEventId(ev)
         }
       })

@@ -14,9 +14,13 @@ import type {
   EventCity,
   ExploreEvent,
   FeaturedStar,
+  ShowOption,
+  TicketType,
 } from "@/lib/mockData"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+const DEFAULT_EVENT_IMAGE = "/event-placeholder.svg"
+const DEFAULT_AVATAR_IMAGE = "/avatar-placeholder.svg"
 
 // ── Raw API shapes (subset we consume) ──────────────────────────────
 interface ApiEvent {
@@ -38,6 +42,7 @@ interface ApiEvent {
   description?: string
   contentBlocks?: ContentBlock[]
   sessions?: { date?: string; time?: string; label?: string }[]
+  shows?: { _id: string; title?: string; startTime: string; endTime: string }[]
   organizer?: string
   organizerLogoUrl?: string
   organizerDescription?: string
@@ -47,6 +52,9 @@ interface ApiTicket {
   _id: string
   ticketName: string
   price: number
+  minPerOrder: number
+  maxPerOrder: number
+  showId?: string
 }
 
 interface ApiStar {
@@ -93,7 +101,20 @@ function formatPrice(priceFrom?: number, isFree?: boolean): string {
   return `Từ ${priceFrom.toLocaleString("vi-VN")}đ`
 }
 
-const eventImage = (e: ApiEvent) => e.imageUrl || e.banner || ""
+const eventImage = (e: ApiEvent) => e.imageUrl || e.banner || DEFAULT_EVENT_IMAGE
+
+/** Event.shows[] → presentational options, oldest first, auto-labelled when the
+ *  organizer didn't name the showing ("Suất chiều" etc). */
+function toShowOptions(shows: ApiEvent["shows"]): ShowOption[] {
+  return [...(shows ?? [])]
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+    .map((s, i) => ({
+      id: s._id,
+      label: s.title?.trim() || `Suất ${i + 1}`,
+      startTime: s.startTime,
+      endTime: s.endTime,
+    }))
+}
 
 // ── Mappers ─────────────────────────────────────────────────────────
 function toEventItem(e: ApiEvent): EventItem {
@@ -102,10 +123,10 @@ function toEventItem(e: ApiEvent): EventItem {
     title: e.title,
     date: formatDate(e.date ?? e.startDate),
     time: e.time || "",
-    location: e.location || "",
+    location: e.location || "Đang cập nhật",
     price: formatPrice(e.priceFrom, e.isFree),
     image: eventImage(e),
-    category: e.category || "",
+    category: e.category || "Sự kiện",
   }
 }
 
@@ -148,11 +169,11 @@ export async function fetchHomeData(): Promise<HomeData> {
       id: b._id,
       title: b.title,
       subtitle: b.subtitle || "",
-      image: b.imageUrl || "",
+      image: b.imageUrl || DEFAULT_EVENT_IMAGE,
       cta: b.ctaLabel || "Khám phá ngay",
       link: b.linkUrl || "#",
     })),
-    stars: stars.map((s) => ({ id: s._id, name: s.name, slug: s.slug, image: s.imageUrl || "", verified: s.verified })),
+    stars: stars.map((s) => ({ id: s._id, name: s.name, slug: s.slug, image: s.imageUrl || DEFAULT_AVATAR_IMAGE, verified: s.verified })),
     featured: featured.map(toEventItem),
     trending: trending.map(toEventItem),
     upcoming: upcoming.map(toEventItem),
@@ -165,13 +186,20 @@ export async function fetchExploreEvents(): Promise<ExploreEvent[]> {
   return events.map(toExploreEvent)
 }
 
+/** Header search bar — GET /api/events/search?q=..., matches title/description/location/organizer/category. */
+export async function fetchSearchEvents(q: string): Promise<ExploreEvent[]> {
+  const events = await apiGet<ApiEvent[]>(`/events/search?q=${encodeURIComponent(q)}&limit=100`, [])
+  return events.map(toExploreEvent)
+}
+
 export interface EventDetailData {
   event: EventItem
   showDates: string[]
   description: ContentBlock[]
   descriptionHtml?: string
   organizer: { name: string; logo: string; description: string }
-  tickets: { id: string; name: string; price: number }[]
+  shows: ShowOption[]
+  tickets: TicketType[]
   related: EventItem[]
 }
 
@@ -192,10 +220,18 @@ export async function fetchEventDetail(id: string): Promise<EventDetailData | nu
     showDates: showDates.length > 0 ? showDates : [formatDate(e.date ?? e.startDate)],
     organizer: {
       name: e.organizer || "EventBox Organizer",
-      logo: e.organizerLogoUrl || "",
+      logo: e.organizerLogoUrl || DEFAULT_AVATAR_IMAGE,
       description: e.organizerDescription || "Đơn vị tổ chức trên nền tảng EventBox.",
     },
-    tickets: (data.tickets ?? []).map((t) => ({ id: t._id, name: t.ticketName, price: t.price })),
+    shows: toShowOptions(e.shows),
+    tickets: (data.tickets ?? []).map((t) => ({
+      id: t._id,
+      name: t.ticketName,
+      price: t.price,
+      minPerOrder: t.minPerOrder,
+      maxPerOrder: t.maxPerOrder,
+      showId: t.showId,
+    })),
     related: (data.related ?? []).map(toEventItem),
   }
 }

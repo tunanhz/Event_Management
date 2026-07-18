@@ -109,7 +109,7 @@ export function CheckInScanner({ onScan, result, disabled }: CheckInScannerProps
             </Button>
           </form>
         ) : (
-          <CameraQrScanner onScan={onScan} />
+          <CameraQrScanner onScan={onScan} disabled={disabled} />
         )}
 
         {result && <ResultCard result={result} />}

@@ -6,6 +6,8 @@ import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult, PaginationQuery } from '../../common/types';
 import { config } from '../../config';
 import { buildPaymentUrl, buildOrderInfo, formatVnpayDate } from '../payment/vnpay.util';
+import { UserRepository } from '../user/user.repository';
+import { emailService } from '../../common/utils/email.service';
 
 export interface CreateRegistrationInput {
   eventId: string;
@@ -20,9 +22,11 @@ export interface ConfirmPaymentResult {
 
 export class RegistrationService {
   private registrationRepository: RegistrationRepository;
+  private userRepository: UserRepository;
 
   constructor() {
     this.registrationRepository = new RegistrationRepository();
+    this.userRepository = new UserRepository();
   }
 
   // Places a 10-minute hold on `quantity` tickets: reserves stock immediately (so it can
@@ -60,6 +64,12 @@ export class RegistrationService {
     }
     if (ticket.saleEnd && now > ticket.saleEnd) {
       throw new AppError('Đã hết thời gian bán vé', 400);
+    }
+    if (quantity < ticket.minPerOrder || quantity > ticket.maxPerOrder) {
+      throw new AppError(
+        `Số lượng vé phải từ ${ticket.minPerOrder} đến ${ticket.maxPerOrder} mỗi đơn`,
+        400
+      );
     }
 
     const reserved = await this.registrationRepository.reserveTicketStock(ticketId, quantity);
@@ -107,7 +117,58 @@ export class RegistrationService {
       paymentDate: new Date(),
     });
 
+    try {
+      await this.notifyRegistrationConfirmed(registration);
+    } catch (err) {
+      console.error('Failed to record purchase confirmation notification:', err);
+    }
+
     return { registration, payment };
+  }
+
+  /**
+   * Notify the participant that their purchase is confirmed: an in-app
+   * Notification row (ERD) plus an email (the only reliable channel —
+   * User.email is required, User.phone is optional and there is no SMS
+   * gateway here). Includes the organizer's custom "Tin nhắn xác nhận"
+   * (Event.confirmationMessage) when set.
+   *
+   * Best-effort: awaits the DB write (fast, and callers/tests can rely on
+   * the Notification existing once this resolves) but never awaits the email
+   * send itself — a slow/failed SMTP delivery must not delay or fail an
+   * already-successful payment. Any failure here is caught by the caller.
+   */
+  private async notifyRegistrationConfirmed(registration: IRegistration): Promise<void> {
+    const [participant, event, ticket] = await Promise.all([
+      this.userRepository.findById(registration.participantId.toString()),
+      this.registrationRepository.findEventById(registration.eventId.toString()),
+      this.registrationRepository.findTicketById(registration.ticketId.toString()),
+    ]);
+    if (!participant || !event || !ticket) return; // should not happen for a just-confirmed registration
+
+    const customMessage = event.confirmationMessage?.trim() || undefined;
+    const detail = `${ticket.ticketName} x${registration.quantity} — ${registration.totalAmount.toLocaleString('vi-VN')}đ`;
+    const message = customMessage
+      ? `${customMessage}\n\n${detail}`
+      : `Bạn đã đặt vé "${event.title}" thành công. ${detail}`;
+
+    await this.registrationRepository.createNotification({
+      userId: participant._id as mongoose.Types.ObjectId,
+      title: 'Đặt vé thành công',
+      message,
+      type: 'REGISTRATION_CONFIRMED',
+      isRead: false,
+    });
+
+    emailService
+      .sendRegistrationConfirmation(participant.email, {
+        eventTitle: event.title,
+        ticketName: ticket.ticketName,
+        quantity: registration.quantity,
+        totalAmount: registration.totalAmount,
+        customMessage,
+      })
+      .catch((err) => console.error('Failed to send registration confirmation email:', err));
   }
 
   // Builds a VNPAY redirect URL covering one or more held registrations at once (the
@@ -212,6 +273,11 @@ export class RegistrationService {
           paymentDate: params.payDate ?? new Date(),
         });
         results.push({ registration: updated, payment });
+        try {
+          await this.notifyRegistrationConfirmed(updated);
+        } catch (err) {
+          console.error('Failed to record purchase confirmation notification:', err);
+        }
       } catch (err: any) {
         if (err?.code === 11000) {
           const existingPayment = await this.registrationRepository.findPaymentByTransactionCode(

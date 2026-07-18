@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type AssignmentStatus = 'assigned' | 'confirmed' | 'completed' | 'cancelled';
+export type AssignmentStatus = 'assigned' | 'confirmed' | 'completed' | 'cancelled' | 'expired';
 
 export interface IStaffAssignment extends Document {
   eventId: mongoose.Types.ObjectId;
@@ -9,7 +9,7 @@ export interface IStaffAssignment extends Document {
   gate: string;
   /** Khung giờ làm việc: "08:00 - 12:00" */
   shift: string;
-  /** Nhiệm vụ chính: "Soát vé", "Bán vé offline", "Hỗ trợ khách" */
+  /** Nhiệm vụ chính: "Soát vé", "Hỗ trợ khách", "Điều phối cổng" */
   responsibility: string;
   status: AssignmentStatus;
   note?: string;
@@ -27,10 +27,10 @@ const assignmentSchema = new Schema<IStaffAssignment>(
     responsibility: { type: String, required: true, trim: true },
     status: {
       type: String,
-      enum: ['assigned', 'confirmed', 'completed', 'cancelled'],
+      enum: ['assigned', 'confirmed', 'completed', 'cancelled', 'expired'],
       default: 'assigned',
     },
-    note: { type: String, trim: true },
+    note: { type: String, trim: true, maxlength: 500 },
     confirmedAt: { type: Date },
   },
   { timestamps: true }

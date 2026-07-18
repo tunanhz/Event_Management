@@ -17,7 +17,6 @@ import {
   Tag,
   Star,
   Image as ImageIcon,
-  ListChecks,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
@@ -27,10 +26,9 @@ const navigation = [
   { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
   { name: "Kiểm duyệt sự kiện", href: "/dashboard/moderation", icon: ClipboardCheck },
   { name: "Quản trị sự kiện", href: "/dashboard/events", icon: CalendarDays },
-  { name: "Theo dõi trạng thái", href: "/dashboard/event-status", icon: ListChecks },
   { name: "Quản lý người dùng", href: "/dashboard/accounts", icon: Users },
   { name: "Phân công staff", href: "/dashboard/staff-assignment", icon: UserCog },
-  { name: "Quản lý bán vé", href: "/dashboard/ticket-sales", icon: Ticket },
+  { name: "Theo dõi bán vé", href: "/dashboard/ticket-sales", icon: Ticket },
   { name: "Danh mục sự kiện", href: "/dashboard/categories", icon: Tag },
   { name: "Nghệ sĩ nổi bật", href: "/dashboard/stars", icon: Star },
   { name: "Hero banner", href: "/dashboard/banners", icon: ImageIcon },

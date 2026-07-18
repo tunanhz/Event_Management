@@ -68,6 +68,7 @@ app.use('/api/finance', financeRoutes);
   // Phân công staff cho sự kiện
   adminStaffRouter.post('/events/:id/assignments', staffController.createAssignment);
   adminStaffRouter.get('/events/:id/assignments', staffController.getEventAssignments);
+  adminStaffRouter.patch('/events/:id/assignments/:assignmentId', staffController.updateAssignmentNote);
   adminStaffRouter.delete('/events/:id/assignments/:assignmentId', staffController.deleteAssignment);
 
   // Quản lý sự cố

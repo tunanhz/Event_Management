@@ -1,22 +1,20 @@
 import mongoose from 'mongoose';
 import { StaffRepository } from './staff.repository';
-import { IStaffAssignment, AssignmentStatus } from './assignment.model';
+import { IStaffAssignment } from './assignment.model';
 import { ICheckInLog } from './checkin-log.model';
 import { IIncidentReport, IncidentStatus } from './incident.model';
 import { IRegistration } from '../registration/registration.model';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
 import { CheckInStats } from './staff.repository';
-import { ITicket } from '../organizer/ticket.model';
+
+const ASSIGNMENT_CONFIRMATION_LEAD_MS = 60 * 60 * 1000;
 
 // ─── Input types ─────────────────────────────────────────────────────────────
 
 export interface CreateAssignmentInput {
   eventId: string;
   staffId: string;
-  gate: string;
-  shift: string;
-  responsibility: string;
   note?: string;
 }
 
@@ -70,6 +68,9 @@ export class StaffService {
     const event = await this.staffRepository.findEventById(input.eventId);
     if (!event) throw new AppError('Sự kiện không tồn tại', 404);
     if (event.status === 'cancelled') throw new AppError('Không thể phân công cho sự kiện đã hủy', 400);
+    if (this.isConfirmationDeadlinePassed(event)) {
+      throw new AppError('Đã quá hạn phân công: staff phải xác nhận trước khi sự kiện bắt đầu 1 giờ', 400);
+    }
 
     // Kiểm tra trùng
     const existing = await this.staffRepository.findAssignmentByEventAndStaff(
@@ -80,27 +81,46 @@ export class StaffService {
       throw new AppError('Nhân viên này đã được phân công cho sự kiện đó', 409);
     }
 
-    const trimmed = {
-      gate: this.requireString(input.gate, 'Cổng phụ trách'),
-      shift: this.requireString(input.shift, 'Ca trực'),
-      responsibility: this.requireString(input.responsibility, 'Nhiệm vụ'),
-    };
+    const note = this.normalizeAssignmentNote(input.note);
 
     return this.staffRepository.createAssignment({
       ...input,
-      ...trimmed,
+      // Các trường này được giữ để tương thích với dữ liệu cũ. Phân công mới
+      // chỉ dùng note làm nội dung nhiệm vụ và không còn chia theo cổng/ca.
+      gate: 'Không phân cổng',
+      shift: 'Theo lịch sự kiện',
+      responsibility: note || 'Theo phân công',
+      note,
     });
   }
 
   /** Lấy danh sách sự kiện được phân công (Staff xem ca trực của mình). */
   async getMyAssignments(staffId: string): Promise<IStaffAssignment[]> {
-    return this.staffRepository.findAssignments({ staffId, status: undefined });
+    const assignments = await this.staffRepository.findAssignments({ staffId, status: undefined });
+    return this.expireOverdueAssignments(assignments);
   }
 
   /** Admin xem danh sách staff được phân công cho một sự kiện. */
   async getEventAssignments(eventId: string): Promise<IStaffAssignment[]> {
     this.assertValidObjectId(eventId, 'eventId');
-    return this.staffRepository.findAssignments({ eventId });
+    const assignments = await this.staffRepository.findAssignments({ eventId });
+    return this.expireOverdueAssignments(assignments);
+  }
+
+  /** Admin cập nhật ghi chú nhiệm vụ của một phân công. */
+  async updateAssignmentNote(
+    assignmentId: string,
+    eventId: string,
+    note: unknown
+  ): Promise<IStaffAssignment> {
+    this.assertValidObjectIds(assignmentId, eventId);
+    const updated = await this.staffRepository.updateAssignmentNote(
+      assignmentId,
+      eventId,
+      this.normalizeAssignmentNote(note)
+    );
+    if (!updated) throw new AppError('Phân công không tồn tại trong sự kiện này', 404);
+    return updated;
   }
 
   /** Staff xác nhận nhận ca. */
@@ -117,13 +137,38 @@ export class StaffService {
       throw new AppError('Phân công không còn ở trạng thái chờ xác nhận', 400);
     }
 
-    const updated = await this.staffRepository.updateAssignmentStatus(
+    const event = await this.staffRepository.findEventById(assignment.eventId.toString());
+    if (!event) throw new AppError('Sự kiện không tồn tại', 404);
+    if (this.isConfirmationDeadlinePassed(event)) {
+      await this.staffRepository.transitionPendingAssignment(assignmentId, 'expired');
+      throw new AppError('Đã quá hạn xác nhận ca. Bạn được ghi nhận là không làm ca này', 400);
+    }
+
+    const updated = await this.staffRepository.transitionPendingAssignment(
       assignmentId,
       'confirmed',
-      { confirmedAt: new Date() }
+      new Date()
     );
-    if (!updated) throw new AppError('Không thể cập nhật trạng thái phân công', 500);
+    if (!updated) throw new AppError('Trạng thái phân công vừa thay đổi, vui lòng tải lại', 409);
     return updated;
+  }
+
+  /** Staff can operate an event only after confirming the assignment on time. */
+  async assertConfirmedAssignment(eventId: string, staffId: string): Promise<void> {
+    this.assertValidObjectIds(eventId, staffId);
+    const [assignment] = await this.expireOverdueAssignments(
+      await this.staffRepository.findAssignments({ eventId, staffId })
+    );
+
+    if (!assignment) {
+      throw new AppError('Bạn không được phân công làm việc tại sự kiện này', 403);
+    }
+    if (assignment.status === 'expired') {
+      throw new AppError('Ca làm đã quá hạn xác nhận và được ghi nhận là không làm', 403);
+    }
+    if (assignment.status !== 'confirmed') {
+      throw new AppError('Bạn cần xác nhận ca trước khi sử dụng chức năng vận hành', 403);
+    }
   }
 
   /** Admin hủy phân công. */
@@ -157,6 +202,11 @@ export class StaffService {
       });
       return { result: 'invalid', message: 'Mã vé không hợp lệ hoặc không tồn tại' };
     }
+
+    const participant = regAny.participantId as unknown as { fullName?: string };
+    const ticket = regAny.ticketId as unknown as { ticketName?: string };
+    const attendeeName = participant.fullName ?? 'Người tham dự';
+    const ticketName = ticket.ticketName ?? 'Vé sự kiện';
 
     if (regAny.eventId.toString() !== eventId) {
       // Vé thuộc sự kiện khác
@@ -195,6 +245,8 @@ export class StaffService {
       return {
         result: 'duplicate',
         message: 'Vé này đã được check-in trước đó',
+        attendeeName,
+        ticketName,
         previousCheckedInAt: regAny.checkedInAt,
       };
     }
@@ -213,6 +265,8 @@ export class StaffService {
       return {
         result: 'duplicate',
         message: 'Vé này vừa được check-in bởi trạm khác',
+        attendeeName,
+        ticketName,
       };
     }
 
@@ -225,6 +279,8 @@ export class StaffService {
     return {
       result: 'success',
       message: 'Check-in thành công!',
+      attendeeName,
+      ticketName,
       checkedInAt: updated.checkedInAt,
     };
   }
@@ -271,74 +327,6 @@ export class StaffService {
     });
 
     return updated;
-  }
-
-  // ── Offline Sales ─────────────────────────────────────────────────────────────
-
-  async getEventTickets(eventId: string): Promise<ITicket[]> {
-    this.assertValidObjectId(eventId, 'eventId');
-    return this.staffRepository.getEventTickets(eventId);
-  }
-
-  async sellOfflineTicket(input: {
-    eventId: string;
-    ticketId: string;
-    staffId: string;
-    quantity: number;
-    participantInfo: { fullName: string; email: string; phone?: string };
-  }): Promise<{ ticketCode: string; registrationId: string }> {
-    this.assertValidObjectIds(input.eventId, input.ticketId, input.staffId);
-    if (input.quantity <= 0) throw new AppError('Số lượng phải lớn hơn 0', 400);
-    this.requireString(input.participantInfo.fullName, 'Họ tên khách hàng');
-    this.requireString(input.participantInfo.email, 'Email khách hàng');
-
-    // 1. Get ticket
-    const ticket = await this.staffRepository.findTicketById(input.ticketId);
-    if (!ticket) throw new AppError('Loại vé không tồn tại', 404);
-    if (ticket.eventId.toString() !== input.eventId) {
-      throw new AppError('Vé không thuộc sự kiện này', 400);
-    }
-    if (ticket.status !== 'ACTIVE') {
-      throw new AppError('Vé hiện không được bán', 400);
-    }
-    if (ticket.soldQuantity + input.quantity > ticket.quantity) {
-      throw new AppError('Số lượng vé còn lại không đủ', 400);
-    }
-
-    // 2. Find or create user
-    let user = await this.staffRepository.findUserByEmail(input.participantInfo.email);
-    if (!user) {
-      user = await this.staffRepository.createUser({
-        fullName: input.participantInfo.fullName,
-        email: input.participantInfo.email,
-        phone: input.participantInfo.phone,
-      });
-    }
-
-    // 3. Generate ticketCode (e.g. OFF-123456)
-    const ticketCode = `OFF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-    // 4. Sell ticket (Transaction)
-    try {
-      const reg = await this.staffRepository.sellOfflineTicket({
-        eventId: input.eventId,
-        ticketId: input.ticketId,
-        participantId: (user._id as mongoose.Types.ObjectId).toString(),
-        quantity: input.quantity,
-        unitPrice: ticket.price,
-        ticketCode,
-      });
-
-      return {
-        ticketCode: reg.ticketCode!,
-        registrationId: (reg._id as mongoose.Types.ObjectId).toString(),
-      };
-    } catch (err: any) {
-      if (err.message.includes('không đủ số lượng')) {
-        throw new AppError('Vé đã bán hết hoặc không đủ số lượng', 400);
-      }
-      throw err;
-    }
   }
 
   // ── Incidents ─────────────────────────────────────────────────────────────────
@@ -429,5 +417,46 @@ export class StaffService {
       throw new AppError(`${fieldName} không được để trống`, 400);
     }
     return value.trim();
+  }
+
+  private normalizeAssignmentNote(value: unknown): string {
+    if (value === undefined || value === null) return '';
+    if (typeof value !== 'string') {
+      throw new AppError('Ghi chú nhiệm vụ phải là chuỗi', 400);
+    }
+    const note = value.trim();
+    if (note.length > 500) {
+      throw new AppError('Ghi chú nhiệm vụ không được vượt quá 500 ký tự', 400);
+    }
+    return note;
+  }
+
+  private async expireOverdueAssignments(
+    assignments: IStaffAssignment[]
+  ): Promise<IStaffAssignment[]> {
+    return Promise.all(assignments.map(async (assignment) => {
+      if (assignment.status !== 'assigned') return assignment;
+
+      const populatedEvent = assignment.eventId as unknown as {
+        _id?: mongoose.Types.ObjectId;
+        startDate?: Date;
+        date?: Date;
+      };
+      const eventId = populatedEvent._id?.toString() ?? assignment.eventId.toString();
+      const event = populatedEvent.startDate || populatedEvent.date
+        ? populatedEvent
+        : await this.staffRepository.findEventById(eventId);
+
+      if (!event || !this.isConfirmationDeadlinePassed(event)) return assignment;
+      return await this.staffRepository.transitionPendingAssignment(
+        (assignment._id as mongoose.Types.ObjectId).toString(),
+        'expired'
+      ) ?? assignment;
+    }));
+  }
+
+  private isConfirmationDeadlinePassed(event: { startDate?: Date; date?: Date }): boolean {
+    const start = event.startDate ?? event.date;
+    return Boolean(start && Date.now() >= new Date(start).getTime() - ASSIGNMENT_CONFIRMATION_LEAD_MS);
   }
 }

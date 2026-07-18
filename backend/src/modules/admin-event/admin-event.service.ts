@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 import {
   AdminEventRepository,
   AdminEventQuery,
-  EventStatusTrackingResult,
 } from './admin-event.repository';
 import { IEvent, Event } from '../event/event.model';
 import { ITicket } from '../organizer/ticket.model';
@@ -50,11 +49,9 @@ export interface AdminEventStatusInput {
  */
 export class AdminEventService {
   private adminEventRepository: AdminEventRepository;
-  private categoryRepository: CategoryRepository;
 
   constructor() {
     this.adminEventRepository = new AdminEventRepository();
-    this.categoryRepository = new CategoryRepository();
   }
 
   async listEvents(query: AdminEventQuery): Promise<PaginatedResult<IEvent>> {
@@ -77,161 +74,6 @@ export class AdminEventService {
     const event = await this.getEventOrThrow(eventId);
     const tickets = await this.adminEventRepository.findTicketsByEvent(eventId);
     return { event, tickets };
-  }
-
-  async getStatusTracking(search?: string): Promise<EventStatusTrackingResult> {
-    return this.adminEventRepository.getStatusTracking(search?.trim() || undefined);
-  }
-
-  async updateEvent(eventId: string, input: AdminEventUpdateInput): Promise<IEvent> {
-    const existing = await this.getEventOrThrow(eventId);
-    const update: Partial<IEvent> = {};
-
-    const title = this.asTrimmedString(input.title);
-    if (title !== undefined) update.title = title;
-
-    const description = this.asTrimmedString(input.description);
-    if (description !== undefined) update.description = description;
-
-    const location = this.asTrimmedString(input.location);
-    if (location !== undefined) update.location = location;
-
-    const banner = this.asOptionalTrimmedString(input.banner);
-    if (banner !== undefined) {
-      update.banner = banner;
-      update.imageUrl = banner;
-    }
-
-    const posterImage = this.asOptionalTrimmedString(input.posterImage);
-    if (posterImage !== undefined) update.posterImage = posterImage;
-
-    const organizer = this.asTrimmedString(input.organizer);
-    if (organizer !== undefined) update.organizer = organizer;
-
-    const organizerLogoUrl = this.asOptionalTrimmedString(input.organizerLogoUrl);
-    if (organizerLogoUrl !== undefined) update.organizerLogoUrl = organizerLogoUrl;
-
-    const organizerDescription = this.asOptionalTrimmedString(input.organizerDescription);
-    if (organizerDescription !== undefined) update.organizerDescription = organizerDescription;
-
-    const privacy = this.asOptionalTrimmedString(input.privacy);
-    if (privacy !== undefined) {
-      if (privacy !== 'public' && privacy !== 'private') {
-        throw new AppError('privacy chi nhan public hoac private', 400);
-      }
-      update.privacy = privacy;
-    }
-
-    const confirmationMessage = this.asOptionalTrimmedString(input.confirmationMessage);
-    if (confirmationMessage !== undefined) update.confirmationMessage = confirmationMessage;
-
-    if (typeof input.isFeatured === 'boolean') update.isFeatured = input.isFeatured;
-    if (typeof input.isTrending === 'boolean') update.isTrending = input.isTrending;
-
-    if (input.capacity !== undefined) {
-      const capacity = Number(input.capacity);
-      if (!Number.isFinite(capacity) || capacity < 1) {
-        throw new AppError('capacity phai la so >= 1', 400);
-      }
-      update.capacity = capacity;
-      update.maxAttendees = capacity;
-    }
-
-    const startDate = this.asDate(input.startDate, 'startDate');
-    const endDate = this.asDate(input.endDate, 'endDate');
-    if (startDate || endDate) {
-      const nextStart = startDate ?? existing.startDate ?? existing.date;
-      const nextEnd = endDate ?? existing.endDate ?? existing.date;
-      if (nextEnd.getTime() < nextStart.getTime()) {
-        throw new AppError('endDate phai sau startDate', 400);
-      }
-      update.startDate = nextStart;
-      update.endDate = nextEnd;
-      update.date = nextStart;
-    }
-
-    const categoryId = this.asOptionalTrimmedString(input.categoryId);
-    if (categoryId !== undefined) {
-      if (!mongoose.isValidObjectId(categoryId)) {
-        throw new AppError('Category khong hop le', 400);
-      }
-      const category = await this.categoryRepository.findById(categoryId);
-      if (!category) {
-        throw new AppError('Category khong ton tai', 400);
-      }
-      update.categoryId = new mongoose.Types.ObjectId(categoryId);
-      update.category = category.name;
-      update.categorySlug = category.slug;
-    }
-
-    const updated = await this.adminEventRepository.updateEvent(eventId, update);
-    if (!updated) throw new AppError('Event not found', 404);
-    return updated;
-  }
-
-  async forceStatus(
-    eventId: string,
-    adminId: string,
-    input: AdminEventStatusInput
-  ): Promise<IEvent> {
-    await this.getEventOrThrow(eventId);
-    const update: Partial<IEvent> = {};
-
-    const status = this.asOptionalTrimmedString(input.status) as LifecycleStatus | undefined;
-    const reviewStatus = this.asOptionalTrimmedString(input.reviewStatus) as ReviewStatus | undefined;
-    const privacy = this.asOptionalTrimmedString(input.privacy) as 'public' | 'private' | undefined;
-
-    if (!status && !reviewStatus && !privacy) {
-      throw new AppError('Can truyen status, reviewStatus hoac privacy', 400);
-    }
-    if (status && !LIFECYCLE_STATUSES.includes(status)) {
-      throw new AppError(`status chi nhan mot trong: ${LIFECYCLE_STATUSES.join(', ')}`, 400);
-    }
-    if (reviewStatus && !REVIEW_STATUSES.includes(reviewStatus)) {
-      throw new AppError(`reviewStatus chi nhan mot trong: ${REVIEW_STATUSES.join(', ')}`, 400);
-    }
-
-    if (status) update.status = status;
-    if (reviewStatus) update.reviewStatus = reviewStatus;
-    if (privacy) {
-      if (privacy !== 'public' && privacy !== 'private') {
-        throw new AppError('privacy chi nhan public hoac private', 400);
-      }
-      update.privacy = privacy;
-    }
-
-    if ((reviewStatus ?? (status === 'published' ? 'PUBLISHED' : undefined)) === 'PUBLISHED') {
-      update.reviewStatus = 'PUBLISHED';
-      update.status = 'published';
-      update.approvedById = new mongoose.Types.ObjectId(adminId);
-      update.reviewedAt = new Date();
-      update.rejectionReason = undefined;
-    }
-
-    if ((reviewStatus ?? (status === 'draft' ? 'DRAFT' : undefined)) === 'DRAFT') {
-      update.reviewStatus = 'DRAFT';
-      update.status = status ?? 'draft';
-      update.rejectionReason = undefined;
-    }
-
-    if (reviewStatus === 'REJECTED') {
-      const reason = this.asTrimmedString(input.rejectionReason);
-      if (!reason) {
-        throw new AppError('Can nhap ly do khi ep trang thai REJECTED', 400);
-      }
-      update.rejectionReason = reason;
-      update.reviewedAt = new Date();
-      if (!status) update.status = 'draft';
-    }
-
-    if (reviewStatus === 'PENDING_REVIEW' && !status) {
-      update.status = 'draft';
-      update.rejectionReason = undefined;
-    }
-
-    const updated = await this.adminEventRepository.updateEvent(eventId, update);
-    if (!updated) throw new AppError('Event not found', 404);
-    return updated;
   }
 
   async cancelEvent(eventId: string, reason?: unknown): Promise<IEvent> {

@@ -1,6 +1,11 @@
 import { clientApi } from "@/lib/client-api"
 
-export type ReviewStatus = "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED"
+export type ReviewStatus =
+  | "DRAFT"
+  | "PENDING_REVIEW"
+  | "APPROVED_WAITING_DEPOSIT"
+  | "PUBLISHED"
+  | "REJECTED"
 export type LifecycleStatus = "draft" | "published" | "cancelled" | "completed"
 
 export interface PopulatedRef {

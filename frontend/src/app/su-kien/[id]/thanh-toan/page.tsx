@@ -36,7 +36,7 @@ export default async function PaymentPage({
   return (
     <>
       <Header />
-      <PaymentView event={detail.event} tickets={detail.tickets} quantities={quantities} />
+      <PaymentView event={detail.event} tickets={detail.tickets} quantities={quantities} shows={detail.shows} />
     </>
   )
 }

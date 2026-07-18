@@ -1,7 +1,6 @@
 /* ─── HeroBanner ─────────────────────────────────────────── */
 
 .section {
-  margin-top: var(--header-height);
   padding-top: 24px;
 }
 

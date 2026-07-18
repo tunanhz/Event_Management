@@ -118,7 +118,6 @@ function fullWizardPayload(categoryId: string, slug: string, signatureUrl?: stri
     slug,
     privacy: 'private',
     confirmationMessage: 'Hẹn gặp bạn tại sự kiện!',
-    enableQuestions: true,
     // Step 4
     logisticsServices: ['audio-lighting', 'checkin-staff'],
     permitDocuments: [{ name: 'giay-phep-to-chuc.pdf', url: '/uploads/permits/qa.pdf', sizeKb: 1024 }],
@@ -177,8 +176,8 @@ async function main() {
   check('posterImage + locationType saved', ev?.posterImage?.includes('poster') && ev?.locationType === 'offline');
   check('Org info mapped (organizer/logo/description)',
     ev?.organizer === 'QA Entertainment' && !!ev?.organizerLogoUrl && !!ev?.organizerDescription);
-  check('Settings saved (slug/privacy/confirmation/questions)',
-    ev?.slug === slug && ev?.privacy === 'private' && !!ev?.confirmationMessage && ev?.enableQuestions === true);
+  check('Settings saved (slug/privacy/confirmation)',
+    ev?.slug === slug && ev?.privacy === 'private' && !!ev?.confirmationMessage);
   check('Logistics + permit docs saved',
     ev?.logisticsServices?.length === 2 && ev?.permitDocuments?.[0]?.name?.endsWith('.pdf'));
   check('Contract agreed + agreedAt stamped', ev?.contract?.agreed === true && !!ev?.contract?.agreedAt);

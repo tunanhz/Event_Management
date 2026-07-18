@@ -31,6 +31,9 @@ export interface TicketType {
 /** A single showing/occurrence with its own date range and ticket tiers. */
 export interface EventShow {
   id: string
+  /** Organizer-facing label, e.g. "Đêm khai mạc". Optional — views fall back
+   *  to an auto-numbered "Suất N". */
+  title: string
   startTime: string
   endTime: string
   tickets: TicketType[]
@@ -53,13 +56,12 @@ export interface CreateEventForm {
   orgLogo: string | null
   orgName: string
   orgInfo: string
-  /** Step 2 — one or more shows, each with its own ticket tiers. */
+  /** Step 2 — one or more shows (suất diễn), each with its own ticket tiers. */
   shows: EventShow[]
   /** Step 3 — settings. */
   slug: string
   privacy: EventPrivacy
   confirmationMessage: string
-  enableQuestions: boolean
   /** Step 4 — logistics services requested from the platform. */
   logisticsServices: string[]
   /** Step 4 — uploaded legal permit / contract documents (metadata only). */
@@ -172,7 +174,7 @@ export function createEmptyTicket(): TicketType {
 
 /** A blank show with an empty ticket list. */
 export function createEmptyShow(): EventShow {
-  return { id: genId("show"), startTime: "", endTime: "", tickets: [] }
+  return { id: genId("show"), title: "", startTime: "", endTime: "", tickets: [] }
 }
 
 export const WIZARD_STEPS: { id: WizardStep; label: string }[] = [
@@ -196,19 +198,40 @@ export const EVENT_CATEGORIES = [
 // Province/ward options come from the official 34-province dataset in
 // /public/data/vietnam-provinces-wards.json — see use-vietnam-address-data.ts.
 
-/** Pre-filled description template shown in the reference editor. */
-export const DEFAULT_DESCRIPTION_HTML = `<p><strong>Giới thiệu sự kiện:</strong></p>
-<p>[Tóm tắt ngắn gọn về sự kiện: Nội dung chính của sự kiện, điểm đặc sắc nhất và lý do khiến người tham gia không nên bỏ lỡ]</p>
-<p><strong>Chi tiết sự kiện:</strong></p>
+/**
+ * Starter content for the event-description editor. Shown pre-filled and fully
+ * editable (not a ghost placeholder) on new events, so organizers begin from a
+ * structured outline instead of a blank box. Bracketed "[…]" prompts mark the
+ * parts they should replace; the Điều khoản section is usable as-is. Structure
+ * maps to the editor toolbar (h3 headings / ul lists / p paragraphs).
+ */
+export const DESCRIPTION_TEMPLATE = `<h3>🎬 Giới thiệu sự kiện</h3>
+<p>[Viết 2–3 câu giới thiệu tổng quan: sự kiện là gì, dành cho ai và điểm đặc biệt khiến khán giả không thể bỏ lỡ.]</p>
+<h3>✨ Điểm nhấn nổi bật</h3>
 <ul>
-<li><strong>Chương trình chính:</strong> [Liệt kê những hoạt động nổi bật trong sự kiện: các phần trình diễn, khách mời đặc biệt, lịch trình các tiết mục cụ thể nếu có.]</li>
-<li><strong>Khách mời:</strong> [Thông tin về các khách mời đặc biệt, nghệ sĩ, diễn giả sẽ tham gia sự kiện.]</li>
-<li><strong>Trải nghiệm đặc biệt:</strong> [Nếu có các hoạt động đặc biệt khác như workshop, khu trải nghiệm, photo booth, khu vực check-in hay các phần quà/ưu đãi dành riêng cho người tham dự.]</li>
+<li>[Điểm nhấn 1 — ví dụ: sân khấu hoành tráng, dàn nghệ sĩ đình đám…]</li>
+<li>[Điểm nhấn 2 — ví dụ: trải nghiệm độc quyền, quà tặng hấp dẫn…]</li>
+<li>[Điểm nhấn 3 — ví dụ: ưu đãi riêng cho khách đặt vé sớm…]</li>
 </ul>
-<p><strong>Điều khoản và điều kiện:</strong></p>
-<p>[TnC] sự kiện</p>
-<p>Lưu ý về điều khoản trẻ em</p>
-<p>Lưu ý về điều khoản VAT</p>`
+<h3>🗓️ Chương trình chính</h3>
+<ul>
+<li>[19:00] — [Đón khách &amp; check-in]</li>
+<li>[19:30] — [Khai mạc / tiết mục mở màn]</li>
+<li>[20:00] — [Nội dung chính của chương trình]</li>
+<li>[21:30] — [Bế mạc]</li>
+</ul>
+<h3>🎤 Khách mời</h3>
+<p>[Giới thiệu ngắn gọn về nghệ sĩ, diễn giả hoặc khách mời đặc biệt của chương trình.]</p>
+<h3>🎁 Trải nghiệm đặc biệt</h3>
+<p>[Mô tả những trải nghiệm dành riêng cho người tham dự: khu photobooth, hoạt động tương tác, ẩm thực, quà lưu niệm…]</p>
+<h3>📌 Điều khoản &amp; Điều kiện</h3>
+<ul>
+<li>Vui lòng có mặt trước giờ diễn ra ít nhất 30 phút để làm thủ tục soát vé.</li>
+<li>Mỗi vé chỉ có giá trị cho một lần vào cửa.</li>
+<li>Vé đã mua không hoàn, không huỷ, trừ trường hợp sự kiện bị huỷ bởi Ban tổ chức.</li>
+<li>Xuất trình vé điện tử (mã QR) tại cổng để được vào sự kiện.</li>
+<li>[Bổ sung quy định khác của Ban tổ chức nếu có…]</li>
+</ul>`
 
 export const INITIAL_FORM: CreateEventForm = {
   posterImage: null,
@@ -220,16 +243,19 @@ export const INITIAL_FORM: CreateEventForm = {
   ward: "",
   street: "",
   category: "",
-  description: DEFAULT_DESCRIPTION_HTML,
+  // Pre-filled editable template (not a placeholder) so the organizer starts
+  // from a structured scaffold and edits in place. The wizard validator still
+  // rejects the *untouched* template (see wizard-validation.ts) so this
+  // convenience can't be used to skip writing a real description.
+  description: DESCRIPTION_TEMPLATE,
   orgLogo: null,
   orgName: "",
   orgInfo: "",
   // Seed one show so the organizer lands on a ready-to-fill date range.
-  shows: [{ id: "show-1", startTime: "", endTime: "", tickets: [] }],
+  shows: [{ id: "show-1", title: "", startTime: "", endTime: "", tickets: [] }],
   slug: "",
   privacy: "public",
   confirmationMessage: "",
-  enableQuestions: false,
   logisticsServices: [],
   permitDocuments: [],
   contractRepName: "",

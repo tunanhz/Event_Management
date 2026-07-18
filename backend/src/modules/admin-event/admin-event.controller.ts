@@ -34,30 +34,6 @@ export class AdminEventController {
     res.json(ApiResponse.ok(result, 'Lấy chi tiết sự kiện thành công'));
   });
 
-  getStatusTracking = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const result = await this.adminEventService.getStatusTracking(
-      asOptionalString(req.query.search)
-    );
-    res.json(ApiResponse.ok(result, 'Lấy theo dõi trạng thái sự kiện thành công'));
-  });
-
-  updateEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const event = await this.adminEventService.updateEvent(
-      req.params.id as string,
-      req.body ?? {}
-    );
-    res.json(ApiResponse.ok(event, 'Cap nhat su kien thanh cong'));
-  });
-
-  forceStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const event = await this.adminEventService.forceStatus(
-      req.params.id as string,
-      req.user!.id,
-      req.body ?? {}
-    );
-    res.json(ApiResponse.ok(event, 'Cap nhat trang thai su kien thanh cong'));
-  });
-
   cancelEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
     const event = await this.adminEventService.cancelEvent(
       req.params.id as string,

@@ -26,16 +26,18 @@ export function deriveTime(date: Date): string {
 }
 
 /** One public session row per showing; falls back to a single row from the
- *  event start date for legacy flat events without shows. */
+ *  event start date for legacy flat events without shows. Uses the show's
+ *  organizer-given title as the label when set, else an auto-numbered
+ *  "Suất N" — only shown at all once there are 2+ sessions to disambiguate. */
 export function deriveSessions(
-  shows: { startTime: Date; endTime?: Date }[],
+  shows: { startTime: Date; endTime?: Date; title?: string }[],
   fallbackStart: Date
 ): ISession[] {
-  const rows = shows.length > 0 ? shows.map((s) => s.startTime) : [fallbackStart];
-  return rows.map((d, i) => ({
-    date: d,
-    time: deriveTime(d),
-    label: rows.length > 1 ? `Suất ${i + 1}` : undefined,
+  const rows = shows.length > 0 ? shows : [{ startTime: fallbackStart }];
+  return rows.map((s, i) => ({
+    date: s.startTime,
+    time: deriveTime(s.startTime),
+    label: rows.length > 1 ? s.title?.trim() || `Suất ${i + 1}` : undefined,
   }));
 }
 

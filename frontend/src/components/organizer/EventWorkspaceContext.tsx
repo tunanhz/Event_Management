@@ -1,19 +1,39 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react"
 import { Loader2, AlertTriangle } from "lucide-react"
 import { useOrganizerTitle } from "./OrganizerShellContext"
 import type { OrganizerEvent } from "./my-events-data"
 import {
   fetchOrganizerEventDetail,
   type ServerEventDetail,
+  type ServerEventShow,
 } from "./organizer-event-detail-api"
 
 interface WorkspaceValue {
-  /** Display shape consumed by summary / seatmap / check-in / orders. */
+  /** Display shape consumed by summary / check-in / orders. */
   event: OrganizerEvent
   /** Raw detail (event + tickets) — used by the edit wizard to rebuild the form. */
   detail: ServerEventDetail
+  /** The event's shows (suất diễn), in saved order; empty for legacy events. */
+  shows: ServerEventShow[]
+  /**
+   * Show filter shared by every report tab (Tổng kết / Check-in / Đơn hàng /
+   * Phân tích): null = "Tất cả suất diễn". Kept here so switching tabs keeps
+   * the same suất diễn selected.
+   */
+  selectedShowId: string | null
+  setSelectedShowId: (id: string | null) => void
+  /**
+   * Re-fetch this event's detail and push it back into the shared context.
+   * The dedicated sub-screens (Lịch trình, Giấy phép, the edit wizard) each
+   * save through their own endpoint, bypassing this provider entirely — so
+   * without calling this afterward, every *other* workspace tab keeps
+   * serving whatever it loaded on its own first mount. A same-tab client-side
+   * navigation to another tab does not remount the provider (only the leaf
+   * page), so it would otherwise show stale data until a full page reload.
+   */
+  refresh: () => Promise<void>
 }
 
 const EventWorkspaceContext = createContext<WorkspaceValue | null>(null)
@@ -41,17 +61,32 @@ export function EventWorkspaceProvider({
   eventId: string
   children: ReactNode
 }) {
-  const [value, setValue] = useState<WorkspaceValue | null>(null)
+  const [value, setValue] = useState<{
+    event: OrganizerEvent
+    detail: ServerEventDetail
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Shared per-show filter; the provider remounts per event (key={id} in the
+  // layout), so a stale selection can never leak across events.
+  const [selectedShowId, setSelectedShowId] = useState<string | null>(null)
 
-  // The provider is keyed by eventId in the layout, so it remounts (and state
-  // resets to the loading placeholder) whenever the organizer opens a different
-  // event — this effect just fetches once per event.
+  // Reusable loader exposed as `refresh` for callers outside this effect
+  // (the dedicated sub-screens, after their own successful saves).
+  const load = useCallback(async () => {
+    const v = await fetchOrganizerEventDetail(eventId)
+    setValue(v)
+  }, [eventId])
+
+  // Initial load — abort-guarded, and kept inline (not calling `load`) so no
+  // setState runs synchronously in the effect body.
   useEffect(() => {
     let active = true
     fetchOrganizerEventDetail(eventId)
       .then((v) => {
-        if (active) setValue(v)
+        if (active) {
+          setValue(v)
+          setError(null)
+        }
       })
       .catch((e) => {
         if (active) setError(e instanceof Error ? e.message : "Không tải được sự kiện")
@@ -87,8 +122,19 @@ export function EventWorkspaceProvider({
     )
   }
 
+  const shows = (value.detail.event.shows ?? []).filter((s) => s._id)
+
   return (
-    <EventWorkspaceContext.Provider value={value}>
+    <EventWorkspaceContext.Provider
+      value={{
+        ...value,
+        shows,
+        // A selection pointing at a since-deleted show falls back to "all".
+        selectedShowId: shows.some((s) => s._id === selectedShowId) ? selectedShowId : null,
+        setSelectedShowId,
+        refresh: load,
+      }}
+    >
       {children}
     </EventWorkspaceContext.Provider>
   )

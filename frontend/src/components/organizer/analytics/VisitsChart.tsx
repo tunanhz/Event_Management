@@ -16,8 +16,15 @@ export interface VisitPoint {
   visits: number
 }
 
-/** Visits-over-time area chart (flat baseline while there is no traffic). */
-export function VisitsChart({ data }: { data: VisitPoint[] }) {
+/** Area chart over daily points; `seriesName` labels the tooltip/series
+ *  (defaults to the original "Lượt truy cập" for backward compatibility). */
+export function VisitsChart({
+  data,
+  seriesName = "Lượt truy cập",
+}: {
+  data: VisitPoint[]
+  seriesName?: string
+}) {
   return (
     <div className={styles.chartWrap}>
       <ResponsiveContainer width="100%" height="100%">
@@ -57,12 +64,12 @@ export function VisitsChart({ data }: { data: VisitPoint[] }) {
               fontSize: "12px",
             }}
             labelStyle={{ color: "#e2e8f0", fontWeight: 600 }}
-            formatter={(value: unknown) => [String(value ?? 0), "Lượt truy cập"]}
+            formatter={(value: unknown) => [String(value ?? 0), seriesName]}
           />
           <Area
             type="monotone"
             dataKey="visits"
-            name="Lượt truy cập"
+            name={seriesName}
             stroke="#0891b2"
             strokeWidth={2.5}
             fill="url(#colorVisits)"

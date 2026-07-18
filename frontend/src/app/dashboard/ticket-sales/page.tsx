@@ -2,11 +2,11 @@ import type { Metadata } from "next"
 import { TicketSalesView } from "@/components/ticket-sales/TicketSalesView"
 
 export const metadata: Metadata = {
-  title: "Quản lý bán vé | EventBox",
-  description: "Cấu hình phí nền tảng và theo dõi tình hình bán vé theo sự kiện.",
+  title: "Theo dõi bán vé | EventBox",
+  description: "Theo dõi số lượng vé bán và doanh thu theo sự kiện.",
 }
 
-/** Admin ticket sale management — /dashboard/ticket-sales. */
+/** Admin ticket-sales monitoring — /dashboard/ticket-sales. */
 export default function TicketSalesPage() {
   return <TicketSalesView />
 }

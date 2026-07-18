@@ -1,31 +1,24 @@
 "use client"
 
-import type { ReactNode } from "react"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import {
   CalendarClock,
-  Edit3,
   Eye,
   Loader2,
   RotateCcw,
   Search,
   ShieldAlert,
-  SlidersHorizontal,
   Trash2,
-  XCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { cn } from "@/lib/utils"
-import { categoryApi, type Category } from "@/lib/admin-content-api"
 import {
   cancelAdminEvent,
   deleteAdminEvent,
   fetchAdminEvents,
-  forceAdminEventStatus,
   refLabel,
-  updateAdminEvent,
   type AdminEvent,
   type LifecycleStatus,
   type PaginationMeta,
@@ -36,6 +29,7 @@ const REVIEW_OPTIONS: { value: ReviewStatus | ""; label: string }[] = [
   { value: "", label: "Tất cả xét duyệt" },
   { value: "DRAFT", label: "Bản nháp" },
   { value: "PENDING_REVIEW", label: "Chờ duyệt" },
+  { value: "APPROVED_WAITING_DEPOSIT", label: "Chờ cọc" },
   { value: "PUBLISHED", label: "Đã duyệt" },
   { value: "REJECTED", label: "Từ chối" },
 ]
@@ -51,6 +45,7 @@ const STATUS_OPTIONS: { value: LifecycleStatus | ""; label: string }[] = [
 const REVIEW_LABEL: Record<ReviewStatus, string> = {
   DRAFT: "Bản nháp",
   PENDING_REVIEW: "Chờ duyệt",
+  APPROVED_WAITING_DEPOSIT: "Chờ cọc",
   PUBLISHED: "Đã duyệt",
   REJECTED: "Từ chối",
 }
@@ -69,25 +64,6 @@ const emptyMeta: PaginationMeta = {
   itemsPerPage: 10,
 }
 
-interface EditForm {
-  title: string
-  organizer: string
-  location: string
-  categoryId: string
-  capacity: string
-  startDate: string
-  endDate: string
-  banner: string
-  description: string
-  privacy: "public" | "private"
-  isFeatured: boolean
-  isTrending: boolean
-}
-
-function refId(ref: AdminEvent["categoryId"]) {
-  return ref && typeof ref === "object" ? ref._id ?? "" : typeof ref === "string" ? ref : ""
-}
-
 function formatDate(value?: string) {
   if (!value) return "—"
   const date = new Date(value)
@@ -95,23 +71,9 @@ function formatDate(value?: string) {
   return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
 }
 
-function toInputDate(value?: string) {
-  if (!value) return ""
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ""
-  const offset = date.getTimezoneOffset() * 60000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
-}
-
-function toIso(value: string) {
-  if (!value) return undefined
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
-}
-
 function reviewBadge(reviewStatus: ReviewStatus): "secondary" | "success" | "warning" | "destructive" {
   if (reviewStatus === "PUBLISHED") return "success"
-  if (reviewStatus === "PENDING_REVIEW") return "warning"
+  if (reviewStatus === "PENDING_REVIEW" || reviewStatus === "APPROVED_WAITING_DEPOSIT") return "warning"
   if (reviewStatus === "REJECTED") return "destructive"
   return "secondary"
 }
@@ -123,55 +85,8 @@ function lifecycleClass(status: LifecycleStatus) {
   return "text-muted-foreground"
 }
 
-function makeEditForm(event: AdminEvent): EditForm {
-  return {
-    title: event.title ?? "",
-    organizer: event.organizer ?? refLabel(event.creatorId, "fullName"),
-    location: event.location ?? "",
-    categoryId: refId(event.categoryId),
-    capacity: String(event.capacity ?? event.maxAttendees ?? 1),
-    startDate: toInputDate(event.startDate ?? event.date),
-    endDate: toInputDate(event.endDate ?? event.date),
-    banner: event.banner ?? event.imageUrl ?? "",
-    description: event.description ?? "",
-    privacy: event.privacy ?? "public",
-    isFeatured: event.isFeatured === true,
-    isTrending: event.isTrending === true,
-  }
-}
-
-function Modal({
-  title,
-  children,
-  onClose,
-}: {
-  title: string
-  children: ReactNode
-  onClose: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90dvh] w-full max-w-3xl overflow-y-auto rounded-xl border border-border bg-card shadow-xl">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h3 className="text-base font-bold text-foreground">{title}</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="Đóng"
-          >
-            <XCircle className="h-5 w-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
-}
-
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<AdminEvent[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
   const [meta, setMeta] = useState<PaginationMeta>(emptyMeta)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
@@ -210,15 +125,11 @@ export default function AdminEventsPage() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([
-      fetchAdminEvents({ page, limit: 10, search: submittedSearch, status, reviewStatus }),
-      categoryApi.list(),
-    ])
-      .then(([eventResult, categoryResult]) => {
+    fetchAdminEvents({ page, limit: 10, search: submittedSearch, status, reviewStatus })
+      .then((eventResult) => {
         if (cancelled) return
         setEvents(eventResult.events)
         setMeta(eventResult.meta)
-        setCategories(categoryResult)
       })
       .catch((err) => {
         if (!cancelled) {
@@ -233,16 +144,6 @@ export default function AdminEventsPage() {
     }
   }, [page, submittedSearch, status, reviewStatus])
 
-  const counts = useMemo(() => {
-    return events.reduce(
-      (acc, event) => {
-        acc[event.reviewStatus] += 1
-        return acc
-      },
-      { DRAFT: 0, PENDING_REVIEW: 0, PUBLISHED: 0, REJECTED: 0 } as Record<ReviewStatus, number>
-    )
-  }, [events])
-
   const submitSearch = (event: React.FormEvent) => {
     event.preventDefault()
     setSubmittedSearch(search.trim())
@@ -256,7 +157,7 @@ export default function AdminEventsPage() {
 
   const openStatus = (event: AdminEvent) => {
     setStatusEvent(event)
-    setForcedStatus(event.privacy === "private" ? "private" : event.status)
+    setForcedStatus(event.status)
     setForcedReviewStatus(event.reviewStatus)
     setStatusReason(event.rejectionReason ?? "")
   }
@@ -297,25 +198,11 @@ export default function AdminEventsPage() {
     setSaving(true)
     setError(null)
     try {
-      const payload: {
-        status?: LifecycleStatus
-        reviewStatus?: ReviewStatus
-        rejectionReason?: string
-        privacy?: "public" | "private"
-      } = {
+      await forceAdminEventStatus(statusEvent._id, {
+        status: forcedStatus,
         reviewStatus: forcedReviewStatus,
         rejectionReason: statusReason,
-      }
-
-      if (forcedStatus === "private") {
-        payload.status = "published"
-        payload.privacy = "private"
-      } else {
-        payload.status = forcedStatus
-        payload.privacy = "public"
-      }
-
-      await forceAdminEventStatus(statusEvent._id, payload)
+      })
       setStatusEvent(null)
       await load()
     } catch (err) {
@@ -366,7 +253,7 @@ export default function AdminEventsPage() {
         <div>
           <h2 className="text-2xl font-bold text-foreground">Quản trị sự kiện</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Xem toàn bộ sự kiện, sửa thông tin vận hành, hủy, xóa và ép trạng thái khi cần.
+            Xem toàn bộ sự kiện, theo dõi trạng thái, hủy hoặc xóa khi cần.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -388,15 +275,6 @@ export default function AdminEventsPage() {
           {error}
         </div>
       )}
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {REVIEW_OPTIONS.filter((item) => item.value).map((item) => (
-          <div key={item.value} className="rounded-xl border border-border bg-card p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">{item.label}</p>
-            <p className="mt-2 text-2xl font-bold text-foreground">{counts[item.value as ReviewStatus]}</p>
-          </div>
-        ))}
-      </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <div className="border-b border-border p-4">
@@ -451,7 +329,7 @@ export default function AdminEventsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] text-left text-sm">
+            <table className="w-full min-w-[960px] text-left text-sm">
               <thead className="border-b border-border bg-muted/60 text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-bold">Sự kiện</th>
@@ -459,7 +337,7 @@ export default function AdminEventsPage() {
                   <th className="px-4 py-3 font-bold">Lịch</th>
                   <th className="px-4 py-3 font-bold">Vòng đời</th>
                   <th className="px-4 py-3 font-bold">Xét duyệt</th>
-                  <th className="px-4 py-3 font-bold">Trạng thái</th>
+                  <th className="px-4 py-3 font-bold">Vận hành</th>
                   <th className="px-4 py-3 font-bold">Thao tác</th>
                 </tr>
               </thead>
@@ -493,25 +371,19 @@ export default function AdminEventsPage() {
                       )}
                     </td>
                     <td className="px-4 py-4">
-                      {event.status === "cancelled" ? (
-                        <Badge variant="destructive">Đã hủy</Badge>
-                      ) : event.status === "completed" ? (
-                        <Badge variant="secondary">Đã qua</Badge>
-                      ) : event.privacy === "private" ? (
-                        <Badge variant="warning">Riêng tư</Badge>
-                      ) : (
-                        <Badge variant="success">Công khai</Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1.5">
+                        {event.isFeatured && <Badge variant="success">Nổi bật</Badge>}
+                        {event.isTrending && <Badge variant="warning">Xu hướng</Badge>}
+                        <Badge variant="secondary">{event.privacy === "private" ? "Riêng tư" : "Công khai"}</Badge>
+                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">
-                        <Button type="button" size="sm" variant="outline" onClick={() => openEdit(event)}>
-                          <Edit3 className="mr-1.5 h-3.5 w-3.5" />
-                          Sửa
-                        </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => openStatus(event)}>
-                          <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
-                          Trạng thái
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/dashboard/moderation/${event._id}`}>
+                            <Eye className="mr-1.5 h-3.5 w-3.5" />
+                            Chi tiết
+                          </Link>
                         </Button>
                         <Button type="button" size="sm" variant="outline" onClick={() => void cancelEvent(event)}>
                           <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
@@ -594,7 +466,20 @@ export default function AdminEventsPage() {
               Mô tả
               <textarea className="min-h-28 w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground outline-none focus:border-cyan-500 focus:bg-card focus:ring-2 focus:ring-cyan-500/20" value={editForm.description} onChange={(event) => setEditForm({ ...editForm, description: event.target.value })} />
             </label>
-            
+            <div className="flex flex-wrap gap-4 text-sm font-semibold text-foreground">
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={editForm.isFeatured} onChange={(event) => setEditForm({ ...editForm, isFeatured: event.target.checked })} />
+                Nổi bật
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={editForm.isTrending} onChange={(event) => setEditForm({ ...editForm, isTrending: event.target.checked })} />
+                Xu hướng
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={editForm.privacy === "private"} onChange={(event) => setEditForm({ ...editForm, privacy: event.target.checked ? "private" : "public" })} />
+                Riêng tư
+              </label>
+            </div>
             <div className="flex justify-end gap-2 border-t border-border pt-4">
               <Button type="button" variant="outline" onClick={() => setEditEvent(null)}>Hủy</Button>
               <Button type="submit" disabled={saving}>
@@ -611,13 +496,11 @@ export default function AdminEventsPage() {
           <form onSubmit={saveStatus} className="space-y-4 p-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="space-y-1.5 text-sm font-semibold text-foreground">
-                Trạng thái sự kiện
-                <select className={inputClass} value={forcedStatus} onChange={(event) => setForcedStatus(event.target.value as any)}>
-                  <option value="draft">Nháp</option>
-                  <option value="published">Công khai</option>
-                  <option value="private">Riêng tư</option>
-                  <option value="completed">Hoàn tất</option>
-                  <option value="cancelled">Đã hủy</option>
+                Vòng đời public
+                <select className={inputClass} value={forcedStatus} onChange={(event) => setForcedStatus(event.target.value as LifecycleStatus)}>
+                  {STATUS_OPTIONS.filter((item) => item.value).map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
                 </select>
               </label>
               <label className="space-y-1.5 text-sm font-semibold text-foreground">

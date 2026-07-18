@@ -1,21 +1,12 @@
-import {
-  getAvailableBalance,
-  getWithdrawalHistory,
-} from "@/components/organizer/manage/withdrawal-request-data"
+"use client"
+
+import { useWorkspaceEvent } from "@/components/organizer/EventWorkspaceContext"
 import { WithdrawalRequestView } from "@/components/organizer/manage/WithdrawalRequestView"
 
-/** Withdrawal ("Rút tiền"): banking form + request history for the event. */
-export default async function EventWithdrawalPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-
+/** Withdrawal ("Rút tiền"): real balance + request history from the API. */
+export default function EventWithdrawalPage() {
+  const { event, detail } = useWorkspaceEvent()
   return (
-    <WithdrawalRequestView
-      availableBalance={getAvailableBalance(id)}
-      history={getWithdrawalHistory(id)}
-    />
+    <WithdrawalRequestView eventId={event.id} defaultPaymentInfo={detail.event.paymentInfo} />
   )
 }

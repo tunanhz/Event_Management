@@ -89,7 +89,6 @@ export interface IEvent extends Document {
   slug?: string;
   privacy: 'public' | 'private';
   confirmationMessage?: string;
-  enableQuestions: boolean;
   /** Platform support services requested (step 4), e.g. "audio-lighting". */
   logisticsServices: string[];
   permitDocuments: IPermitDocument[];
@@ -181,7 +180,6 @@ const eventSchema = new Schema<IEvent>(
     },
     privacy: { type: String, enum: ['public', 'private'], default: 'public' },
     confirmationMessage: { type: String, maxlength: 500 },
-    enableQuestions: { type: Boolean, default: false },
     logisticsServices: { type: [String], default: [] },
     permitDocuments: { type: [permitDocumentSchema], default: [] },
     contract: { type: eventContractSchema },

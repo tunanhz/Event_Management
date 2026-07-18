@@ -16,6 +16,13 @@ const Header: React.FC = () => {
   // Hide on scroll-down (past a small threshold), reveal on scroll-up.
   const hidden = dir === "down" && y > 120;
 
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    router.push(`/su-kien?q=${encodeURIComponent(q)}`);
+  };
+
   return (
     <>
       {/* ═══════ Desktop Header ═══════ */}
@@ -34,13 +41,13 @@ const Header: React.FC = () => {
             </Link>
 
             {/* Search Bar */}
-            <div className={styles.searchBar}>
-              <span className={styles.searchIcon}>
+            <form className={styles.searchBar} onSubmit={submitSearch} role="search">
+              <button type="submit" className={styles.searchIcon} aria-label="Tìm kiếm">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-              </span>
+              </button>
               <input
                 type="search"
                 className={styles.searchInput}
@@ -56,7 +63,7 @@ const Header: React.FC = () => {
                 </svg>
                 TP. Hồ Chí Minh
               </button>
-            </div>
+            </form>
 
             {/* Right Actions */}
             <div className={styles.actions}>
@@ -131,18 +138,18 @@ const Header: React.FC = () => {
 
           {/* Mobile Actions */}
           <div className={styles.mobileActions}>
-            <NotificationBell className={styles.mobileIconBtn} />
+            <NotificationBell className={`${styles.mobileIconBtn} ${styles.mobileOptional}`} />
 
-            <ThemeToggle className={styles.mobileIconBtn} />
+            <ThemeToggle className={`${styles.mobileIconBtn} ${styles.mobileOptional}`} />
 
-            <button className={styles.mobileIconBtn} type="button" aria-label="Tìm kiếm">
+            <button className={`${styles.mobileIconBtn} ${styles.mobileSearchBtn}`} type="button" aria-label="Tìm kiếm">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </button>
 
-            <button className={styles.mobileIconBtn} type="button" aria-label="Menu">
+            <button className={`${styles.mobileIconBtn} ${styles.mobileMenuBtn}`} type="button" aria-label="Menu">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="12" x2="21" y2="12" />

@@ -4,6 +4,8 @@ import type { ModerationEvent } from "@/types"
 // Chi tiết hồ sơ duyệt sự kiện (mock) — mở rộng ModerationEvent với dữ liệu
 // mà Admin cần thẩm định: mô tả, lịch, sức chứa, loại vé, hồ sơ pháp lý.
 export interface ModerationTicketType {
+  /** Backend ticket _id — absent for mock data, present for API-loaded events. */
+  id?: string
   name: string
   price: number
   quantity: number

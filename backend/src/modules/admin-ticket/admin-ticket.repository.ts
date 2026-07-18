@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { Event } from '../event/event.model';
 import { Ticket, ITicket } from '../organizer/ticket.model';
 import { PaginationQuery, PaginatedResult } from '../../common/types';
 
@@ -49,31 +48,4 @@ export class AdminTicketRepository {
       .lean();
   }
 
-  async findRawTicketById(id: string): Promise<ITicket | null> {
-    return Ticket.findById(id).lean();
-  }
-
-  async countTicketsByEvent(eventId: string): Promise<number> {
-    return Ticket.countDocuments({ eventId });
-  }
-
-  async updateTicket(id: string, data: Partial<ITicket>): Promise<ITicket | null> {
-    return Ticket.findByIdAndUpdate(id, data, { new: true, runValidators: true })
-      .populate('eventId', 'title status reviewStatus startDate date location category categoryId creatorId organizer')
-      .lean();
-  }
-
-  async deleteTicket(id: string): Promise<void> {
-    await Ticket.findByIdAndDelete(id);
-  }
-
-  async syncEventPriceFields(eventId: string): Promise<void> {
-    const visibleTickets = await Ticket.find({ eventId, status: { $ne: 'HIDDEN' } })
-      .select('price')
-      .lean();
-    const priceFrom =
-      visibleTickets.length > 0 ? Math.min(...visibleTickets.map((ticket) => ticket.price)) : 0;
-    const isFree = visibleTickets.length > 0 && visibleTickets.every((ticket) => ticket.price === 0);
-    await Event.findByIdAndUpdate(eventId, { priceFrom, isFree });
-  }
 }

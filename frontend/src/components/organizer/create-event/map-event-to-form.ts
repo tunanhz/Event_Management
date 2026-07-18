@@ -1,5 +1,4 @@
 import {
-  DEFAULT_DESCRIPTION_HTML,
   createEmptyShow,
   type CreateEventForm,
   type EventShow,
@@ -45,7 +44,8 @@ function mapTicket(t: ServerEventTicket): TicketType {
  * Seed a CreateEventForm from a saved event's detail for the "Chỉnh sửa" flow.
  * Shows keep their server _id (so a re-save updates them instead of recreating),
  * and tickets are grouped back under their show via Ticket.showId. Tickets with
- * no matching show (legacy flat events) fall under the first show.
+ * no matching show (legacy flat events) fall under a synthesized first show
+ * spanning the event's own date range.
  */
 export function mapDetailToForm(detail: ServerEventDetail): CreateEventForm {
   const { event, tickets } = detail
@@ -54,6 +54,7 @@ export function mapDetailToForm(detail: ServerEventDetail): CreateEventForm {
     .filter((s) => s._id)
     .map((s) => ({
       id: s._id as string,
+      title: s.title ?? "",
       startTime: isoToLocalInput(s.startTime),
       endTime: isoToLocalInput(s.endTime),
       tickets: tickets.filter((t) => t.showId === s._id).map(mapTicket),
@@ -64,7 +65,13 @@ export function mapDetailToForm(detail: ServerEventDetail): CreateEventForm {
   )
   if (orphanTickets.length > 0) {
     if (shows.length === 0) {
-      shows.push({ ...createEmptyShow(), tickets: orphanTickets.map(mapTicket) })
+      // Legacy flat event: surface its single time range as one show.
+      shows.push({
+        ...createEmptyShow(),
+        startTime: isoToLocalInput(event.startDate ?? event.date),
+        endTime: isoToLocalInput(event.endDate ?? event.date),
+        tickets: orphanTickets.map(mapTicket),
+      })
     } else {
       shows[0].tickets.push(...orphanTickets.map(mapTicket))
     }
@@ -83,7 +90,9 @@ export function mapDetailToForm(detail: ServerEventDetail): CreateEventForm {
         ? event.location ?? ""
         : event.venue?.street ?? "",
     category: event.categoryId ?? "",
-    description: event.description || DEFAULT_DESCRIPTION_HTML,
+    // No fallback template — an event saved with no description shows the
+    // editor's ghost placeholder, same as a brand-new draft.
+    description: event.description || "",
     orgLogo: event.organizerLogoUrl ?? null,
     orgName: event.organizer ?? "",
     orgInfo: event.organizerDescription ?? "",
@@ -91,7 +100,6 @@ export function mapDetailToForm(detail: ServerEventDetail): CreateEventForm {
     slug: event.slug ?? "",
     privacy: event.privacy ?? "public",
     confirmationMessage: event.confirmationMessage ?? "",
-    enableQuestions: event.enableQuestions ?? false,
     logisticsServices: event.logisticsServices ?? [],
     permitDocuments: (event.permitDocuments ?? []).map((d, i) => ({
       id: `permit-${i}-${d.url}`,

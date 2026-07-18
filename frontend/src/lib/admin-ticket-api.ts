@@ -72,20 +72,6 @@ export async function fetchAdminTickets(params: AdminTicketListParams) {
   }
 }
 
-export async function updateAdminTicket(id: string, payload: Partial<AdminTicket>) {
-  const res = await clientApi.put<ApiEnvelope<AdminTicket>>(`/admin/tickets/${id}`, payload)
-  return res.data
-}
-
-export async function updateAdminTicketStatus(id: string, status: TicketStatus) {
-  const res = await clientApi.patch<ApiEnvelope<AdminTicket>>(`/admin/tickets/${id}/status`, { status })
-  return res.data
-}
-
-export async function deleteAdminTicket(id: string) {
-  await clientApi.delete(`/admin/tickets/${id}`)
-}
-
 export function eventRef(ticket: AdminTicket): PopulatedEvent {
   return typeof ticket.eventId === "object" ? ticket.eventId : {}
 }

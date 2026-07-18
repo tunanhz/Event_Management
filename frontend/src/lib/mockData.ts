@@ -316,6 +316,18 @@ export interface TicketType {
   id: string;
   name: string;
   price: number; // VND
+  minPerOrder: number;
+  maxPerOrder: number;
+  /** Showing this tier is sold for. Absent = valid for every showing. */
+  showId?: string;
+}
+
+/** One showing ("xuất chiếu") of a multi-show event. */
+export interface ShowOption {
+  id: string;
+  label: string;
+  startTime: string; // ISO
+  endTime: string; // ISO
 }
 
 export interface EventDetail {
@@ -327,10 +339,10 @@ export interface EventDetail {
 
 /** Default ticket tiers attached to every event (no per-event ticket data yet). */
 export const defaultTicketTiers: TicketType[] = [
-  { id: "standard-2", name: "STANDARD 2", price: 700_000 },
-  { id: "standard-1", name: "STANDARD 1", price: 1_000_000 },
-  { id: "vip", name: "VIP", price: 2_100_000 },
-  { id: "super-vip", name: "SUPER VIP", price: 2_300_000 },
+  { id: "standard-2", name: "STANDARD 2", price: 700_000, minPerOrder: 1, maxPerOrder: 10 },
+  { id: "standard-1", name: "STANDARD 1", price: 1_000_000, minPerOrder: 1, maxPerOrder: 10 },
+  { id: "vip", name: "VIP", price: 2_100_000, minPerOrder: 1, maxPerOrder: 10 },
+  { id: "super-vip", name: "SUPER VIP", price: 2_300_000, minPerOrder: 1, maxPerOrder: 10 },
 ];
 
 /* Workshop Gốm runs daily: 30/06 + all of July → 1 + 31 suất. */
