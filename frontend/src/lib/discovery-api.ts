@@ -17,6 +17,8 @@ import type {
 } from "@/lib/mockData"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+const DEFAULT_EVENT_IMAGE = "/event-placeholder.svg"
+const DEFAULT_AVATAR_IMAGE = "/avatar-placeholder.svg"
 
 // ── Raw API shapes (subset we consume) ──────────────────────────────
 interface ApiEvent {
@@ -93,7 +95,7 @@ function formatPrice(priceFrom?: number, isFree?: boolean): string {
   return `Từ ${priceFrom.toLocaleString("vi-VN")}đ`
 }
 
-const eventImage = (e: ApiEvent) => e.imageUrl || e.banner || ""
+const eventImage = (e: ApiEvent) => e.imageUrl || e.banner || DEFAULT_EVENT_IMAGE
 
 // ── Mappers ─────────────────────────────────────────────────────────
 function toEventItem(e: ApiEvent): EventItem {
@@ -102,10 +104,10 @@ function toEventItem(e: ApiEvent): EventItem {
     title: e.title,
     date: formatDate(e.date ?? e.startDate),
     time: e.time || "",
-    location: e.location || "",
+    location: e.location || "Đang cập nhật",
     price: formatPrice(e.priceFrom, e.isFree),
     image: eventImage(e),
-    category: e.category || "",
+    category: e.category || "Sự kiện",
   }
 }
 
@@ -148,11 +150,11 @@ export async function fetchHomeData(): Promise<HomeData> {
       id: b._id,
       title: b.title,
       subtitle: b.subtitle || "",
-      image: b.imageUrl || "",
+      image: b.imageUrl || DEFAULT_EVENT_IMAGE,
       cta: b.ctaLabel || "Khám phá ngay",
       link: b.linkUrl || "#",
     })),
-    stars: stars.map((s) => ({ id: s._id, name: s.name, slug: s.slug, image: s.imageUrl || "", verified: s.verified })),
+    stars: stars.map((s) => ({ id: s._id, name: s.name, slug: s.slug, image: s.imageUrl || DEFAULT_AVATAR_IMAGE, verified: s.verified })),
     featured: featured.map(toEventItem),
     trending: trending.map(toEventItem),
     upcoming: upcoming.map(toEventItem),
@@ -192,7 +194,7 @@ export async function fetchEventDetail(id: string): Promise<EventDetailData | nu
     showDates: showDates.length > 0 ? showDates : [formatDate(e.date ?? e.startDate)],
     organizer: {
       name: e.organizer || "EventBox Organizer",
-      logo: e.organizerLogoUrl || "",
+      logo: e.organizerLogoUrl || DEFAULT_AVATAR_IMAGE,
       description: e.organizerDescription || "Đơn vị tổ chức trên nền tảng EventBox.",
     },
     tickets: (data.tickets ?? []).map((t) => ({ id: t._id, name: t.ticketName, price: t.price })),

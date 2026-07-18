@@ -16,6 +16,16 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Test check-in camera on a phone
+
+The camera API requires HTTPS when the page is opened from another device. Connect the phone and development machine to the same Wi-Fi, then run:
+
+```bash
+npm run dev:mobile
+```
+
+Open the HTTPS URL printed by the command on the phone. On the first run, trust the generated development certificate and allow camera access. The command automatically prefers a physical LAN/Wi-Fi IPv4 address. If it selects the wrong adapter, set `MOBILE_HOST` explicitly before running it.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
