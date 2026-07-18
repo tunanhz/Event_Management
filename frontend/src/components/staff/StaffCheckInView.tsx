@@ -19,7 +19,15 @@ import {
 type ScanResult = CheckInResult | null
 
 /** Map API response → legacy CheckInResult shape that CheckInScanner expects */
-function mapToScannerResult(response: CheckInResponse): CheckInResult {
+function formatScanTime(value?: string): string | null {
+  if (!value) return null
+  return new Date(value).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+function mapToScannerResult(response: CheckInResponse, code: string): CheckInResult {
   const statusMap: Record<ApiCheckInResult, CheckInResult["status"]> = {
     success: "success",
     duplicate: "duplicate",
@@ -27,7 +35,21 @@ function mapToScannerResult(response: CheckInResponse): CheckInResult {
     wrong_event: "invalid",
     cancelled: "invalid",
   }
-  return { status: statusMap[response.result] ?? "invalid" }
+  const status = statusMap[response.result] ?? "invalid"
+  if (status === "invalid") return { status }
+
+  return {
+    status,
+    ticket: {
+      code: code.trim().toUpperCase(),
+      attendeeName: response.attendeeName ?? "Người tham dự",
+      email: "",
+      orderCode: "",
+      ticketType: response.ticketName ?? "Vé sự kiện",
+      checkedInAt: formatScanTime(response.checkedInAt),
+    },
+    previousTime: formatScanTime(response.previousCheckedInAt) ?? undefined,
+  }
 }
 
 const POLL_INTERVAL_MS = 15_000 // Refresh stats every 15s
@@ -71,7 +93,7 @@ export function StaffCheckInView({ eventId }: { eventId: string }) {
   const handleScan = async (raw: string) => {
     try {
       const response = await checkInTicket({ ticketCode: raw.trim(), eventId })
-      setResult(mapToScannerResult(response))
+      setResult(mapToScannerResult(response, raw))
 
       // Push to recent feed
       setRecentScans((prev) => [

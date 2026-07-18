@@ -103,8 +103,26 @@ export function StaffShiftSummaryView({ eventId }: { eventId: string }) {
                 <Clock size={15} aria-hidden="true" />
                 {assignment.shift}
               </span>
-              <Badge variant={assignment.status === "confirmed" ? "success" : "secondary"}>
-                {assignment.status === "confirmed" ? "Đã nhận ca" : "Chưa nhận ca"}
+              <Badge
+                variant={
+                  assignment.status === "confirmed"
+                    ? "success"
+                    : assignment.status === "expired" || assignment.status === "cancelled"
+                      ? "destructive"
+                      : assignment.status === "assigned"
+                        ? "warning"
+                        : "secondary"
+                }
+              >
+                {assignment.status === "confirmed"
+                  ? "Đã nhận ca"
+                  : assignment.status === "expired"
+                    ? "Không làm – quá hạn"
+                    : assignment.status === "cancelled"
+                      ? "Đã hủy"
+                      : assignment.status === "completed"
+                        ? "Đã hoàn thành"
+                        : "Chưa nhận ca"}
               </Badge>
             </div>
           ) : (

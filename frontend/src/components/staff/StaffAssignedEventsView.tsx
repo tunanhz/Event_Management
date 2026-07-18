@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   CalendarClock, MapPin, Clock, DoorOpen, BadgeCheck, ScanLine,
-  Users, History, CheckCheck, Loader2, AlertCircle, CreditCard
+  Users, History, CheckCheck, Loader2, AlertCircle
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
@@ -36,6 +36,7 @@ export function StaffAssignedEventsView() {
         prev.map((a) => (a._id === assignmentId ? updated : a))
       )
     } catch (err: any) {
+      fetchMyAssignments().then(setAssignments).catch(() => undefined)
       alert(err.message ?? "Xác nhận thất bại")
     } finally {
       setConfirming(null)
@@ -64,8 +65,9 @@ export function StaffAssignedEventsView() {
 
   const todayCount = assignments.filter((a) => {
     const event = typeof a.eventId === "object" ? a.eventId : null
-    if (!event?.startDate) return false
-    const d = new Date(event.startDate)
+    const eventStart = event?.startDate ?? event?.date
+    if (!eventStart) return false
+    const d = new Date(eventStart)
     const today = new Date()
     return (
       d.getFullYear() === today.getFullYear() &&
@@ -112,7 +114,28 @@ export function StaffAssignedEventsView() {
             const event = typeof assignment.eventId === "object" ? assignment.eventId : null
             const eventId = event?._id ?? (assignment.eventId as string)
             const base = `/staff/check-in/${eventId}`
-            const isConfirmed = assignment.status !== "assigned"
+            const isAwaitingConfirmation = assignment.status === "assigned"
+            const isConfirmed = assignment.status === "confirmed"
+            const eventStart = event?.startDate ?? event?.date
+            const confirmationDeadline = eventStart
+              ? new Date(new Date(eventStart).getTime() - 60 * 60 * 1000)
+              : null
+            const statusLabel = assignment.status === "assigned"
+              ? "Chờ xác nhận"
+              : assignment.status === "confirmed"
+                ? "Đã xác nhận"
+                : assignment.status === "completed"
+                  ? "Đã hoàn thành"
+                  : assignment.status === "expired"
+                    ? "Không làm – quá hạn"
+                    : "Đã hủy"
+            const statusVariant = assignment.status === "assigned"
+              ? "warning"
+              : assignment.status === "cancelled" || assignment.status === "expired"
+                ? "destructive"
+                : assignment.status === "confirmed"
+                  ? "success"
+                  : "secondary"
 
             return (
               <article
@@ -125,15 +148,15 @@ export function StaffAssignedEventsView() {
                       <h2 className="text-lg font-bold text-foreground">
                         {event?.title ?? "Sự kiện"}
                       </h2>
-                      <Badge variant={isConfirmed ? "success" : "warning"}>
-                        {isConfirmed ? "Đã xác nhận" : "Chờ xác nhận"}
+                      <Badge variant={statusVariant}>
+                        {statusLabel}
                       </Badge>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                      {event?.startDate && (
+                      {eventStart && (
                         <span className="inline-flex items-center gap-1.5">
                           <CalendarClock size={15} aria-hidden="true" />
-                          {new Date(event.startDate).toLocaleString("vi-VN", {
+                          {new Date(eventStart).toLocaleString("vi-VN", {
                             dateStyle: "short",
                             timeStyle: "short",
                           })}
@@ -165,33 +188,47 @@ export function StaffAssignedEventsView() {
                   </span>
                 </div>
 
+                {isAwaitingConfirmation && confirmationDeadline && (
+                  <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-amber-600 dark:text-amber-400">
+                    <AlertCircle size={15} aria-hidden="true" />
+                    Xác nhận trước {confirmationDeadline.toLocaleString("vi-VN", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}; quá hạn sẽ được ghi nhận là không làm.
+                  </p>
+                )}
+                {assignment.status === "expired" && (
+                  <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-destructive">
+                    <AlertCircle size={15} aria-hidden="true" />
+                    Ca này đã quá hạn xác nhận và không còn quyền vận hành sự kiện.
+                  </p>
+                )}
+
                 {/* Actions */}
                 <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
-                  <Button asChild className="h-11 gap-2 rounded-xl px-5 font-semibold">
-                    <Link href={base}>
-                      <ScanLine size={17} aria-hidden="true" />
-                      Vào trạm check-in
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" className="h-11 gap-2 rounded-xl px-4">
-                    <Link href={`${base}/attendees`}>
-                      <Users size={16} aria-hidden="true" />
-                      Người tham dự
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" className="h-11 gap-2 rounded-xl px-4">
-                    <Link href={`${base}/history`}>
-                      <History size={16} aria-hidden="true" />
-                      Lịch sử
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" className="h-11 gap-2 rounded-xl px-4 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
-                    <Link href={`${base}/offline-sale`}>
-                      <CreditCard size={16} aria-hidden="true" />
-                      Bán vé
-                    </Link>
-                  </Button>
-                  {!isConfirmed && (
+                  {isConfirmed && (
+                    <>
+                      <Button asChild className="h-11 gap-2 rounded-xl px-5 font-semibold">
+                        <Link href={base}>
+                          <ScanLine size={17} aria-hidden="true" />
+                          Vào trạm check-in
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline" className="h-11 gap-2 rounded-xl px-4">
+                        <Link href={`${base}/attendees`}>
+                          <Users size={16} aria-hidden="true" />
+                          Người tham dự
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline" className="h-11 gap-2 rounded-xl px-4">
+                        <Link href={`${base}/history`}>
+                          <History size={16} aria-hidden="true" />
+                          Lịch sử
+                        </Link>
+                      </Button>
+                    </>
+                  )}
+                  {isAwaitingConfirmation && (
                     <Button
                       variant="outline"
                       className="h-11 gap-2 rounded-xl border-emerald-500/40 px-4 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-500/10 dark:text-emerald-400"

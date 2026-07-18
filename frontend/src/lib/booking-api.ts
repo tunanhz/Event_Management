@@ -24,6 +24,7 @@ interface ApiRegistration {
   quantity: number
   totalAmount: number
   status: "PENDING" | "PAID" | "CANCELLED" | "EXPIRED" | "REFUNDED"
+  ticketCode?: string
   createdAt: string
 }
 
@@ -110,7 +111,7 @@ function toUserTicket(r: ApiRegistration): UserTicket {
   else if (r.status === "PAID" && eventPassed) status = "used"
   return {
     id: r._id,
-    orderCode: `EVB-${r._id.slice(-6).toUpperCase()}`,
+    orderCode: r.ticketCode ?? `EVB-${r._id.slice(-6).toUpperCase()}`,
     eventId: ev._id || (typeof r.eventId === "string" ? r.eventId : ""),
     eventTitle: ev.title || "Sự kiện",
     image: ev.imageUrl || ev.banner || "",

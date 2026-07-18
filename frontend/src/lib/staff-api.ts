@@ -22,7 +22,7 @@ export interface PaginationMeta {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type AssignmentStatus = "assigned" | "confirmed" | "completed" | "cancelled";
+export type AssignmentStatus = "assigned" | "confirmed" | "completed" | "cancelled" | "expired";
 
 export interface StaffAssignment {
   _id: string;
@@ -32,6 +32,7 @@ export interface StaffAssignment {
     banner?: string;
     imageUrl?: string;
     location?: string;
+    date?: string;
     startDate?: string;
     endDate?: string;
     status: string;
@@ -258,52 +259,6 @@ export async function manualCheckIn(
   const res = await clientApi.post<ApiEnvelope<AttendeeRow>>(
     `/staff/events/${eventId}/attendees/${registrationId}/check-in`,
     {}
-  );
-  return res.data;
-}
-
-// ─── Offline Sales ────────────────────────────────────────────────────────────
-
-export interface TicketType {
-  _id: string;
-  ticketName: string;
-  price: number;
-  quantity: number;
-  soldQuantity: number;
-  minPerOrder: number;
-  maxPerOrder: number;
-  status: string;
-}
-
-export interface SellOfflineTicketPayload {
-  ticketId: string;
-  quantity: number;
-  participantInfo: {
-    fullName: string;
-    email: string;
-    phone?: string;
-  };
-}
-
-export interface OfflineSaleResult {
-  ticketCode: string;
-  registrationId: string;
-}
-
-/** Staff: Lấy danh sách vé đang mở bán của sự kiện */
-export async function fetchEventTickets(eventId: string): Promise<TicketType[]> {
-  const res = await clientApi.get<ApiEnvelope<TicketType[]>>(`/staff/events/${eventId}/tickets`);
-  return res.data ?? [];
-}
-
-/** Staff: Bán vé offline tại quầy */
-export async function sellOfflineTicket(
-  eventId: string,
-  payload: SellOfflineTicketPayload
-): Promise<OfflineSaleResult> {
-  const res = await clientApi.post<ApiEnvelope<OfflineSaleResult>>(
-    `/staff/events/${eventId}/offline-sale`,
-    payload
   );
   return res.data;
 }

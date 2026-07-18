@@ -3,9 +3,8 @@ import { StaffAssignment, IStaffAssignment, AssignmentStatus } from './assignmen
 import { CheckInLog, ICheckInLog } from './checkin-log.model';
 import { IncidentReport, IIncidentReport, IncidentStatus } from './incident.model';
 import { Registration, IRegistration } from '../registration/registration.model';
-import { Ticket, ITicket } from '../organizer/ticket.model';
+import { ITicket } from '../organizer/ticket.model';
 import { Event, IEvent } from '../event/event.model';
-import { User, IUser } from '../user/user.model';
 import { PaginatedResult } from '../../common/types';
 
 // ─── Assignment ──────────────────────────────────────────────────────────────
@@ -50,17 +49,16 @@ export class StaffRepository {
     if (query.status) filter.status = query.status;
 
     return StaffAssignment.find(filter)
-      .populate('eventId', 'title banner imageUrl location startDate endDate status')
+      .populate('eventId', 'title banner imageUrl location date startDate endDate status')
       .populate('staffId', 'fullName email avatar')
       .sort({ createdAt: -1 })
       .lean();
   }
 
   async findAssignmentById(id: string): Promise<IStaffAssignment | null> {
-    return StaffAssignment.findById(id)
-      .populate('eventId', 'title banner imageUrl location startDate endDate status')
-      .populate('staffId', 'fullName email avatar')
-      .lean();
+    // Keep references as ObjectIds here. The service uses staffId for the
+    // ownership check before allowing a shift to be confirmed.
+    return StaffAssignment.findById(id).lean();
   }
 
   async findAssignmentByEventAndStaff(
@@ -102,7 +100,25 @@ export class StaffRepository {
       id,
       { status, ...extra },
       { new: true }
-    ).lean();
+    )
+      .populate('eventId', 'title banner imageUrl location date startDate endDate status')
+      .populate('staffId', 'fullName email avatar')
+      .lean();
+  }
+
+  async transitionPendingAssignment(
+    id: string,
+    status: 'confirmed' | 'expired',
+    confirmedAt?: Date
+  ): Promise<IStaffAssignment | null> {
+    return StaffAssignment.findOneAndUpdate(
+      { _id: id, status: 'assigned' },
+      { status, ...(confirmedAt ? { confirmedAt } : {}) },
+      { new: true }
+    )
+      .populate('eventId', 'title banner imageUrl location date startDate endDate status')
+      .populate('staffId', 'fullName email avatar')
+      .lean();
   }
 
   async deleteAssignment(id: string): Promise<IStaffAssignment | null> {
@@ -135,7 +151,10 @@ export class StaffRepository {
   ): Promise<IRegistration | null> {
     return Registration.findOne({
       ticketCode: ticketCode.trim().toUpperCase(),
-    }).lean();
+    })
+      .populate('participantId', 'fullName email')
+      .populate('ticketId', 'ticketName price')
+      .lean();
   }
 
   /** Mark registration as checked-in atomically; returns null if already checked. */
@@ -256,79 +275,6 @@ export class StaffRepository {
   }
 
   // ── Incidents ──────────────────────────────────────────────────────────────
-
-  // ── Offline Sales ────────────────────────────────────────────────────────────
-
-  async findUserByEmail(email: string): Promise<IUser | null> {
-    return User.findOne({ email: email.toLowerCase().trim() }).lean();
-  }
-
-  async createUser(data: { fullName: string; email: string; phone?: string }): Promise<IUser> {
-    const user = new User({
-      ...data,
-      email: data.email.toLowerCase().trim(),
-      role: 'PARTICIPANT',
-      accountStatus: 'ACTIVE',
-    });
-    return user.save();
-  }
-
-  async findTicketById(ticketId: string): Promise<ITicket | null> {
-    return Ticket.findById(ticketId).lean();
-  }
-
-  async sellOfflineTicket(data: {
-    eventId: string;
-    ticketId: string;
-    participantId: string;
-    quantity: number;
-    unitPrice: number;
-    ticketCode: string;
-  }): Promise<IRegistration> {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-    try {
-      // 1. Update ticket sold quantity
-      const ticket = await Ticket.findOneAndUpdate(
-        { 
-          _id: new mongoose.Types.ObjectId(data.ticketId),
-          $expr: { $gte: ["$quantity", { $add: ["$soldQuantity", data.quantity] }] }
-        },
-        { $inc: { soldQuantity: data.quantity } },
-        { new: true, session }
-      );
-
-      if (!ticket) {
-        throw new Error('Vé đã hết hoặc không đủ số lượng');
-      }
-
-      // 2. Create registration
-      const reg = new Registration({
-        eventId: new mongoose.Types.ObjectId(data.eventId),
-        ticketId: new mongoose.Types.ObjectId(data.ticketId),
-        participantId: new mongoose.Types.ObjectId(data.participantId),
-        quantity: data.quantity,
-        unitPrice: data.unitPrice,
-        totalAmount: data.quantity * data.unitPrice,
-        status: 'PAID',
-        ticketCode: data.ticketCode,
-      });
-
-      await reg.save({ session });
-      
-      await session.commitTransaction();
-      return reg;
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
-  }
-
-  async getEventTickets(eventId: string): Promise<ITicket[]> {
-    return Ticket.find({ eventId: new mongoose.Types.ObjectId(eventId), status: 'ACTIVE' }).lean();
-  }
 
   async createIncident(data: {
     eventId: string;
