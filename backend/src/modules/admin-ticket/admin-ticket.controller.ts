@@ -29,24 +29,4 @@ export class AdminTicketController {
     res.json(ApiResponse.ok(ticket, 'Lay chi tiet ve thanh cong'));
   });
 
-  updateTicket = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const ticket = await this.adminTicketService.updateTicket(
-      req.params.id as string,
-      req.body ?? {}
-    );
-    res.json(ApiResponse.ok(ticket, 'Cap nhat ve thanh cong'));
-  });
-
-  updateStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const ticket = await this.adminTicketService.updateStatus(
-      req.params.id as string,
-      (req.body ?? {}).status
-    );
-    res.json(ApiResponse.ok(ticket, 'Cap nhat trang thai ve thanh cong'));
-  });
-
-  deleteTicket = asyncHandler(async (req: AuthRequest, res: Response) => {
-    await this.adminTicketService.deleteTicket(req.params.id as string);
-    res.json(ApiResponse.ok(null, 'Da xoa ve'));
-  });
 }

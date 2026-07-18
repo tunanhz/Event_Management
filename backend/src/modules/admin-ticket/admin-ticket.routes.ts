@@ -9,8 +9,5 @@ router.use(isAuthenticated as any, authorize('ADMIN') as any);
 
 router.get('/', adminTicketController.listTickets);
 router.get('/:id', adminTicketController.getTicket);
-router.put('/:id', adminTicketController.updateTicket);
-router.patch('/:id/status', adminTicketController.updateStatus);
-router.delete('/:id', adminTicketController.deleteTicket);
 
 export default router;

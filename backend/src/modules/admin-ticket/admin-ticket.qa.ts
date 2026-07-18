@@ -117,24 +117,23 @@ async function main() {
   check('List returns 200', list.status === 200, list.json);
   check('List contains 2 tickets', list.json.data?.length === 2, list.json);
 
-  console.log('2. Inventory guard');
-  const badQuantity = await api('PUT', `/api/admin/tickets/${soldTicket._id}`, adminToken, {
+  console.log('2. Admin read-only detail');
+  const detail = await api('GET', `/api/admin/tickets/${soldTicket._id}`, adminToken);
+  check('Detail returns 200', detail.status === 200, detail.json);
+
+  console.log('3. Admin mutation routes are not exposed');
+  const update = await api('PUT', `/api/admin/tickets/${soldTicket._id}`, adminToken, {
     quantity: 2,
   });
-  check('Cannot set quantity below soldQuantity', badQuantity.status === 400, badQuantity.json);
+  check('Admin cannot edit ticket configuration', update.status === 404, update.json);
 
-  console.log('3. Admin status override');
-  const hidden = await api('PATCH', `/api/admin/tickets/${soldTicket._id}/status`, adminToken, {
+  const statusOverride = await api('PATCH', `/api/admin/tickets/${soldTicket._id}/status`, adminToken, {
     status: 'HIDDEN',
   });
-  check('Can hide a ticket', hidden.status === 200 && hidden.json.data?.status === 'HIDDEN', hidden.json);
+  check('Admin cannot override ticket status', statusOverride.status === 404, statusOverride.json);
 
-  console.log('4. Delete guards');
-  const deleteSold = await api('DELETE', `/api/admin/tickets/${soldTicket._id}`, adminToken);
-  check('Cannot delete a sold ticket', deleteSold.status === 400, deleteSold.json);
-
-  const deleteEmpty = await api('DELETE', `/api/admin/tickets/${emptyTicket._id}`, adminToken);
-  check('Can delete unsold non-last ticket', deleteEmpty.status === 200, deleteEmpty.json);
+  const remove = await api('DELETE', `/api/admin/tickets/${emptyTicket._id}`, adminToken);
+  check('Admin cannot delete organizer ticket', remove.status === 404, remove.json);
 
   await Ticket.deleteMany({ eventId: event._id });
   await Event.findByIdAndDelete(event._id);
