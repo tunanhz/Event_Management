@@ -10,12 +10,17 @@ import {
   type EventShow,
   type TicketType,
 } from "./create-event-data"
+import type { ShowFieldKey } from "./wizard-validation"
 import pageStyles from "@/app/organizer/create-event/create-event.module.css"
 import styles from "./time-and-tickets.module.css"
 
 interface TimeAndTicketsStepProps {
   form: CreateEventForm
   update: (patch: Partial<CreateEventForm>) => void
+  /** Inline validation messages per show id (already filtered by touched). */
+  showErrors?: Record<string, Partial<Record<ShowFieldKey, string>>>
+  /** Marks a show's field as touched so its error can surface without a save. */
+  onShowFieldBlur?: (showId: string, key: ShowFieldKey) => void
 }
 
 /** Which show's ticket modal is open — editing (ticket set) or creating (null). */
@@ -31,7 +36,7 @@ export function showLabel(show: { title?: string }, index: number): string {
  * each with its own optional label, date range and ticket tiers
  * (created/edited via {@link TicketTypeModal}).
  */
-export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
+export function TimeAndTicketsStep({ form, update, showErrors, onShowFieldBlur }: TimeAndTicketsStepProps) {
   const [modal, setModal] = useState<ModalState>(null)
   // "all" shows everything; otherwise a single show id.
   const [filter, setFilter] = useState<string>("all")
@@ -142,6 +147,8 @@ export function TimeAndTicketsStep({ form, update }: TimeAndTicketsStepProps) {
               show={show}
               index={form.shows.findIndex((s) => s.id === show.id) + 1}
               canDelete={form.shows.length > 1}
+              errors={showErrors?.[show.id]}
+              onFieldBlur={(key) => onShowFieldBlur?.(show.id, key)}
               onUpdate={(patch) => patchShow(show.id, patch)}
               onDelete={() => deleteShow(show.id)}
               onAddTicket={() => setModal({ showId: show.id, ticket: null })}

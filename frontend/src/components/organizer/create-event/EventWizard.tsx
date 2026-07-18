@@ -18,7 +18,17 @@ import {
   type CreateEventForm,
   type WizardStep,
 } from "./create-event-data"
-import { firstInvalidStep, validateStep, fieldErrors, type Step1FieldKey } from "./wizard-validation"
+import {
+  firstInvalidStep,
+  validateStep,
+  fieldErrors,
+  showFieldErrors,
+  step3FieldErrors,
+  step4FieldErrors,
+  step5FieldErrors,
+  step6FieldErrors,
+  type ShowFieldKey,
+} from "./wizard-validation"
 import styles from "@/app/organizer/create-event/create-event.module.css"
 
 /**
@@ -59,21 +69,61 @@ export function EventWizard({
     if (stepErrors.length > 0) errorRef.current?.focus()
   }, [stepErrors])
 
-  // Inline (per-field) validation for step 1. A field's error shows once it has
-  // been blurred (touched) or after a failed "Tiếp tục"/"Lưu" reveals them all.
-  const [touched, setTouched] = useState<Partial<Record<Step1FieldKey, boolean>>>({})
+  // Inline (per-field) validation across every step. A field's error shows red
+  // as soon as it has been touched (changed/blurred) — no "Lưu"/"Tiếp tục" press
+  // needed — or after a failed navigation reveals them all. Keys are unique
+  // across steps (namespaced per show for step 2), so one Set covers the wizard.
+  const [touched, setTouched] = useState<Set<string>>(() => new Set())
   const [revealFieldErrors, setRevealFieldErrors] = useState(false)
-  const markTouched = (key: Step1FieldKey) =>
-    setTouched((t) => (t[key] ? t : { ...t, [key]: true }))
+  const markTouched = (key: string) =>
+    setTouched((t) => (t.has(key) ? t : new Set(t).add(key)))
+  const isShown = (key: string) => revealFieldErrors || touched.has(key)
 
-  const shownFieldErrors = (() => {
-    const all = fieldErrors(form)
-    const out: Partial<Record<Step1FieldKey, string>> = {}
-    for (const key of Object.keys(all) as Step1FieldKey[]) {
-      if (revealFieldErrors || touched[key]) out[key] = all[key]
-    }
+  /** Keep only the errors whose field has been touched (or after reveal-all). */
+  function filterShown<K extends string>(
+    all: Partial<Record<K, string>>
+  ): Partial<Record<K, string>> {
+    const out: Partial<Record<K, string>> = {}
+    for (const key of Object.keys(all) as K[]) if (isShown(key)) out[key] = all[key]
     return out
-  })()
+  }
+
+  const shownFieldErrors = filterShown(fieldErrors(form))
+
+  // Step 2 — per-show inline errors, keyed by show id. The "≥ 1 loại vé" error
+  // surfaces once the organizer has touched that show's date fields (or reveal-all),
+  // since a show's ticket list has no field of its own to blur.
+  const shownShowErrors: Record<string, Partial<Record<ShowFieldKey, string>>> = {}
+  form.shows.forEach((show, i) => {
+    const all = showFieldErrors(show, form.shows[i - 1])
+    const base = `show:${show.id}`
+    const out: Partial<Record<ShowFieldKey, string>> = {}
+    if (all.startTime && isShown(`${base}:startTime`)) out.startTime = all.startTime
+    if (all.endTime && isShown(`${base}:endTime`)) out.endTime = all.endTime
+    const showTouched =
+      revealFieldErrors || touched.has(`${base}:startTime`) || touched.has(`${base}:endTime`)
+    if (all.tickets && showTouched) out.tickets = all.tickets
+    shownShowErrors[show.id] = out
+  })
+
+  const shownStep3 = filterShown(step3FieldErrors(form))
+  const shownStep4 = filterShown(step4FieldErrors(form))
+  const shownStep6 = filterShown(step6FieldErrors(form))
+
+  // Step 5 — the signature/agreement have no text field to blur, so reveal them
+  // once the organizer has started the contract section (touched any of its
+  // controls) or after reveal-all.
+  const step5All = step5FieldErrors(form)
+  const contractStarted =
+    revealFieldErrors ||
+    touched.has("contractRepName") ||
+    touched.has("signature") ||
+    touched.has("agreed")
+  const shownStep5: Partial<Record<"contractRepName" | "signature" | "agreed", string>> = {}
+  if (step5All.contractRepName && isShown("contractRepName"))
+    shownStep5.contractRepName = step5All.contractRepName
+  if (step5All.signature && contractStarted) shownStep5.signature = step5All.signature
+  if (step5All.agreed && contractStarted) shownStep5.agreed = step5All.agreed
 
   // Furthest step the organizer may open: up to (and including) the first
   // incomplete step. Everything beyond stays locked until earlier steps pass.
@@ -105,6 +155,7 @@ export function EventWizard({
   const goToStep = (target: WizardStep) => {
     if (target <= step) {
       setStepErrors([])
+      setRevealFieldErrors(false)
       setStep(target)
       return
     }
@@ -112,8 +163,10 @@ export function EventWizard({
     if (blocker && blocker < target) {
       setStep(blocker)
       setStepErrors(validateStep(blocker, form))
+      setRevealFieldErrors(true)
     } else {
       setStepErrors([])
+      setRevealFieldErrors(false)
       setStep(target)
     }
   }
@@ -258,15 +311,50 @@ export function EventWizard({
         </div>
       )}
 
-      {step === 2 && <TimeAndTicketsStep form={form} update={update} />}
+      {step === 2 && (
+        <TimeAndTicketsStep
+          form={form}
+          update={update}
+          showErrors={shownShowErrors}
+          onShowFieldBlur={(showId, key) => markTouched(`show:${showId}:${key}`)}
+        />
+      )}
 
-      {step === 3 && <SettingsStep form={form} update={update} />}
+      {step === 3 && (
+        <SettingsStep
+          form={form}
+          update={update}
+          errors={shownStep3}
+          onBlur={markTouched}
+        />
+      )}
 
-      {step === 4 && <LogisticsPermitStep form={form} update={update} />}
+      {step === 4 && (
+        <LogisticsPermitStep
+          form={form}
+          update={update}
+          errors={shownStep4}
+          onTouch={() => markTouched("permitDocuments")}
+        />
+      )}
 
-      {step === 5 && <ContractStep form={form} update={update} />}
+      {step === 5 && (
+        <ContractStep
+          form={form}
+          update={update}
+          errors={shownStep5}
+          onBlur={markTouched}
+        />
+      )}
 
-      {step === 6 && <PaymentStep form={form} update={update} />}
+      {step === 6 && (
+        <PaymentStep
+          form={form}
+          update={update}
+          errors={shownStep6}
+          onBlur={markTouched}
+        />
+      )}
       </div>
       </fieldset>
     </div>

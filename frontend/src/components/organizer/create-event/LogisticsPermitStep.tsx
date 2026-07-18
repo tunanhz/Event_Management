@@ -4,12 +4,14 @@ import { useRef, useState } from "react"
 import { FileText, Trash2, UploadCloud } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SectionCard } from "./SectionCard"
+import { FieldError } from "./FieldError"
 import {
   LOGISTICS_SERVICES,
   PERMIT_FILE_RULES,
   type CreateEventForm,
   type PermitDocument,
 } from "./create-event-data"
+import type { Step4FieldKey } from "./wizard-validation"
 import styles from "./logistics-step.module.css"
 import pageStyles from "@/app/organizer/create-event/create-event.module.css"
 
@@ -18,6 +20,10 @@ interface LogisticsPermitStepProps {
   update: (
     patch: Partial<CreateEventForm> | ((prev: CreateEventForm) => Partial<CreateEventForm>)
   ) => void
+  /** Inline validation messages (already filtered by touched). */
+  errors?: Partial<Record<Step4FieldKey, string>>
+  /** Marks the permit upload as touched so the "≥ 1 file" error can surface. */
+  onTouch?: () => void
 }
 
 /**
@@ -26,7 +32,7 @@ interface LogisticsPermitStepProps {
  * immediately to /api/uploads/permits; the form keeps the returned URL so the
  * save call only ships metadata.
  */
-export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) {
+export function LogisticsPermitStep({ form, update, errors, onTouch }: LogisticsPermitStepProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -59,6 +65,7 @@ export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) 
   }
 
   const addFiles = async (files: FileList | null) => {
+    onTouch?.()
     if (!files || files.length === 0) return
     const errors: string[] = []
     const accepted: PermitDocument[] = []
@@ -112,8 +119,10 @@ export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) 
     if (inputRef.current) inputRef.current.value = ""
   }
 
-  const removeFile = (id: string) =>
+  const removeFile = (id: string) => {
+    onTouch?.()
     update({ permitDocuments: form.permitDocuments.filter((d) => d.id !== id) })
+  }
 
   return (
     <div className={pageStyles.form}>
@@ -191,6 +200,8 @@ export function LogisticsPermitStep({ form, update }: LogisticsPermitStepProps) 
             {uploadError}
           </p>
         )}
+
+        <FieldError msg={errors?.permitDocuments} />
 
         {form.permitDocuments.length > 0 && (
           <ul className={styles.fileList}>

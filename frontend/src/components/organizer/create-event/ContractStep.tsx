@@ -3,10 +3,12 @@
 import { FileText, ExternalLink, FileDown, PenLine } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SectionCard } from "./SectionCard"
+import { FieldError } from "./FieldError"
 import { ORGANIZER_TERMS } from "../terms-data"
 import { ContractDocument } from "./ContractDocument"
 import { SignaturePad } from "./SignaturePad"
 import type { CreateEventForm } from "./create-event-data"
+import type { Step5FieldKey } from "./wizard-validation"
 import formStyles from "./create-event-form.module.css"
 import styles from "./contract-step.module.css"
 import pageStyles from "@/app/organizer/create-event/create-event.module.css"
@@ -14,6 +16,10 @@ import pageStyles from "@/app/organizer/create-event/create-event.module.css"
 interface ContractStepProps {
   form: CreateEventForm
   update: (patch: Partial<CreateEventForm>) => void
+  /** Inline validation messages (already filtered by touched). */
+  errors?: Partial<Record<Step5FieldKey, string>>
+  /** Marks a field as touched so its error can surface without a save press. */
+  onBlur?: (key: Step5FieldKey) => void
 }
 
 /**
@@ -23,12 +29,14 @@ interface ContractStepProps {
  * only unlocks after signing — mirrored by the backend rule (agreed ⇒
  * signatureUrl required).
  */
-export function ContractStep({ form, update }: ContractStepProps) {
+export function ContractStep({ form, update, errors, onBlur }: ContractStepProps) {
   const canAgree = !!form.signatureDataUrl && !!form.contractRepName.trim()
 
-  const onSignature = (dataUrl: string | null) =>
+  const onSignature = (dataUrl: string | null) => {
+    onBlur?.("signature")
     // Clearing the signature also revokes a previously ticked acceptance.
     update({ signatureDataUrl: dataUrl, ...(dataUrl ? {} : { contractAgreed: false }) })
+  }
 
   // The print stylesheet only fires under body.print-contract, so printing
   // any other page of the app stays untouched.
@@ -91,15 +99,22 @@ export function ContractStep({ form, update }: ContractStepProps) {
           </label>
           <input
             id="contract-rep"
-            className={formStyles.input}
+            className={cn(formStyles.input, errors?.contractRepName && formStyles.inputError)}
             type="text"
             style={{ paddingRight: "1rem" }}
             placeholder="Họ và tên người đại diện ký kết"
             value={form.contractRepName}
-            onChange={(e) => update({ contractRepName: e.target.value })}
+            onChange={(e) => {
+              update({ contractRepName: e.target.value })
+              onBlur?.("contractRepName")
+            }}
+            onBlur={() => onBlur?.("contractRepName")}
             autoComplete="name"
             aria-required="true"
+            aria-invalid={!!errors?.contractRepName || undefined}
+            aria-describedby={errors?.contractRepName ? "err-contract-rep" : undefined}
           />
+          <FieldError id="err-contract-rep" msg={errors?.contractRepName} />
         </div>
 
         <div className={formStyles.field}>
@@ -120,6 +135,7 @@ export function ContractStep({ form, update }: ContractStepProps) {
               </>
             )}
           </p>
+          <FieldError msg={errors?.signature} />
         </div>
 
         <label
@@ -133,7 +149,10 @@ export function ContractStep({ form, update }: ContractStepProps) {
             className={styles.agreeCheckbox}
             checked={form.contractAgreed}
             disabled={!canAgree}
-            onChange={(e) => update({ contractAgreed: e.target.checked })}
+            onChange={(e) => {
+              onBlur?.("agreed")
+              update({ contractAgreed: e.target.checked })
+            }}
           />
           <span className={styles.agreeText}>
             Tôi là người đại diện hợp pháp của Ban tổ chức, <strong>đã ký tên</strong>{" "}
@@ -141,6 +160,7 @@ export function ContractStep({ form, update }: ContractStepProps) {
             EventBox.
           </span>
         </label>
+        <FieldError msg={errors?.agreed} />
       </SectionCard>
     </div>
   )

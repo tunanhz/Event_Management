@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Lock, Mail, Users, User as UserIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SectionCard } from "./SectionCard"
+import { FieldError } from "./FieldError"
 import {
   SETTINGS_LIMITS,
   EVENT_URL_PATH,
@@ -11,6 +12,7 @@ import {
   type CreateEventForm,
   type EventPrivacy,
 } from "./create-event-data"
+import type { Step3FieldKey } from "./wizard-validation"
 import formStyles from "./create-event-form.module.css"
 import styles from "./settings-step.module.css"
 import pageStyles from "@/app/organizer/create-event/create-event.module.css"
@@ -18,13 +20,17 @@ import pageStyles from "@/app/organizer/create-event/create-event.module.css"
 interface SettingsStepProps {
   form: CreateEventForm
   update: (patch: Partial<CreateEventForm>) => void
+  /** Inline validation messages (already filtered by touched). */
+  errors?: Partial<Record<Step3FieldKey, string>>
+  /** Marks a field as touched so its error can surface without a save press. */
+  onBlur?: (key: Step3FieldKey) => void
 }
 
 /**
  * Step 3 — event settings: custom URL slug, booking privacy, and the
  * post-purchase confirmation message.
  */
-export function SettingsStep({ form, update }: SettingsStepProps) {
+export function SettingsStep({ form, update, errors, onBlur }: SettingsStepProps) {
   // Read origin on the client only to avoid an SSR/CSR hydration mismatch:
   // the server has no `window`, so the URL host must be filled in after mount.
   const [origin, setOrigin] = useState("")
@@ -46,17 +52,24 @@ export function SettingsStep({ form, update }: SettingsStepProps) {
           <div className={formStyles.inputWrap}>
             <input
               id="event-slug"
-              className={formStyles.input}
+              className={cn(formStyles.input, errors?.slug && formStyles.inputError)}
               type="text"
               maxLength={SETTINGS_LIMITS.slug}
               placeholder="ten-su-kien"
+              aria-invalid={!!errors?.slug || undefined}
+              aria-describedby={errors?.slug ? "err-event-slug" : undefined}
               value={form.slug}
-              onChange={(e) => update({ slug: e.target.value })}
+              onChange={(e) => {
+                update({ slug: e.target.value })
+                onBlur?.("slug")
+              }}
+              onBlur={() => onBlur?.("slug")}
             />
             <span className={formStyles.counter}>
               {form.slug.length} / {SETTINGS_LIMITS.slug}
             </span>
           </div>
+          <FieldError id="err-event-slug" msg={errors?.slug} />
           <p className={styles.urlPreview}>
             Đường dẫn sự kiện của bạn là:{" "}
             <span className={styles.urlLink}>{previewUrl}</span>

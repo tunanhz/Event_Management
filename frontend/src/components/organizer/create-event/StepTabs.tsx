@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useRef } from "react"
+import { Fragment, useEffect, useRef } from "react"
 import { ChevronRight, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WIZARD_STEPS, type WizardStep } from "./create-event-data"
@@ -23,6 +23,17 @@ interface StepTabsProps {
 /** Wizard header with step tabs and Save / Continue actions. */
 export function StepTabs({ current, maxStep = 6, onSelect, onSave, onNext, saving, readOnly }: StepTabsProps) {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  // The tab strip scrolls horizontally (scrollbar hidden), so a far-right tab
+  // like step 6 can sit off-screen. Whenever the active step changes — e.g.
+  // pressing "Tiếp tục" 5 → 6 — bring its tab into view so it's always visible.
+  useEffect(() => {
+    tabRefs.current[current - 1]?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    })
+  }, [current])
 
   // Arrow-key roving within the reachable (unlocked) steps: 1…maxStep.
   const onKeyDown = (e: React.KeyboardEvent, index: number) => {

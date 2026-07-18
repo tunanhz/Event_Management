@@ -22,14 +22,38 @@ interface TicketTypeModalProps {
 
 type Errors = Partial<Record<keyof TicketType, string>>
 
+/** Format a Date as a local `datetime-local` value (YYYY-MM-DDTHH:mm).
+ *  Local — not UTC — so the pre-filled value matches the organizer's clock. */
+function toLocalDateTime(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 /**
  * Create / edit modal for a ticket tier. Mirrors the reference fields (name,
  * price/free, quantity, per-order limits, sale window, description, artwork)
  * and validates the numeric + date constraints on submit.
  */
 export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, onSave }: TicketTypeModalProps) {
-  const [draft, setDraft] = useState<TicketType>(() => ticket ?? initialDraft ?? createEmptyTicket())
-  const [errors, setErrors] = useState<Errors>({})
+  // New tickets pre-fill a valid, editable sale window: it opens ~1h from now
+  // (must be in the future) and closes when the show ends (its natural cap).
+  // An existing ticket / resumed draft keeps its own values untouched.
+  const [draft, setDraft] = useState<TicketType>(() => {
+    if (ticket) return ticket
+    if (initialDraft) return initialDraft
+    return {
+      ...createEmptyTicket(),
+      saleStart: toLocalDateTime(new Date(Date.now() + 60 * 60 * 1000)),
+      saleEnd: showEndTime || "",
+    }
+  })
+  // Errors recompute live from the draft; a field turns red once it's been
+  // touched (changed) or after a failed "Lưu" — no need to submit first.
+  const [touched, setTouched] = useState<Set<string>>(() => new Set())
+  const [attempted, setAttempted] = useState(false)
+  // Captured once at mount so the live (render-time) validation stays pure;
+  // the save handler re-reads the clock for an up-to-date "future" check.
+  const [nowTs] = useState(() => Date.now())
   const nameRef = useRef<HTMLInputElement>(null)
   // Keep the latest draft reachable from the keydown listener without
   // re-binding it on every keystroke.
@@ -45,12 +69,14 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
     return () => document.removeEventListener("keydown", onKey)
   }, [onClose])
 
-  const set = <K extends keyof TicketType>(key: K, value: TicketType[K]) =>
+  const set = <K extends keyof TicketType>(key: K, value: TicketType[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }))
+    setTouched((t) => (t.has(key) ? t : new Set(t).add(key)))
+  }
 
   const num = (v: string) => (v === "" ? 0 : Math.max(0, Number(v) || 0))
 
-  const validate = (): Errors => {
+  const validate = (now: number): Errors => {
     const e: Errors = {}
     if (!draft.name.trim()) e.name = "Vui lòng nhập tên vé"
     if (!draft.isFree && draft.price <= 0) e.price = "Giá vé phải lớn hơn 0"
@@ -59,7 +85,7 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
     if (draft.maxPerOrder < draft.minPerOrder) e.maxPerOrder = "Phải ≥ số vé tối thiểu"
     if (draft.maxPerOrder > draft.quantity) e.maxPerOrder = "Không vượt quá tổng số vé"
     if (!draft.saleStart) e.saleStart = "Chọn thời gian bắt đầu"
-    else if (new Date(draft.saleStart).getTime() <= Date.now())
+    else if (new Date(draft.saleStart).getTime() <= now)
       e.saleStart = "Thời gian bắt đầu bán vé phải ở tương lai"
     if (!draft.saleEnd) e.saleEnd = "Chọn thời gian kết thúc"
     else if (draft.saleStart && draft.saleEnd <= draft.saleStart)
@@ -69,10 +95,15 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
     return e
   }
 
+  // Live errors + a per-field reveal gate (touched, or after a save attempt).
+  const errors = validate(nowTs)
+  const shownErr = (key: keyof TicketType) =>
+    attempted || touched.has(key) ? errors[key] : undefined
+
   const handleSave = () => {
-    const e = validate()
-    setErrors(e)
-    if (Object.keys(e).length === 0) {
+    setAttempted(true)
+    // Re-validate against the current clock (event handler → fresh time is fine).
+    if (Object.keys(validate(Date.now())).length === 0) {
       onSave({ ...draft, name: draft.name.trim(), price: draft.isFree ? 0 : draft.price })
     }
   }
@@ -83,9 +114,11 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
     set("image", URL.createObjectURL(file))
   }
 
+  // Backdrop clicks do NOT dismiss — an accidental click outside must never
+  // wipe what the organizer has typed. Close only via ✕, Escape or Lưu.
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="ticket-modal-title" onClick={() => onClose(draft)}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="ticket-modal-title">
+      <div className={styles.modal}>
         <div className={styles.header}>
           <h2 id="ticket-modal-title" className={styles.title}>
             {ticket ? "Chỉnh sửa loại vé" : "Tạo loại vé mới"}
@@ -97,7 +130,7 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
 
         <div className={styles.body}>
           {/* Name */}
-          <Field label="Tên vé" required error={errors.name}>
+          <Field label="Tên vé" required error={shownErr("name")}>
             <div className={formStyles.inputWrap}>
               <input
                 ref={nameRef}
@@ -116,7 +149,7 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
 
           {/* Price / quantity / per-order limits */}
           <div className={styles.grid4}>
-            <Field label="Giá vé" required error={errors.price}>
+            <Field label="Giá vé" required error={shownErr("price")}>
               <div className={styles.priceRow}>
                 <input
                   className={`${formStyles.input} ${styles.priceInput}`}
@@ -139,14 +172,14 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
               </div>
             </Field>
 
-            <NumField label="Tổng số lượng vé" value={draft.quantity} error={errors.quantity} onChange={(v) => set("quantity", v)} />
-            <NumField label="Số vé tối thiểu trong một đơn hàng" value={draft.minPerOrder} error={errors.minPerOrder} onChange={(v) => set("minPerOrder", v)} />
-            <NumField label="Số vé tối đa trong một đơn hàng" value={draft.maxPerOrder} error={errors.maxPerOrder} onChange={(v) => set("maxPerOrder", v)} />
+            <NumField label="Tổng số lượng vé" value={draft.quantity} error={shownErr("quantity")} onChange={(v) => set("quantity", v)} />
+            <NumField label="Số vé tối thiểu trong một đơn hàng" value={draft.minPerOrder} error={shownErr("minPerOrder")} onChange={(v) => set("minPerOrder", v)} />
+            <NumField label="Số vé tối đa trong một đơn hàng" value={draft.maxPerOrder} error={shownErr("maxPerOrder")} onChange={(v) => set("maxPerOrder", v)} />
           </div>
 
           {/* Sale window */}
           <div className={styles.grid2}>
-            <Field label="Thời gian bắt đầu bán vé" required error={errors.saleStart}>
+            <Field label="Thời gian bắt đầu bán vé" required error={shownErr("saleStart")}>
               <input
                 className={`${formStyles.input} ${styles.dateInput}`}
                 type="datetime-local"
@@ -155,7 +188,7 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
                 onChange={(e) => set("saleStart", e.target.value)}
               />
             </Field>
-            <Field label="Thời gian kết thúc bán vé" required error={errors.saleEnd}>
+            <Field label="Thời gian kết thúc bán vé" required error={shownErr("saleEnd")}>
               <input
                 className={`${formStyles.input} ${styles.dateInput}`}
                 type="datetime-local"
