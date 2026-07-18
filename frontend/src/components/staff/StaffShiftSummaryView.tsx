@@ -4,8 +4,6 @@ import { useEffect, useState, useCallback } from "react"
 import {
   ClipboardCheck,
   BadgeCheck,
-  DoorOpen,
-  Clock,
   ScanLine,
   CheckCircle2,
   AlertTriangle,
@@ -93,15 +91,7 @@ export function StaffShiftSummaryView({ eventId }: { eventId: string }) {
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
               <span className="inline-flex items-center gap-1.5 text-foreground">
                 <BadgeCheck size={15} className="text-primary" aria-hidden="true" />
-                {assignment.responsibility}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <DoorOpen size={15} aria-hidden="true" />
-                {assignment.gate}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <Clock size={15} aria-hidden="true" />
-                {assignment.shift}
+                {assignment.note || "Chưa có ghi chú nhiệm vụ"}
               </span>
               <Badge
                 variant={

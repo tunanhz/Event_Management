@@ -15,9 +15,6 @@ const ASSIGNMENT_CONFIRMATION_LEAD_MS = 60 * 60 * 1000;
 export interface CreateAssignmentInput {
   eventId: string;
   staffId: string;
-  gate: string;
-  shift: string;
-  responsibility: string;
   note?: string;
 }
 
@@ -84,15 +81,16 @@ export class StaffService {
       throw new AppError('Nhân viên này đã được phân công cho sự kiện đó', 409);
     }
 
-    const trimmed = {
-      gate: this.requireString(input.gate, 'Cổng phụ trách'),
-      shift: this.requireString(input.shift, 'Ca trực'),
-      responsibility: this.requireString(input.responsibility, 'Nhiệm vụ'),
-    };
+    const note = this.normalizeAssignmentNote(input.note);
 
     return this.staffRepository.createAssignment({
       ...input,
-      ...trimmed,
+      // Các trường này được giữ để tương thích với dữ liệu cũ. Phân công mới
+      // chỉ dùng note làm nội dung nhiệm vụ và không còn chia theo cổng/ca.
+      gate: 'Không phân cổng',
+      shift: 'Theo lịch sự kiện',
+      responsibility: note || 'Theo phân công',
+      note,
     });
   }
 
@@ -107,6 +105,22 @@ export class StaffService {
     this.assertValidObjectId(eventId, 'eventId');
     const assignments = await this.staffRepository.findAssignments({ eventId });
     return this.expireOverdueAssignments(assignments);
+  }
+
+  /** Admin cập nhật ghi chú nhiệm vụ của một phân công. */
+  async updateAssignmentNote(
+    assignmentId: string,
+    eventId: string,
+    note: unknown
+  ): Promise<IStaffAssignment> {
+    this.assertValidObjectIds(assignmentId, eventId);
+    const updated = await this.staffRepository.updateAssignmentNote(
+      assignmentId,
+      eventId,
+      this.normalizeAssignmentNote(note)
+    );
+    if (!updated) throw new AppError('Phân công không tồn tại trong sự kiện này', 404);
+    return updated;
   }
 
   /** Staff xác nhận nhận ca. */
@@ -403,6 +417,18 @@ export class StaffService {
       throw new AppError(`${fieldName} không được để trống`, 400);
     }
     return value.trim();
+  }
+
+  private normalizeAssignmentNote(value: unknown): string {
+    if (value === undefined || value === null) return '';
+    if (typeof value !== 'string') {
+      throw new AppError('Ghi chú nhiệm vụ phải là chuỗi', 400);
+    }
+    const note = value.trim();
+    if (note.length > 500) {
+      throw new AppError('Ghi chú nhiệm vụ không được vượt quá 500 ký tự', 400);
+    }
+    return note;
   }
 
   private async expireOverdueAssignments(

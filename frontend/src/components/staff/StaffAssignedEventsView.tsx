@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
-  CalendarClock, MapPin, Clock, DoorOpen, BadgeCheck, ScanLine,
+  CalendarClock, MapPin, Clock, BadgeCheck, ScanLine,
   Users, History, CheckCheck, Loader2, AlertCircle
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -84,7 +84,7 @@ export function StaffAssignedEventsView() {
           Sự kiện được phân công
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Ca trực soát vé của bạn do ban tổ chức phân công. Chọn sự kiện để vào trạm check-in.
+          Nhiệm vụ của bạn do quản trị viên phân công. Chọn sự kiện để vào trạm check-in.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/12 px-3 py-1 text-xs font-semibold text-primary">
@@ -173,18 +173,10 @@ export function StaffAssignedEventsView() {
                 </div>
 
                 {/* Duty details */}
-                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+                <div className="mt-4 text-sm">
                   <span className="inline-flex items-center gap-1.5 text-foreground">
                     <BadgeCheck size={15} className="text-primary" aria-hidden="true" />
-                    {assignment.responsibility}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                    <DoorOpen size={15} aria-hidden="true" />
-                    {assignment.gate}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                    <Clock size={15} aria-hidden="true" />
-                    Ca trực {assignment.shift}
+                    {assignment.note || "Chưa có ghi chú nhiệm vụ"}
                   </span>
                 </div>
 

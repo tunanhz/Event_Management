@@ -151,9 +151,6 @@ export async function confirmAssignment(assignmentId: string): Promise<StaffAssi
 
 export interface CreateAssignmentPayload {
   staffId: string;
-  gate: string;
-  shift: string;
-  responsibility: string;
   note?: string;
 }
 
@@ -175,6 +172,19 @@ export async function fetchEventAssignments(eventId: string): Promise<StaffAssig
     `/admin/events/${eventId}/assignments`
   );
   return res.data ?? [];
+}
+
+/** Admin: cập nhật ghi chú nhiệm vụ */
+export async function updateAssignmentNote(
+  eventId: string,
+  assignmentId: string,
+  note: string
+): Promise<StaffAssignment> {
+  const res = await clientApi.patch<ApiEnvelope<StaffAssignment>>(
+    `/admin/events/${eventId}/assignments/${assignmentId}`,
+    { note }
+  );
+  return res.data;
 }
 
 /** Admin: hủy phân công */
