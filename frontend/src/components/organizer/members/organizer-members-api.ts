@@ -32,15 +32,6 @@ export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
   cancelled: "Đã hủy",
 }
 
-/**
- * Statuses offered in the members filter dropdown. "cancelled" is left out on
- * purpose: the backend list query excludes cancelled assignments
- * (status: { $ne: 'cancelled' }), so a "Đã hủy" option would always show 0 and
- * read as "empty" rather than "not returned". The full label map above still
- * covers "cancelled" so the table renders it correctly if the API ever does.
- */
-export const FILTERABLE_MEMBER_STATUSES: MemberStatus[] = ["assigned", "confirmed", "completed"]
-
 export async function fetchEventMembers(eventId: string): Promise<EventMemberApi[]> {
   const res = await clientApi.get<Envelope<EventMemberApi[]>>(
     `/organizer/events/${eventId}/members`

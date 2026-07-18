@@ -10,7 +10,6 @@ import {
   CircleCheck,
   User,
   Pencil,
-  Armchair,
   Wallet,
   CalendarClock,
   FileText,
@@ -44,7 +43,6 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { key: "permits", name: "Giấy phép", icon: FileText },
       { key: "members", name: "Thành viên", icon: User },
       { key: "edit", name: "Chỉnh sửa", icon: Pencil },
-      { key: "seatmap", name: "Sơ đồ ghế", icon: Armchair },
     ],
   },
 ]

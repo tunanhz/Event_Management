@@ -14,7 +14,7 @@ function showLabel(show: ServerEventShow, index: number): string {
 
 /**
  * Shared header for the report sub-pages (Tổng kết / Check-in / Đơn hàng /
- * Phân tích / Sơ đồ ghế): the active suất diễn's date plus the "Đổi suất
+ * Phân tích): the active suất diễn's date plus the "Đổi suất
  * diễn" switcher. The selection lives in the workspace context, so it
  * follows the organizer across tabs. Events with a single show (or legacy
  * flat events) just see their date — nothing to switch.

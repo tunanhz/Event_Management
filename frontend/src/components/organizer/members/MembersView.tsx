@@ -5,9 +5,7 @@ import { Search, Plus, Filter, Loader2 } from "lucide-react"
 import {
   fetchEventMembers,
   MEMBER_STATUS_LABELS,
-  FILTERABLE_MEMBER_STATUSES,
   type EventMemberApi,
-  type MemberStatus,
 } from "./organizer-members-api"
 import styles from "./members.module.css"
 
@@ -18,7 +16,7 @@ import styles from "./members.module.css"
  */
 export function MembersView({ eventId }: { eventId: string }) {
   const [query, setQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<MemberStatus | "all">("all")
+  const [roleFilter, setRoleFilter] = useState<string>("all")
   const [members, setMembers] = useState<EventMemberApi[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -51,14 +49,24 @@ export function MembersView({ eventId }: { eventId: string }) {
     )
   }, [members, query])
 
-  // StaffAssignment.status (ERD) — the same enum the backend stores, so this
-  // filter can't drift from what the API actually returns.
+  // Distinct "Vai trò tại sự kiện" values, taken from the full roster so the
+  // dropdown options stay stable while searching (the counts below still
+  // reflect the current search).
+  const roles = useMemo(() => {
+    const set = new Set<string>()
+    for (const m of members ?? []) {
+      const r = m.roleInEvent.trim()
+      if (r) set.add(r)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, "vi"))
+  }, [members])
+
   const rows = useMemo(
     () =>
-      statusFilter === "all"
+      roleFilter === "all"
         ? searchFiltered
-        : searchFiltered.filter((m) => m.status === statusFilter),
-    [searchFiltered, statusFilter]
+        : searchFiltered.filter((m) => m.roleInEvent === roleFilter),
+    [searchFiltered, roleFilter]
   )
 
   return (
@@ -93,14 +101,14 @@ export function MembersView({ eventId }: { eventId: string }) {
           <Filter size={15} className={styles.filterIcon} aria-hidden="true" />
           <select
             className={styles.filterSelect}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as MemberStatus | "all")}
-            aria-label="Lọc theo trạng thái"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            aria-label="Lọc theo vai trò tại sự kiện"
           >
             <option value="all">Tất cả ({searchFiltered.length})</option>
-            {FILTERABLE_MEMBER_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {MEMBER_STATUS_LABELS[s]} ({searchFiltered.filter((m) => m.status === s).length})
+            {roles.map((r) => (
+              <option key={r} value={r}>
+                {r} ({searchFiltered.filter((m) => m.roleInEvent === r).length})
               </option>
             ))}
           </select>

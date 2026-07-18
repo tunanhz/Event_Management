@@ -117,6 +117,13 @@ export interface EventMemberRow {
   assignedAt: Date;
 }
 
+/** One point on the summary sales chart — real PAID sales in a time bucket. */
+export interface SalesSeriesPoint {
+  label: string;
+  revenue: number;
+  tickets: number;
+}
+
 /** Sales analytics snapshot derived from PAID registrations. */
 export interface EventAnalytics {
   totalRevenue: number;
@@ -1035,6 +1042,65 @@ export class OrganizerService {
         };
       }),
     };
+  }
+
+  /**
+   * Real per-bucket PAID sales for the summary chart. `range` picks the window
+   * and granularity: '30d' = the last 30 local (GMT+7) days grouped by day,
+   * '24h' = the last 24 hours grouped by hour. Buckets with no sales are
+   * zero-filled so the x-axis stays continuous, and labels ('D/M' or 'H:00')
+   * match what the chart renders. `showId` scopes to one suất diễn.
+   */
+  async getEventSalesSeries(
+    eventId: string,
+    actor: OrganizerActor,
+    range: '24h' | '30d',
+    showId?: string
+  ): Promise<SalesSeriesPoint[]> {
+    const event = await this.getOwnedEvent(eventId, actor);
+    const ticketIds = await this.ticketIdsForShow(event, showId);
+
+    const HOUR = 3_600_000;
+    const DAY = 24 * HOUR;
+    const VN = 7 * HOUR; // Vietnam is GMT+7 with no DST, so a fixed offset is exact.
+    const pad = (n: number) => String(n).padStart(2, '0');
+    // Wall-clock (GMT+7) parts of a UTC instant, via the shift-then-read-UTC trick.
+    const parts = (ms: number) => {
+      const d = new Date(ms + VN);
+      return { y: d.getUTCFullYear(), mo: d.getUTCMonth(), day: d.getUTCDate(), h: d.getUTCHours() };
+    };
+
+    const now = Date.now();
+    const buckets: { key: string; label: string }[] = [];
+    let granularity: 'day' | 'hour';
+    let from: Date;
+
+    if (range === '24h') {
+      granularity = 'hour';
+      const p = parts(now);
+      const hourStart = Date.UTC(p.y, p.mo, p.day, p.h, 0, 0) - VN; // top of current GMT+7 hour
+      for (let i = 23; i >= 0; i--) {
+        const q = parts(hourStart - i * HOUR);
+        buckets.push({ key: `${q.y}-${pad(q.mo + 1)}-${pad(q.day)}T${pad(q.h)}`, label: `${q.h}:00` });
+      }
+      from = new Date(hourStart - 23 * HOUR);
+    } else {
+      granularity = 'day';
+      const p = parts(now);
+      const dayStart = Date.UTC(p.y, p.mo, p.day, 0, 0, 0) - VN; // GMT+7 midnight today
+      for (let i = 29; i >= 0; i--) {
+        const q = parts(dayStart - i * DAY);
+        buckets.push({ key: `${q.y}-${pad(q.mo + 1)}-${pad(q.day)}`, label: `${q.day}/${q.mo + 1}` });
+      }
+      from = new Date(dayStart - 29 * DAY);
+    }
+
+    const raw = await this.organizerRepository.paidSalesSeries(eventId, ticketIds, from, granularity);
+    const byKey = new Map(raw.map((r) => [r.bucket, r]));
+    return buckets.map((b) => {
+      const hit = byKey.get(b.key);
+      return { label: b.label, revenue: hit?.revenue ?? 0, tickets: hit?.tickets ?? 0 };
+    });
   }
 
   // ─── Withdrawals ("Rút tiền") — post-event payout requests ────────────

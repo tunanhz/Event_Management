@@ -189,6 +189,18 @@ export class OrganizerController {
     res.json(ApiResponse.ok(analytics, 'Lấy thống kê bán vé thành công'));
   });
 
+  // ─── Summary sales chart (real PAID sales per day / hour) ─────────────
+  getEventSalesSeries = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const range = req.query.range === '24h' ? '24h' : '30d';
+    const series = await this.organizerService.getEventSalesSeries(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      range,
+      asOptionalString(req.query.showId)
+    );
+    res.json(ApiResponse.ok(series, 'Lấy dữ liệu doanh thu theo thời gian thành công'));
+  });
+
   // ─── Withdrawals ("Rút tiền") ─────────────────────────────────────────
   getWithdrawalOverview = asyncHandler(async (req: AuthRequest, res: Response) => {
     const overview = await this.organizerService.getWithdrawalOverview(req.params.id as string, {

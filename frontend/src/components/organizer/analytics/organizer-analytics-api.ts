@@ -49,3 +49,30 @@ export async function fetchEventAnalytics(
   )
   return res.data
 }
+
+/** One point on the summary sales chart — real PAID sales per time bucket. */
+export interface SalesSeriesPoint {
+  /** "D/M" (30d) or "H:00" (24h), pre-formatted GMT+7 by the backend. */
+  label: string
+  revenue: number
+  tickets: number
+}
+
+/**
+ * Real per-day (30d) / per-hour (24h) PAID sales for the summary chart, from:
+ *   GET /organizer/events/:id/sales-series?range=&showId=
+ * Buckets are zero-filled and labelled by the backend, so the chart renders
+ * them as-is.
+ */
+export async function fetchEventSalesSeries(
+  eventId: string,
+  range: "24h" | "30d",
+  showId?: string | null
+): Promise<SalesSeriesPoint[]> {
+  const params = new URLSearchParams({ range })
+  if (showId) params.set("showId", showId)
+  const res = await clientApi.get<Envelope<SalesSeriesPoint[]>>(
+    `/organizer/events/${eventId}/sales-series?${params.toString()}`
+  )
+  return res.data
+}

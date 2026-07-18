@@ -7,7 +7,7 @@
  * (empty ⇒ valid). `firstInvalidStep` finds the earliest incomplete step,
  * used to gate forward tab navigation and the final save.
  */
-import { LIMITS, SETTINGS_LIMITS, type CreateEventForm, type WizardStep } from "./create-event-data"
+import { DESCRIPTION_TEMPLATE, LIMITS, SETTINGS_LIMITS, type CreateEventForm, type WizardStep } from "./create-event-data"
 
 /** Plain-text length of rich-text HTML (strips tags + entities). */
 function htmlText(html: string): string {
@@ -77,8 +77,11 @@ function validateStep1(f: CreateEventForm): string[] {
   push("ward")
   push("street")
   push("category")
-  if (htmlText(f.description).length < 10)
+  const descText = htmlText(f.description)
+  if (descText.length < 10)
     e.push("Vui lòng nhập mô tả sự kiện (tối thiểu 10 ký tự).")
+  else if (descText === htmlText(DESCRIPTION_TEMPLATE))
+    e.push("Vui lòng thay nội dung mẫu bằng mô tả thực tế cho sự kiện của bạn.")
   push("orgName")
   push("orgInfo")
   return e
@@ -115,12 +118,32 @@ function validateStep2(f: CreateEventForm): string[] {
       // from an earlier draft that has since become past-dated.
       if (t.saleStart && new Date(t.saleStart).getTime() <= Date.now())
         e.push(`Vé "${t.name || "?"}" (${label}): thời gian bắt đầu bán vé phải ở tương lai.`)
-      // Catches a ticket left over from before the organizer shortened this
-      // show's end time — its own sale window looked valid when it was saved.
+      // Sales may run right up to the show's end (multi-day events sell through,
+      // even after they've started) — just never past it. Also catches a ticket
+      // left over from before the organizer shortened this show's end time.
       if (show.endTime && t.saleEnd && t.saleEnd > show.endTime)
         e.push(`Vé "${t.name || "?"}" (${label}): thời gian kết thúc bán vé không được sau thời gian kết thúc suất diễn.`)
     })
   })
+
+  // Shows must run sequentially — each one may only start after the previous
+  // has ended, so no two suất diễn share or overlap a time slot. Compared in
+  // list order so the "Suất N" numbering stays chronological (back-to-back,
+  // i.e. next start == previous end, is allowed).
+  for (let i = 1; i < f.shows.length; i++) {
+    const prev = f.shows[i - 1]
+    const cur = f.shows[i]
+    if (!prev.startTime || !prev.endTime || !cur.startTime || !cur.endTime) continue
+    const prevEnd = new Date(prev.endTime).getTime()
+    const curStart = new Date(cur.startTime).getTime()
+    if (Number.isNaN(prevEnd) || Number.isNaN(curStart)) continue
+    if (curStart < prevEnd) {
+      const prevLabel = prev.title.trim() || `Suất ${i}`
+      const curLabel = cur.title.trim() || `Suất ${i + 1}`
+      e.push(`${curLabel}: phải bắt đầu sau khi ${prevLabel} kết thúc — các suất diễn không được trùng giờ.`)
+    }
+  }
+
   return e
 }
 

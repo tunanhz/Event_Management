@@ -198,6 +198,41 @@ export const EVENT_CATEGORIES = [
 // Province/ward options come from the official 34-province dataset in
 // /public/data/vietnam-provinces-wards.json — see use-vietnam-address-data.ts.
 
+/**
+ * Starter content for the event-description editor. Shown pre-filled and fully
+ * editable (not a ghost placeholder) on new events, so organizers begin from a
+ * structured outline instead of a blank box. Bracketed "[…]" prompts mark the
+ * parts they should replace; the Điều khoản section is usable as-is. Structure
+ * maps to the editor toolbar (h3 headings / ul lists / p paragraphs).
+ */
+export const DESCRIPTION_TEMPLATE = `<h3>🎬 Giới thiệu sự kiện</h3>
+<p>[Viết 2–3 câu giới thiệu tổng quan: sự kiện là gì, dành cho ai và điểm đặc biệt khiến khán giả không thể bỏ lỡ.]</p>
+<h3>✨ Điểm nhấn nổi bật</h3>
+<ul>
+<li>[Điểm nhấn 1 — ví dụ: sân khấu hoành tráng, dàn nghệ sĩ đình đám…]</li>
+<li>[Điểm nhấn 2 — ví dụ: trải nghiệm độc quyền, quà tặng hấp dẫn…]</li>
+<li>[Điểm nhấn 3 — ví dụ: ưu đãi riêng cho khách đặt vé sớm…]</li>
+</ul>
+<h3>🗓️ Chương trình chính</h3>
+<ul>
+<li>[19:00] — [Đón khách &amp; check-in]</li>
+<li>[19:30] — [Khai mạc / tiết mục mở màn]</li>
+<li>[20:00] — [Nội dung chính của chương trình]</li>
+<li>[21:30] — [Bế mạc]</li>
+</ul>
+<h3>🎤 Khách mời</h3>
+<p>[Giới thiệu ngắn gọn về nghệ sĩ, diễn giả hoặc khách mời đặc biệt của chương trình.]</p>
+<h3>🎁 Trải nghiệm đặc biệt</h3>
+<p>[Mô tả những trải nghiệm dành riêng cho người tham dự: khu photobooth, hoạt động tương tác, ẩm thực, quà lưu niệm…]</p>
+<h3>📌 Điều khoản &amp; Điều kiện</h3>
+<ul>
+<li>Vui lòng có mặt trước giờ diễn ra ít nhất 30 phút để làm thủ tục soát vé.</li>
+<li>Mỗi vé chỉ có giá trị cho một lần vào cửa.</li>
+<li>Vé đã mua không hoàn, không huỷ, trừ trường hợp sự kiện bị huỷ bởi Ban tổ chức.</li>
+<li>Xuất trình vé điện tử (mã QR) tại cổng để được vào sự kiện.</li>
+<li>[Bổ sung quy định khác của Ban tổ chức nếu có…]</li>
+</ul>`
+
 export const INITIAL_FORM: CreateEventForm = {
   posterImage: null,
   bannerImage: null,
@@ -208,12 +243,11 @@ export const INITIAL_FORM: CreateEventForm = {
   ward: "",
   street: "",
   category: "",
-  // Empty, not a pre-filled template — RichTextEditor shows a ghost
-  // placeholder via CSS (:empty::before) that vanishes on the first
-  // keystroke, instead of baking example/instruction text in as if it were
-  // the organizer's real content (which also let step-1 validation pass
-  // without anyone ever writing an actual description).
-  description: "",
+  // Pre-filled editable template (not a placeholder) so the organizer starts
+  // from a structured scaffold and edits in place. The wizard validator still
+  // rejects the *untouched* template (see wizard-validation.ts) so this
+  // convenience can't be used to skip writing a real description.
+  description: DESCRIPTION_TEMPLATE,
   orgLogo: null,
   orgName: "",
   orgInfo: "",
