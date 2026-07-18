@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { CalendarClock, MapPin, CheckCircle2, Clock, Ticket, type LucideIcon, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
@@ -61,8 +61,10 @@ const POLL_INTERVAL_MS = 15_000 // Refresh stats every 15s
  *  - GET  /api/staff/events/:id/checkin-stats → live counters
  */
 export function StaffCheckInView({ eventId }: { eventId: string }) {
+  const checkingRef = useRef(false)
   const [stats, setStats] = useState<CheckInStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
+  const [checking, setChecking] = useState(false)
   const [result, setResult] = useState<ScanResult>(null)
   const [recentScans, setRecentScans] = useState<Array<{
     code: string
@@ -91,6 +93,10 @@ export function StaffCheckInView({ eventId }: { eventId: string }) {
 
   // ── Handle scan ──────────────────────────────────────────────────────────
   const handleScan = async (raw: string) => {
+    if (checkingRef.current) return
+    checkingRef.current = true
+    setChecking(true)
+
     try {
       const response = await checkInTicket({ ticketCode: raw.trim(), eventId })
       setResult(mapToScannerResult(response, raw))
@@ -114,8 +120,11 @@ export function StaffCheckInView({ eventId }: { eventId: string }) {
             : prev
         )
       }
-    } catch (err: any) {
+    } catch {
       setResult({ status: "invalid" })
+    } finally {
+      checkingRef.current = false
+      setChecking(false)
     }
   }
 
@@ -152,7 +161,7 @@ export function StaffCheckInView({ eventId }: { eventId: string }) {
 
       {/* ── Scanner + recent feed ───────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <CheckInScanner onScan={handleScan} result={result} />
+        <CheckInScanner onScan={handleScan} result={result} disabled={checking} />
 
         <Card>
           <CardHeader className="pb-3">

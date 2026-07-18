@@ -311,7 +311,7 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -321,15 +321,15 @@
 .mobileActions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.35rem;
 }
 
 .mobileIconBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1.5px solid rgba(255, 255, 255, 0.5);
   background: transparent;
@@ -425,5 +425,31 @@
 
   .logoText {
     font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobileOptional {
+    display: none;
+  }
+
+  .logoText {
+    font-size: 1.05rem;
+  }
+
+  .logoIcon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 340px) {
+  .mobileMenuBtn {
+    display: none;
+  }
+
+  .mobileIconBtn {
+    width: 36px;
+    height: 36px;
   }
 }

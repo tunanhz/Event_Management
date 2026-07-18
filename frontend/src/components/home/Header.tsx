@@ -138,18 +138,18 @@ const Header: React.FC = () => {
 
           {/* Mobile Actions */}
           <div className={styles.mobileActions}>
-            <NotificationBell className={styles.mobileIconBtn} />
+            <NotificationBell className={`${styles.mobileIconBtn} ${styles.mobileOptional}`} />
 
-            <ThemeToggle className={styles.mobileIconBtn} />
+            <ThemeToggle className={`${styles.mobileIconBtn} ${styles.mobileOptional}`} />
 
-            <button className={styles.mobileIconBtn} type="button" aria-label="Tìm kiếm">
+            <button className={`${styles.mobileIconBtn} ${styles.mobileSearchBtn}`} type="button" aria-label="Tìm kiếm">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </button>
 
-            <button className={styles.mobileIconBtn} type="button" aria-label="Menu">
+            <button className={`${styles.mobileIconBtn} ${styles.mobileMenuBtn}`} type="button" aria-label="Menu">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="12" x2="21" y2="12" />
