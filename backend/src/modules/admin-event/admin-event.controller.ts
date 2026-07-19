@@ -80,6 +80,23 @@ export class AdminEventController {
     res.json(ApiResponse.ok(event, 'Cập nhật chi phí phát sinh thành công'));
   });
 
+  updateEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const event = await this.adminEventService.updateEvent(
+      req.params.id as string,
+      req.body ?? {}
+    );
+    res.json(ApiResponse.ok(event, 'Da cap nhat su kien'));
+  });
+
+  forceStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const event = await this.adminEventService.forceStatus(
+      req.params.id as string,
+      req.user!.id,
+      req.body ?? {}
+    );
+    res.json(ApiResponse.ok(event, 'Da cap nhat trang thai'));
+  });
+
   getDashboardStats = asyncHandler(async (req: AuthRequest, res: Response) => {
     const result = await this.adminEventService.getDashboardStats();
     res.json(ApiResponse.ok(result, 'Lấy số liệu tổng quan thành công'));

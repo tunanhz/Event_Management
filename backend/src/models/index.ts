@@ -120,10 +120,20 @@ const RegistrationSchema = new Schema(
   },
 
   quantity: Number,
+  unitPrice: Number,
+  totalAmount: Number,
+  ticketCode: String,
+  checkedIn: Boolean,
+  checkedInAt: Date,
+  holdExpiresAt: Date,
 
-  registerDate: Date,
+  registerDate: { type: Date, default: Date.now },
 
-  status: String
+  status: {
+    type: String,
+    enum: ['PENDING', 'PAID', 'CANCELLED', 'EXPIRED', 'REFUNDED'],
+    default: 'PENDING'
+  }
 },
 { timestamps: true }
 );
@@ -247,6 +257,11 @@ const WithdrawalSchema = new Schema(
     type: String,
     enum: ["payout", "refund"],
     default: "payout"
+  },
+
+  registrationId: {
+    type: Schema.Types.ObjectId,
+    ref: "Registration"
   },
 
   beneficiary: String,

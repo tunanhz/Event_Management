@@ -9,6 +9,7 @@ import {
   Search,
   ShieldAlert,
   Trash2,
+  X,
 } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
@@ -18,12 +19,17 @@ import {
   cancelAdminEvent,
   deleteAdminEvent,
   fetchAdminEvents,
+  forceAdminEventStatus,
+  updateAdminEvent,
   refLabel,
   type AdminEvent,
   type LifecycleStatus,
   type PaginationMeta,
   type ReviewStatus,
 } from "@/lib/admin-event-api"
+import { clientApi } from "@/lib/client-api"
+
+/* ───────── Constants ───────── */
 
 const REVIEW_OPTIONS: { value: ReviewStatus | ""; label: string }[] = [
   { value: "", label: "Tất cả xét duyệt" },
@@ -64,11 +70,66 @@ const emptyMeta: PaginationMeta = {
   itemsPerPage: 10,
 }
 
+/* ───────── Types ───────── */
+
+interface EditForm {
+  title: string
+  organizer: string
+  location: string
+  categoryId: string
+  capacity: string
+  startDate: string
+  endDate: string
+  banner: string
+  description: string
+  privacy: "public" | "private"
+  isFeatured: boolean
+  isTrending: boolean
+}
+
+interface CategoryItem {
+  _id: string
+  name: string
+}
+
+/* ───────── Helpers ───────── */
+
 function formatDate(value?: string) {
   if (!value) return "—"
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return "—"
   return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
+}
+
+function toIso(value: string): string {
+  if (!value) return ""
+  return new Date(value).toISOString()
+}
+
+function toLocal(value?: string): string {
+  if (!value) return ""
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ""
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function makeEditForm(event: AdminEvent): EditForm {
+  const catId = typeof event.categoryId === "object" ? event.categoryId?._id ?? "" : event.categoryId ?? ""
+  return {
+    title: event.title,
+    organizer: event.organizer ?? "",
+    location: event.location ?? "",
+    categoryId: catId,
+    capacity: String(event.capacity ?? event.maxAttendees ?? ""),
+    startDate: toLocal(event.startDate ?? event.date),
+    endDate: toLocal(event.endDate),
+    banner: event.banner ?? event.imageUrl ?? event.posterImage ?? "",
+    description: event.description ?? "",
+    privacy: event.privacy ?? "public",
+    isFeatured: event.isFeatured ?? false,
+    isTrending: event.isTrending ?? false,
+  }
 }
 
 function reviewBadge(reviewStatus: ReviewStatus): "secondary" | "success" | "warning" | "destructive" {
@@ -78,12 +139,42 @@ function reviewBadge(reviewStatus: ReviewStatus): "secondary" | "success" | "war
   return "secondary"
 }
 
-function lifecycleClass(status: LifecycleStatus) {
-  if (status === "published") return "text-emerald-600"
-  if (status === "cancelled") return "text-rose-600"
-  if (status === "completed") return "text-cyan-600"
-  return "text-muted-foreground"
+function statusLabel(event: AdminEvent): string {
+  if (event.privacy === "private") return "Riêng tư"
+  if (event.status === "completed") return "Đã qua"
+  if (event.status === "cancelled") return "Đã hủy"
+  return "Công khai"
 }
+
+function statusClass(event: AdminEvent): string {
+  if (event.privacy === "private") return "text-amber-600"
+  if (event.status === "completed") return "text-cyan-600"
+  if (event.status === "cancelled") return "text-rose-600"
+  return "text-emerald-600"
+}
+
+/* ───────── Modal component ───────── */
+
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="relative mx-4 w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-5 py-3">
+          <h3 className="text-base font-bold text-foreground">{title}</h3>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted cursor-pointer">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="max-h-[80vh] overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+/* ───────── Main component ───────── */
 
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<AdminEvent[]>([])
@@ -102,6 +193,7 @@ export default function AdminEventsPage() {
   const [forcedStatus, setForcedStatus] = useState<LifecycleStatus | "private">("draft")
   const [forcedReviewStatus, setForcedReviewStatus] = useState<ReviewStatus>("DRAFT")
   const [statusReason, setStatusReason] = useState("")
+  const [categories, setCategories] = useState<CategoryItem[]>([])
 
   const load = async (nextPage = page) => {
     setLoading(true)
@@ -122,6 +214,13 @@ export default function AdminEventsPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // Load categories for the edit form dropdown
+    clientApi.get<{ data: CategoryItem[] }>("/categories")
+      .then((res) => setCategories(res.data ?? []))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -157,7 +256,7 @@ export default function AdminEventsPage() {
 
   const openStatus = (event: AdminEvent) => {
     setStatusEvent(event)
-    setForcedStatus(event.status)
+    setForcedStatus(event.privacy === "private" ? "private" : event.status)
     setForcedReviewStatus(event.reviewStatus)
     setStatusReason(event.rejectionReason ?? "")
   }
@@ -198,11 +297,25 @@ export default function AdminEventsPage() {
     setSaving(true)
     setError(null)
     try {
-      await forceAdminEventStatus(statusEvent._id, {
-        status: forcedStatus,
+      const payload: {
+        status?: LifecycleStatus
+        reviewStatus?: ReviewStatus
+        rejectionReason?: string
+        privacy?: "public" | "private"
+      } = {
         reviewStatus: forcedReviewStatus,
         rejectionReason: statusReason,
-      })
+      }
+
+      if (forcedStatus === "private") {
+        payload.status = "published"
+        payload.privacy = "private"
+      } else {
+        payload.status = forcedStatus
+        payload.privacy = "public"
+      }
+
+      await forceAdminEventStatus(statusEvent._id, payload)
       setStatusEvent(null)
       await load()
     } catch (err) {
@@ -335,9 +448,8 @@ export default function AdminEventsPage() {
                   <th className="px-4 py-3 font-bold">Sự kiện</th>
                   <th className="px-4 py-3 font-bold">Organizer</th>
                   <th className="px-4 py-3 font-bold">Lịch</th>
-                  <th className="px-4 py-3 font-bold">Vòng đời</th>
+                  <th className="px-4 py-3 font-bold">Trạng thái</th>
                   <th className="px-4 py-3 font-bold">Xét duyệt</th>
-                  <th className="px-4 py-3 font-bold">Vận hành</th>
                   <th className="px-4 py-3 font-bold">Thao tác</th>
                 </tr>
               </thead>
@@ -359,8 +471,8 @@ export default function AdminEventsPage() {
                       </div>
                       <div className="mt-1 text-xs">Sức chứa: {event.capacity ?? event.maxAttendees ?? "—"}</div>
                     </td>
-                    <td className={cn("px-4 py-4 font-semibold", lifecycleClass(event.status))}>
-                      {STATUS_LABEL[event.status]}
+                    <td className={cn("px-4 py-4 font-semibold", statusClass(event))}>
+                      {statusLabel(event)}
                     </td>
                     <td className="px-4 py-4">
                       <Badge variant={reviewBadge(event.reviewStatus)}>
@@ -369,13 +481,6 @@ export default function AdminEventsPage() {
                       {event.rejectionReason && (
                         <p className="mt-1 max-w-56 text-xs text-rose-600 dark:text-rose-400">{event.rejectionReason}</p>
                       )}
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-wrap gap-1.5">
-                        {event.isFeatured && <Badge variant="success">Nổi bật</Badge>}
-                        {event.isTrending && <Badge variant="warning">Xu hướng</Badge>}
-                        <Badge variant="secondary">{event.privacy === "private" ? "Riêng tư" : "Công khai"}</Badge>
-                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">
@@ -466,20 +571,7 @@ export default function AdminEventsPage() {
               Mô tả
               <textarea className="min-h-28 w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground outline-none focus:border-cyan-500 focus:bg-card focus:ring-2 focus:ring-cyan-500/20" value={editForm.description} onChange={(event) => setEditForm({ ...editForm, description: event.target.value })} />
             </label>
-            <div className="flex flex-wrap gap-4 text-sm font-semibold text-foreground">
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={editForm.isFeatured} onChange={(event) => setEditForm({ ...editForm, isFeatured: event.target.checked })} />
-                Nổi bật
-              </label>
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={editForm.isTrending} onChange={(event) => setEditForm({ ...editForm, isTrending: event.target.checked })} />
-                Xu hướng
-              </label>
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={editForm.privacy === "private"} onChange={(event) => setEditForm({ ...editForm, privacy: event.target.checked ? "private" : "public" })} />
-                Riêng tư
-              </label>
-            </div>
+            
             <div className="flex justify-end gap-2 border-t border-border pt-4">
               <Button type="button" variant="outline" onClick={() => setEditEvent(null)}>Hủy</Button>
               <Button type="submit" disabled={saving}>
@@ -496,11 +588,13 @@ export default function AdminEventsPage() {
           <form onSubmit={saveStatus} className="space-y-4 p-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="space-y-1.5 text-sm font-semibold text-foreground">
-                Vòng đời public
-                <select className={inputClass} value={forcedStatus} onChange={(event) => setForcedStatus(event.target.value as LifecycleStatus)}>
-                  {STATUS_OPTIONS.filter((item) => item.value).map((item) => (
-                    <option key={item.value} value={item.value}>{item.label}</option>
-                  ))}
+                Trạng thái sự kiện
+                <select className={inputClass} value={forcedStatus} onChange={(event) => setForcedStatus(event.target.value as any)}>
+                  <option value="draft">Nháp</option>
+                  <option value="published">Công khai</option>
+                  <option value="private">Riêng tư</option>
+                  <option value="completed">Hoàn tất</option>
+                  <option value="cancelled">Đã hủy</option>
                 </select>
               </label>
               <label className="space-y-1.5 text-sm font-semibold text-foreground">

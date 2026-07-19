@@ -215,6 +215,131 @@ export class AdminEventService {
     return date;
   }
 
+  async updateEvent(eventId: string, input: AdminEventUpdateInput): Promise<IEvent> {
+    await this.getEventOrThrow(eventId);
+    const update: Partial<IEvent> = {};
+
+    const title = this.asOptionalTrimmedString(input.title);
+    if (title) update.title = title;
+
+    const description = this.asOptionalTrimmedString(input.description);
+    if (description !== undefined) update.description = description;
+
+    const location = this.asOptionalTrimmedString(input.location);
+    if (location) update.location = location;
+
+    const organizer = this.asOptionalTrimmedString(input.organizer);
+    if (organizer) update.organizer = organizer;
+
+    const organizerLogoUrl = this.asOptionalTrimmedString(input.organizerLogoUrl);
+    if (organizerLogoUrl !== undefined) update.organizerLogoUrl = organizerLogoUrl;
+
+    const organizerDescription = this.asOptionalTrimmedString(input.organizerDescription);
+    if (organizerDescription !== undefined) update.organizerDescription = organizerDescription;
+
+    const banner = this.asOptionalTrimmedString(input.banner);
+    if (banner !== undefined) update.banner = banner;
+
+    const posterImage = this.asOptionalTrimmedString(input.posterImage);
+    if (posterImage !== undefined) update.posterImage = posterImage;
+
+    const confirmationMessage = this.asOptionalTrimmedString(input.confirmationMessage);
+    if (confirmationMessage !== undefined) update.confirmationMessage = confirmationMessage;
+
+    if (input.categoryId !== undefined) {
+      const catId = this.asOptionalTrimmedString(input.categoryId);
+      if (catId) {
+        if (!mongoose.isValidObjectId(catId)) throw new AppError('categoryId khong hop le', 400);
+        const catRepo = new CategoryRepository();
+        const cat = await catRepo.findById(catId);
+        if (!cat) throw new AppError('Danh muc khong ton tai', 404);
+        (update as any).categoryId = new mongoose.Types.ObjectId(catId);
+        update.category = cat.name;
+        update.categorySlug = cat.slug;
+      }
+    }
+
+    const startDate = this.asDate(input.startDate, 'startDate');
+    if (startDate) update.startDate = startDate;
+
+    const endDate = this.asDate(input.endDate, 'endDate');
+    if (endDate) update.endDate = endDate;
+
+    if (input.capacity !== undefined) {
+      const cap = Number(input.capacity);
+      if (Number.isNaN(cap) || cap < 1) throw new AppError('capacity phai >= 1', 400);
+      update.capacity = cap;
+    }
+
+    if (input.isFeatured !== undefined) update.isFeatured = Boolean(input.isFeatured);
+    if (input.isTrending !== undefined) update.isTrending = Boolean(input.isTrending);
+
+    const privacy = this.asOptionalTrimmedString(input.privacy);
+    if (privacy !== undefined) {
+      update.privacy = privacy === 'private' ? 'private' : 'public';
+    }
+
+    const updated = await this.adminEventRepository.updateEvent(eventId, update);
+    if (!updated) throw new AppError('Event not found', 404);
+    return updated;
+  }
+
+  async forceStatus(
+    eventId: string,
+    adminId: string,
+    input: AdminEventStatusInput
+  ): Promise<IEvent> {
+    await this.getEventOrThrow(eventId);
+    const update: Partial<IEvent> = {};
+
+    const status = this.asOptionalTrimmedString(input.status) as LifecycleStatus | undefined;
+    const reviewStatus = this.asOptionalTrimmedString(input.reviewStatus) as ReviewStatus | undefined;
+    const privacy = this.asOptionalTrimmedString(input.privacy) as 'public' | 'private' | undefined;
+
+    if (!status && !reviewStatus && !privacy) {
+      throw new AppError('Can truyen status, reviewStatus hoac privacy', 400);
+    }
+    if (status && !LIFECYCLE_STATUSES.includes(status)) {
+      throw new AppError(`status chi nhan mot trong: ${LIFECYCLE_STATUSES.join(', ')}`, 400);
+    }
+    if (reviewStatus && !REVIEW_STATUSES.includes(reviewStatus)) {
+      throw new AppError(`reviewStatus chi nhan mot trong: ${REVIEW_STATUSES.join(', ')}`, 400);
+    }
+
+    if (status) update.status = status;
+    if (reviewStatus) update.reviewStatus = reviewStatus;
+    if (privacy) {
+      if (privacy !== 'public' && privacy !== 'private') {
+        throw new AppError('privacy chi nhan public hoac private', 400);
+      }
+      update.privacy = privacy;
+    }
+
+    if ((reviewStatus ?? (status === 'published' ? 'PUBLISHED' : undefined)) === 'PUBLISHED') {
+      update.reviewStatus = 'PUBLISHED';
+      update.reviewedAt = new Date();
+    }
+
+    if (reviewStatus === 'REJECTED') {
+      const reason = this.asTrimmedString(input.rejectionReason);
+      if (!reason) {
+        throw new AppError('Can nhap ly do khi ep trang thai REJECTED', 400);
+      }
+      update.rejectionReason = reason;
+      update.reviewedAt = new Date();
+      if (!status) update.status = 'draft';
+    }
+
+    if (reviewStatus === 'PENDING_REVIEW' && !status) {
+      update.status = 'draft';
+      update.rejectionReason = undefined;
+    }
+
+    const updated = await this.adminEventRepository.updateEvent(eventId, update);
+    if (!updated) throw new AppError('Event not found', 404);
+    return updated;
+  }
+
   async getDashboardStats() {
     const totalUsers = await User.countDocuments();
     const totalEvents = await Event.countDocuments();
