@@ -101,12 +101,13 @@ export function PaymentView({ event, tickets, quantities, shows }: Props) {
         const raw = localStorage.getItem("eventbox:notifications-list:" + uId);
         if (raw) notifList.push(...JSON.parse(raw));
       } catch {}
+      const notifiedAt = new Date();
       notifList.unshift({
-        id: "payment-" + Date.now(),
+        id: "payment-" + notifiedAt.getTime(),
         type: "payment_success",
         title: "Thanh toán thành công",
         message: `Bạn đã mua thành công ${lines.reduce((sum, l) => sum + l.qty, 0)} vé cho sự kiện “${event.title}”. Vé điện tử kèm mã QR đã sẵn sàng trong mục Vé của tôi.`,
-        createdAt: new Date().toISOString(),
+        createdAt: notifiedAt.toISOString(),
         href: "/ve-cua-toi",
       });
       localStorage.setItem("eventbox:notifications-list:" + uId, JSON.stringify(notifList));
