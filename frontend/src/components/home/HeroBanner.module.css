@@ -37,6 +37,14 @@
   pointer-events: none;
 }
 
+.slideLink {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  text-decoration: none;
+}
+
 .slideActive {
   opacity: 1;
   transform: scale(1);

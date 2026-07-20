@@ -103,6 +103,7 @@ describe('EventCard', () => {
 
   it('should have aria-pressed true when event is saved', () => {
     mockUseSavedEvents.mockReturnValue({
+      savedIds: [],
       isSaved: jest.fn(() => true),
       toggle: jest.fn(),
     });
@@ -114,6 +115,7 @@ describe('EventCard', () => {
 
   it('should display different aria-label when saved', () => {
     mockUseSavedEvents.mockReturnValue({
+      savedIds: [],
       isSaved: jest.fn(() => true),
       toggle: jest.fn(),
     });
@@ -125,6 +127,7 @@ describe('EventCard', () => {
   it('should call toggle when save button is clicked', async () => {
     const toggleMock = jest.fn();
     mockUseSavedEvents.mockReturnValue({
+      savedIds: [],
       isSaved: jest.fn(() => false),
       toggle: toggleMock,
     });
@@ -139,6 +142,7 @@ describe('EventCard', () => {
   it('should stop event propagation when save button is clicked', async () => {
     const toggleMock = jest.fn();
     mockUseSavedEvents.mockReturnValue({
+      savedIds: [],
       isSaved: jest.fn(() => false),
       toggle: toggleMock,
     });

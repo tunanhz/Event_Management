@@ -22,10 +22,40 @@ export default function VnpayReturnPage() {
   )
 }
 
+import { useAuth } from "@/context/AuthContext"
+import { useEffect } from "react"
+
 function VnpayReturnResult() {
   const params = useSearchParams()
   const success = params.get("status") === "success"
   const message = params.get("message")
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (success) {
+      const uId = user?._id || "guest"
+      const list = []
+      try {
+        const raw = localStorage.getItem("eventbox:notifications-list:" + uId)
+        if (raw) list.push(...JSON.parse(raw))
+      } catch {}
+
+      // Avoid double writing
+      const hasThisVnpayNotif = list.some((n) => n.id.startsWith("vnpay-success-"))
+      if (!hasThisVnpayNotif) {
+        list.unshift({
+          id: "vnpay-success-" + Date.now(),
+          type: "payment_success",
+          title: "Thanh toán VNPAY thành công",
+          message: "Giao dịch VNPAY đã hoàn tất. Bạn đã mua vé thành công, vé điện tử kèm mã QR đã sẵn sàng trong mục Vé của tôi.",
+          createdAt: new Date().toISOString(),
+          href: "/ve-cua-toi",
+        })
+        localStorage.setItem("eventbox:notifications-list:" + uId, JSON.stringify(list))
+        window.dispatchEvent(new CustomEvent("eventbox:notifications-change"))
+      }
+    }
+  }, [success, user])
 
   return (
     <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-card p-8 text-center shadow-sm">

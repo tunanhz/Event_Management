@@ -88,6 +88,19 @@ export async function fetchAdminEvents(params: AdminEventListParams) {
   }
 }
 
+export async function updateAdminEvent(id: string, payload: Partial<AdminEvent>) {
+  const res = await clientApi.put<ApiEnvelope<AdminEvent>>(`/admin/events/${id}`, payload)
+  return res.data
+}
+
+export async function forceAdminEventStatus(
+  id: string,
+  payload: { status?: LifecycleStatus; reviewStatus?: ReviewStatus; rejectionReason?: string; privacy?: "public" | "private" }
+) {
+  const res = await clientApi.patch<ApiEnvelope<AdminEvent>>(`/admin/events/${id}/status`, payload)
+  return res.data
+}
+
 export async function cancelAdminEvent(id: string, reason?: string) {
   const res = await clientApi.post<ApiEnvelope<AdminEvent>>(`/admin/events/${id}/cancel`, { reason })
   return res.data

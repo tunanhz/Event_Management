@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Users,
@@ -9,6 +10,7 @@ import {
   ArrowUpRight,
   ArrowRight,
   Building2,
+  Loader2,
 } from "lucide-react"
 import {
   AreaChart,
@@ -21,46 +23,73 @@ import {
 } from "recharts"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import { mockMetrics, mockRevenueData, mockModerationEvents } from "@/lib/mock-data"
+import { fetchDashboardStats, type DashboardStats } from "@/lib/finance-api"
 import { formatCurrency, formatNumber } from "@/lib/utils"
 
-const statCards = [
-  {
-    label: "Tổng người dùng",
-    value: formatNumber(mockMetrics.totalUsers),
-    sub: `+${mockMetrics.attendeeGrowth}% so với tháng trước`,
-    icon: Users,
-    colorClass: "gradient-primary",
-    textColor: "text-cyan-700",
-  },
-  {
-    label: "Tổng sự kiện",
-    value: formatNumber(mockMetrics.totalEvents),
-    sub: `${mockMetrics.activeEvents} đang diễn ra`,
-    icon: CalendarDays,
-    colorClass: "gradient-emerald",
-    textColor: "text-emerald-700",
-  },
-  {
-    label: "Doanh thu toàn hệ thống",
-    value: formatCurrency(mockMetrics.totalRevenue),
-    sub: `+${mockMetrics.revenueGrowth}% so với tháng trước`,
-    icon: Banknote,
-    colorClass: "gradient-amber",
-    textColor: "text-amber-700",
-  },
-  {
-    label: "Sự kiện chờ duyệt",
-    value: String(mockMetrics.pendingApprovals),
-    sub: "Cần xử lý",
-    icon: ClipboardCheck,
-    colorClass: "gradient-rose",
-    textColor: "text-rose-700",
-  },
-]
-
 export default function AdminOverview() {
-  const pending = mockModerationEvents.filter((e) => e.status === "pending")
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    fetchDashboardStats()
+      .then(setStats)
+      .catch((err) => setError(err.message ?? "Không thể tải số liệu tổng quan"))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center mx-auto max-w-xl">
+        <p className="font-semibold text-destructive">{error || "Lỗi tải số liệu tổng quan"}</p>
+      </div>
+    )
+  }
+
+  const statCards = [
+    {
+      label: "Tổng người dùng",
+      value: formatNumber(stats.totalUsers),
+      sub: `+${stats.attendeeGrowth}% so với tháng trước`,
+      icon: Users,
+      colorClass: "gradient-primary",
+      textColor: "text-cyan-700",
+    },
+    {
+      label: "Tổng sự kiện",
+      value: formatNumber(stats.totalEvents),
+      sub: `${stats.activeEvents} đang công khai`,
+      icon: CalendarDays,
+      colorClass: "gradient-emerald",
+      textColor: "text-emerald-700",
+    },
+    {
+      label: "Doanh thu toàn hệ thống",
+      value: formatCurrency(stats.totalRevenue),
+      sub: `+${stats.revenueGrowth}% so với tháng trước`,
+      icon: Banknote,
+      colorClass: "gradient-amber",
+      textColor: "text-amber-700",
+    },
+    {
+      label: "Sự kiện chờ duyệt",
+      value: String(stats.pendingApprovals),
+      sub: "Cần xử lý gấp",
+      icon: ClipboardCheck,
+      colorClass: "gradient-rose",
+      textColor: "text-rose-700",
+    },
+  ]
+
+  const pending = stats.pendingEvents
 
   return (
     <div className="space-y-7 animate-fade-up">
@@ -71,7 +100,7 @@ export default function AdminOverview() {
             Bảng điều khiển Quản trị
           </h2>
           <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>
-            Tổng quan hoạt động toàn hệ thống EventBox.
+            Số liệu hoạt động thực tế toàn hệ thống EventBox.
           </p>
         </div>
         <Link
@@ -79,7 +108,7 @@ export default function AdminOverview() {
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-cyan-700"
         >
           <ClipboardCheck className="h-4 w-4" />
-          Duyệt {pending.length} sự kiện
+          Duyệt {stats.pendingApprovals} sự kiện
         </Link>
       </div>
 
@@ -122,7 +151,7 @@ export default function AdminOverview() {
           <CardContent className="pl-2">
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockRevenueData}>
+                <AreaChart data={stats.monthlyRevenue}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#0891b2" stopOpacity={0.25} />
@@ -182,31 +211,37 @@ export default function AdminOverview() {
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {pending.slice(0, 4).map((event) => (
-                <Link
-                  key={event.id}
-                  href="/dashboard/moderation"
-                  className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-cyan-50"
-                >
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl gradient-primary text-sm font-bold text-white">
-                    {event.title.charAt(0)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                      {event.title}
-                    </p>
-                    <p
-                      className="mt-0.5 flex items-center gap-1 truncate text-xs"
-                      style={{ color: "var(--muted-foreground)" }}
-                    >
-                      <Building2 className="h-3 w-3 flex-shrink-0" />
-                      {event.organizer}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            {pending.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Hàng đợi kiểm duyệt hiện đang trống.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {pending.slice(0, 4).map((event) => (
+                  <Link
+                    key={event.id}
+                    href={`/dashboard/moderation/${event.id}`}
+                    className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-cyan-50"
+                  >
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl gradient-primary text-sm font-bold text-white">
+                      {event.title.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+                        {event.title}
+                      </p>
+                      <p
+                        className="mt-0.5 flex items-center gap-1 truncate text-xs"
+                        style={{ color: "var(--muted-foreground)" }}
+                      >
+                        <Building2 className="h-3 w-3 flex-shrink-0" />
+                        {event.organizer}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

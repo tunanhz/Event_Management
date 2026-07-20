@@ -29,18 +29,12 @@ export default function FeaturedStars({ stars }: { stars: FeaturedStar[] }) {
             </svg>
             Featured Stars
           </h2>
-          <Link href="/nghe-si" className={styles.viewAll}>
-            Xem thêm
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </Link>
         </div>
 
         <ul className={styles.list}>
           {stars.map((star) => (
             <li key={star.id} className={styles.item}>
-              <Link href={`/nghe-si/${star.slug}`} className={styles.card}>
+              <div className={styles.card}>
                 <span className={styles.avatarRing}>
                   <img
                     src={star.image}
@@ -53,7 +47,7 @@ export default function FeaturedStars({ stars }: { stars: FeaturedStar[] }) {
                   <span className={styles.name}>{star.name}</span>
                   {star.verified && <VerifiedBadge />}
                 </span>
-              </Link>
+              </div>
             </li>
           ))}
         </ul>

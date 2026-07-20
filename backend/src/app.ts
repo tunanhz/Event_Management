@@ -22,6 +22,7 @@ import { adminTicketRoutes } from './modules/admin-ticket';
 import { uploadRoutes } from './modules/upload';
 import { staffRoutes } from './modules/staff';
 import { StaffController } from './modules/staff';
+import { financeRoutes } from './modules/finance';
 import { Router } from 'express';
 import { isAuthenticated, authorize } from './common/middleware/auth.middleware';
 
@@ -57,6 +58,7 @@ app.use('/api/admin/events', adminEventRoutes);
 app.use('/api/admin/tickets', adminTicketRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/finance', financeRoutes);
 
 // ─── Admin Staff Management Routes ──────────────────────────────────────────
 // Phân công staff + quản lý sự cố (Admin only)
