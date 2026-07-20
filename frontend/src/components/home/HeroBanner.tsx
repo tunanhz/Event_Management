@@ -69,20 +69,22 @@ export default function HeroBanner({ banners }: { banners: HeroBannerItem[] }) {
                 key={banner.id}
                 className={`${styles.slide} ${index === current ? styles.slideActive : ''}`}
               >
-                <img
-                  src={banner.image}
-                  alt={banner.title}
-                  className={styles.slideImage}
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                />
-                <div className={styles.overlay} />
-                <div className={styles.content}>
-                  <h2 className={styles.title}>{banner.title}</h2>
-                  <p className={styles.subtitle}>{banner.subtitle}</p>
-                  <a href={banner.link} className={styles.ctaButton}>
-                    {banner.cta}
-                  </a>
-                </div>
+                <a href={banner.link} className={styles.slideLink}>
+                  <img
+                    src={banner.image}
+                    alt={banner.title}
+                    className={styles.slideImage}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                  />
+                  <div className={styles.overlay} />
+                  <div className={styles.content}>
+                    <h2 className={styles.title}>{banner.title}</h2>
+                    <p className={styles.subtitle}>{banner.subtitle}</p>
+                    <span className={styles.ctaButton}>
+                      {banner.cta}
+                    </span>
+                  </div>
+                </a>
               </div>
             ))}
           </div>

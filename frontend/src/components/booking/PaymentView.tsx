@@ -93,6 +93,25 @@ export function PaymentView({ event, tickets, quantities, shows }: Props) {
       }
 
       await confirmMockPayments(registrationIds);
+
+      // Add payment success notification
+      const uId = user?._id || "guest";
+      const notifList = [];
+      try {
+        const raw = localStorage.getItem("eventbox:notifications-list:" + uId);
+        if (raw) notifList.push(...JSON.parse(raw));
+      } catch {}
+      notifList.unshift({
+        id: "payment-" + Date.now(),
+        type: "payment_success",
+        title: "Thanh toán thành công",
+        message: `Bạn đã mua thành công ${lines.reduce((sum, l) => sum + l.qty, 0)} vé cho sự kiện “${event.title}”. Vé điện tử kèm mã QR đã sẵn sàng trong mục Vé của tôi.`,
+        createdAt: new Date().toISOString(),
+        href: "/ve-cua-toi",
+      });
+      localStorage.setItem("eventbox:notifications-list:" + uId, JSON.stringify(notifList));
+      window.dispatchEvent(new CustomEvent("eventbox:notifications-change"));
+
       router.push("/ve-cua-toi");
     } catch (err) {
       setPayError(

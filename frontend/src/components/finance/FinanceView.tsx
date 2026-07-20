@@ -7,14 +7,14 @@ import { PayoutRefundTable } from "./PayoutRefundTable"
 
 const TABS = [
   { id: "contracts", label: "Đối soát hợp đồng" },
-  { id: "payouts", label: "Payout / Refund" },
+  { id: "payouts", label: "Giải ngân (Payout)" },
 ] as const
 
 type TabId = (typeof TABS)[number]["id"]
 
 /**
  * Admin finance console: contract review (SLA compliance after an event
- * completes) and payout/refund execution. Contract "Đạt chuẩn" is the gate
+ * completes) and payout execution. Contract "Đạt chuẩn" is the gate
  * before approving the organizer's payout.
  */
 export function FinanceView() {
@@ -25,7 +25,7 @@ export function FinanceView() {
       <div>
         <h2 className="text-2xl font-bold text-foreground">Tài chính</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Đối soát hợp đồng sau sự kiện và thực hiện giải ngân cho Ban tổ chức / hoàn tiền người mua.
+          Đối soát hợp đồng sau sự kiện và thực hiện giải ngân cho Ban tổ chức.
         </p>
       </div>
 

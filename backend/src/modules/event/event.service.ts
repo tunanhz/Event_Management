@@ -50,6 +50,11 @@ export class EventService {
   // its on-sale ticket tiers, and a same-category "related events" rail.
   async getEventDetail(id: string): Promise<EventDetail> {
     const event = await this.getEventById(id);
+    try {
+      await mongoose.model('Event').findByIdAndUpdate(id, { $inc: { views: 1 } });
+    } catch (err) {
+      console.error('Failed to increment event views:', err);
+    }
     const [tickets, related] = await Promise.all([
       this.eventRepository.findTicketsByEventId(id),
       this.eventRepository.findRelated(event),

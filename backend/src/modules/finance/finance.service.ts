@@ -60,39 +60,7 @@ export class FinanceService {
   }
 
   async listPayouts() {
-    // 1. Find all cancelled events
-    const cancelledEvents = await Event.find({ status: 'cancelled' }).lean();
-
-    // 2. Ensure each PAID registration of cancelled events has a refund record in Withdrawal
-    for (const event of cancelledEvents) {
-      const regs = await Registration.find({ eventId: event._id, status: 'PAID' }).lean();
-      for (const reg of regs) {
-        const existingRefund = await Withdrawal.findOne({ kind: 'refund', registrationId: reg._id });
-        if (!existingRefund) {
-          const user = await User.findById(reg.participantId).lean();
-          const beneficiary = user?.fullName || 'Người mua vé';
-          const payment = await Payment.findOne({ registrationId: reg._id }).lean();
-          const amount = payment?.amount || reg.totalAmount || 0;
-          const bankInfo = payment 
-            ? `${payment.paymentMethod || 'VNPAY'} · GD: ${payment.transactionCode || reg._id}` 
-            : 'VNPAY · Cổng thanh toán';
-
-          await Withdrawal.create({
-            eventId: event._id,
-            organizerId: event.creatorId,
-            registrationId: reg._id,
-            kind: 'refund',
-            beneficiary,
-            bankInfo,
-            amount,
-            requestDate: reg.createdAt || new Date(),
-            status: 'PENDING'
-          });
-        }
-      }
-    }
-
-    const list = await Withdrawal.find()
+    const list = await Withdrawal.find({ kind: 'payout' })
       .populate('eventId', 'title')
       .populate('organizerId', 'fullName')
       .sort({ createdAt: -1 })
@@ -125,12 +93,6 @@ export class FinanceService {
     if (status === 'executed') {
       payout.approvedAt = new Date();
       payout.rejectionReason = undefined;
-
-      // If it is a refund, update Registration and Payment status
-      if (payout.kind === 'refund' && payout.registrationId) {
-        await Registration.findByIdAndUpdate(payout.registrationId, { status: 'REFUNDED' });
-        await Payment.findOneAndUpdate({ registrationId: payout.registrationId }, { status: 'REFUNDED' });
-      }
     } else if (status === 'rejected') {
       payout.rejectionReason = rejectionReason || 'Từ chối bởi admin';
       payout.approvedAt = new Date();

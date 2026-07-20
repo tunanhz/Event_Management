@@ -157,21 +157,21 @@ export interface HomeData {
 
 /** Everything the homepage needs, fetched in parallel. */
 export async function fetchHomeData(): Promise<HomeData> {
-  const [banners, stars, featured, trending, upcoming] = await Promise.all([
-    apiGet<ApiBanner[]>("/banners", []),
+  const [eventsForBanners, stars, featured, trending, upcoming] = await Promise.all([
+    apiGet<ApiEvent[]>("/events?limit=5", []),
     apiGet<ApiStar[]>("/stars", []),
     apiGet<ApiEvent[]>("/events?collection=featured&limit=8", []),
     apiGet<ApiEvent[]>("/events?collection=trending&limit=8", []),
     apiGet<ApiEvent[]>("/events?collection=upcoming&limit=8&sort=date&order=asc", []),
   ])
   return {
-    banners: banners.map((b) => ({
-      id: b._id,
-      title: b.title,
-      subtitle: b.subtitle || "",
-      image: b.imageUrl || DEFAULT_EVENT_IMAGE,
-      cta: b.ctaLabel || "Khám phá ngay",
-      link: b.linkUrl || "#",
+    banners: eventsForBanners.map((e) => ({
+      id: e._id,
+      title: e.title,
+      subtitle: e.description ? e.description.replace(/<[^>]*>/g, "").slice(0, 120) : "Khám phá sự kiện nổi bật trên EventBox.",
+      image: e.banner || e.imageUrl || DEFAULT_EVENT_IMAGE,
+      cta: "Khám phá ngay",
+      link: `/su-kien/${e._id}`,
     })),
     stars: stars.map((s) => ({ id: s._id, name: s.name, slug: s.slug, image: s.imageUrl || DEFAULT_AVATAR_IMAGE, verified: s.verified })),
     featured: featured.map(toEventItem),

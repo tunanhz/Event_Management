@@ -1,7 +1,5 @@
-"use client"
-
 import { useEffect, useState } from "react"
-import { Banknote, Undo2, X, Loader2 } from "lucide-react"
+import { Banknote, X, Loader2 } from "lucide-react"
 import { cn, formatDateTime, formatVnd } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -23,8 +21,8 @@ const STATUS_VARIANT: Record<string, "warning" | "success" | "destructive"> = {
 }
 
 /**
- * Payout/refund execution queue: disburse organizer revenue or refund
- * participants of cancelled events. Rejection requires a reason. Real database state.
+ * Payout execution queue: disburse organizer revenue after event completes.
+ * Rejection requires a reason. Real database state.
  */
 export function PayoutRefundTable() {
   const [requests, setRequests] = useState<PayoutRequest[]>()
@@ -39,7 +37,7 @@ export function PayoutRefundTable() {
       const data = await fetchPayouts()
       setRequests(data)
     } catch (err: any) {
-      setError(err.message ?? "Không thể tải danh sách yêu cầu tài chính")
+      setError(err.message ?? "Không thể tải danh sách yêu cầu giải ngân")
     } finally {
       setLoading(false)
     }
@@ -59,7 +57,7 @@ export function PayoutRefundTable() {
         )
       )
     } catch (err: any) {
-      alert(err.message ?? "Thao tác phê duyệt tài chính thất bại")
+      alert(err.message ?? "Thao tác phê duyệt giải ngân thất bại")
     }
   }
 
@@ -92,7 +90,7 @@ export function PayoutRefundTable() {
     <div className="divide-y divide-border">
       {list.length === 0 ? (
         <p className="p-8 text-center text-sm text-muted-foreground">
-          Chưa có yêu cầu rút tiền hay hoàn tiền nào được gửi lên.
+          Chưa có yêu cầu giải ngân nào được gửi lên.
         </p>
       ) : (
         list.map((req) => (
@@ -100,8 +98,8 @@ export function PayoutRefundTable() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={req.kind === "payout" ? "default" : "secondary"}>
-                    {req.kind === "payout" ? "Payout" : "Refund"}
+                  <Badge variant="default">
+                    Payout
                   </Badge>
                   <p className="font-semibold text-foreground">{req.eventTitle}</p>
                   <Badge variant={STATUS_VARIANT[req.status] || "secondary"}>
@@ -126,8 +124,8 @@ export function PayoutRefundTable() {
                     onClick={() => executeAction(req.id, "executed")}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 cursor-pointer"
                   >
-                    {req.kind === "payout" ? <Banknote className="h-4 w-4" /> : <Undo2 className="h-4 w-4" />}
-                    {req.kind === "payout" ? "Giải ngân" : "Hoàn tiền"}
+                    <Banknote className="h-4 w-4" />
+                    Giải ngân
                   </button>
                   <button
                     type="button"

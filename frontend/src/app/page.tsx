@@ -4,6 +4,7 @@ import Header from "@/components/home/Header";
 import HeroBanner from "@/components/home/HeroBanner";
 import FeaturedStars from "@/components/home/FeaturedStars";
 import EventSection from "@/components/home/EventSection";
+import UpcomingEventsSection from "@/components/home/UpcomingEventsSection";
 import Footer from "@/components/home/Footer";
 import MobileBottomNav from "@/components/home/MobileBottomNav";
 import { Flame, TrendingUp, CalendarClock } from "lucide-react";
@@ -57,7 +58,7 @@ export default async function HomePage() {
 
         <div className={styles.sectionDivider} />
 
-        <EventSection
+        <UpcomingEventsSection
           title="Sắp diễn ra"
           icon={<CalendarClock />}
           events={upcoming}
