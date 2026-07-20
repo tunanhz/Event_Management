@@ -32,7 +32,10 @@ const app = express();
 app.use(helmet());
 app.use(cors({ origin: config.frontendUrl, credentials: true }));
 app.use(cookieParser());
-app.use(morgan('dev'));
+// Request logging is noise in the test runner's output.
+if (config.nodeEnv !== 'test') {
+  app.use(morgan('dev'));
+}
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
