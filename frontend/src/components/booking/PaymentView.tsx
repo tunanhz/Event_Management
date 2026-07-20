@@ -162,15 +162,6 @@ export function PaymentView({ event, tickets, quantities, shows }: Props) {
               </p>
             </section>
 
-            <section className={styles.card}>
-              <div className={styles.cardHeadRow}>
-                <h3 className={styles.cardTitle}>Mã khuyến mãi</h3>
-                <button type="button" className={styles.linkBtn}>Chọn voucher</button>
-              </div>
-              <button type="button" className={styles.promoAdd}>
-                <Tag size={15} aria-hidden="true" /> Thêm khuyến mãi
-              </button>
-            </section>
 
             {!isFree && (
               <section className={styles.card}>

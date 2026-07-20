@@ -5,7 +5,8 @@ import { ResourceManager, type FieldConfig } from "@/components/admin/ResourceMa
 import { bannerApi, type Banner } from "@/lib/admin-content-api"
 
 const fields: FieldConfig[] = [
-  { key: "title", label: "Tiêu đề", type: "text", required: true, placeholder: "Đại Nhạc Hội Quốc Tế 2026" },
+  { key: "eventId", label: "Liên kết sự kiện đã duyệt", type: "event-select", help: "Chọn sự kiện đã được kiểm duyệt để tự động lấy tên, mô tả và ảnh banner." },
+  { key: "title", label: "Tiêu đề quảng cáo", type: "text", required: true, placeholder: "Đại Nhạc Hội Quốc Tế 2026" },
   { key: "subtitle", label: "Mô tả ngắn", type: "textarea", placeholder: "Trải nghiệm âm nhạc đỉnh cao…" },
   { key: "imageUrl", label: "Ảnh banner (URL)", type: "image", required: true, placeholder: "https://…" },
   { key: "ctaLabel", label: "Nhãn nút CTA", type: "text", placeholder: "Mua vé ngay" },

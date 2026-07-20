@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react"
 import { Plus, Pencil, Trash2, X, Loader2, type LucideIcon } from "lucide-react"
 import type { ResourceApi, WithId } from "@/lib/admin-content-api"
+import { clientApi } from "@/lib/client-api"
 
-export type FieldType = "text" | "number" | "image" | "emoji" | "boolean" | "textarea"
+export type FieldType = "text" | "number" | "image" | "emoji" | "boolean" | "textarea" | "event-select"
 
 export interface FieldConfig {
   key: string
@@ -124,7 +125,8 @@ export function ResourceManager<T extends WithId>({
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <>
+      <div className="space-y-6 animate-fade-up">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -203,11 +205,12 @@ export function ResourceManager<T extends WithId>({
           </div>
         )}
       </div>
+    </div>
 
       {/* Create / Edit modal */}
       {form && (
         <div
-          className="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
           onClick={() => !saving && setForm(null)}
@@ -227,7 +230,14 @@ export function ResourceManager<T extends WithId>({
 
             <div className="space-y-4">
               {fields.map((f) => (
-                <FieldInput key={f.key} field={f} value={form[f.key]} onChange={(v) => setField(f.key, v)} />
+                <FieldInput
+                  key={f.key}
+                  field={f}
+                  value={form[f.key]}
+                  onChange={(v) => setField(f.key, v)}
+                  form={form}
+                  setField={setField}
+                />
               ))}
             </div>
 
@@ -254,7 +264,7 @@ export function ResourceManager<T extends WithId>({
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
 
@@ -288,10 +298,14 @@ function FieldInput({
   field,
   value,
   onChange,
+  form,
+  setField,
 }: {
   field: FieldConfig
   value: unknown
   onChange: (v: unknown) => void
+  form?: FormState
+  setField?: (key: string, value: unknown) => void
 }) {
   const label = (
     <label className="mb-1 flex items-center gap-1 text-sm font-semibold text-foreground">
@@ -301,6 +315,24 @@ function FieldInput({
   )
   const inputCls =
     "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-cyan-500"
+
+  const [events, setEvents] = useState<any[]>([])
+  const [loadingEvents, setLoadingEvents] = useState(false)
+
+  useEffect(() => {
+    if (field.type === "event-select") {
+      setLoadingEvents(true)
+      clientApi
+        .get("/admin/events?limit=100&reviewStatus=PUBLISHED")
+        .then((res: any) => {
+          // Check structure: res or res.data. res is envelope, data property contains items
+          const list = res.data ?? res
+          setEvents(Array.isArray(list) ? list : [])
+        })
+        .catch(() => {})
+        .finally(() => setLoadingEvents(false))
+    }
+  }, [field.type])
 
   if (field.type === "boolean") {
     return (
@@ -313,6 +345,47 @@ function FieldInput({
         />
         {field.label}
       </label>
+    )
+  }
+
+  if (field.type === "event-select") {
+    return (
+      <div>
+        {label}
+        {loadingEvents ? (
+          <div className="text-xs text-muted-foreground flex items-center gap-1.5 py-2">
+            <Loader2 className="h-3 w-3 animate-spin text-cyan-500" /> Đang tải danh sách sự kiện đã duyệt...
+          </div>
+        ) : (
+          <select
+            className={inputCls}
+            value={String(value ?? "")}
+            onChange={(e) => {
+              const selectedId = e.target.value
+              onChange(selectedId)
+              
+              if (selectedId && setField) {
+                const ev = events.find((item) => item._id === selectedId)
+                if (ev) {
+                  setField("title", ev.title)
+                  const cleanDesc = (ev.description || "").replace(/<[^>]*>/g, "").slice(0, 120)
+                  setField("subtitle", cleanDesc)
+                  setField("imageUrl", ev.banner || ev.imageUrl || "")
+                  setField("linkUrl", `/su-kien/${ev._id}`)
+                }
+              }
+            }}
+          >
+            <option value="">-- Chọn sự kiện quảng cáo --</option>
+            {events.map((ev) => (
+              <option key={ev._id} value={ev._id}>
+                {ev.title} ({ev.organizer || "BTC"})
+              </option>
+            ))}
+          </select>
+        )}
+        {field.help && <p className="mt-1 text-xs text-muted-foreground">{field.help}</p>}
+      </div>
     )
   }
 
