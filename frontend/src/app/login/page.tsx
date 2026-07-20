@@ -1,11 +1,30 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/context/AuthContext"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel"
 import { Ticket, Mail, Lock, AlertCircle, Eye, EyeOff } from "lucide-react"
+
+interface GoogleCredentialResponse {
+  credential: string
+}
+
+interface GoogleIdentityApi {
+  accounts: {
+    id: {
+      initialize(options: {
+        client_id: string
+        callback: (response: GoogleCredentialResponse) => void
+      }): void
+      renderButton(
+        element: HTMLElement,
+        options: { theme: string; size: string; width: number; text: string }
+      ): void
+    }
+  }
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -14,6 +33,18 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const { login, loginWithGoogle } = useAuth()
+
+  const handleGoogleCredentialResponse = useCallback(async (response: GoogleCredentialResponse) => {
+    try {
+      setLoading(true)
+      setError("")
+      await loginWithGoogle(response.credential)
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Đăng nhập Google thất bại")
+    } finally {
+      setLoading(false)
+    }
+  }, [loginWithGoogle])
 
   // Dynamic Google script loading
   useEffect(() => {
@@ -24,35 +55,29 @@ export default function LoginPage() {
     document.body.appendChild(script)
 
     script.onload = () => {
-      const g = (window as any).google;
+      const g = (window as typeof window & { google?: GoogleIdentityApi }).google;
       if (g) {
         g.accounts.id.initialize({
           client_id: "182516438144-c810a7p012fhgbhmqpgk3bjs3en1om48.apps.googleusercontent.com", // Will fallback in backend if blank
           callback: handleGoogleCredentialResponse,
         });
-        g.accounts.id.renderButton(
-          document.getElementById("googleSignInBtn"),
-          { theme: "outline", size: "large", width: "100%", text: "signin_with" }
-        );
+        const container = document.getElementById("googleSignInBtn")
+        if (container) {
+          const measuredWidth = Math.floor(container.getBoundingClientRect().width) || 320
+          g.accounts.id.renderButton(container, {
+            theme: "outline",
+            size: "large",
+            width: Math.max(200, Math.min(400, measuredWidth)),
+            text: "signin_with",
+          });
+        }
       }
     };
 
     return () => {
       document.body.removeChild(script)
     };
-  }, []);
-
-  const handleGoogleCredentialResponse = async (response: any) => {
-    try {
-      setLoading(true)
-      setError("")
-      await loginWithGoogle(response.credential)
-    } catch (err: any) {
-      setError(err.message || "Đăng nhập Google thất bại")
-    } finally {
-      setLoading(false)
-    }
-  };
+  }, [handleGoogleCredentialResponse]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,8 +91,8 @@ export default function LoginPage() {
       setLoading(true)
       setError("")
       await login(email, password)
-    } catch (err: any) {
-      setError(err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.")
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.")
     } finally {
       setLoading(false)
     }
@@ -78,10 +103,10 @@ export default function LoginPage() {
       <AuthBrandPanel />
 
       {/* Form panel */}
-      <div className="relative flex flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <div className="relative flex min-w-0 flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         <ThemeToggle className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted" />
 
-        <div className="w-full max-w-md space-y-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
           {/* Compact logo (brand panel hidden below lg) */}
           <Link
             href="/"
@@ -96,7 +121,7 @@ export default function LoginPage() {
 
           {/* Heading */}
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-extrabold tracking-tight text-foreground">Đăng nhập</h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">Đăng nhập</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Đăng nhập vào tài khoản EventBox của bạn
             </p>
@@ -113,7 +138,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
                 <label htmlFor="email-address" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1">
@@ -168,7 +193,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex flex-col items-start gap-3 text-sm min-[360px]:flex-row min-[360px]:items-center min-[360px]:justify-between">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -180,9 +205,12 @@ export default function LoginPage() {
                   Ghi nhớ đăng nhập
                 </label>
               </div>
-              <a href="#" className="font-medium text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300">
+              <Link
+                href="/forgot-password"
+                className="font-medium text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300"
+              >
                 Quên mật khẩu?
-              </a>
+              </Link>
             </div>
 
             <div>
@@ -207,7 +235,7 @@ export default function LoginPage() {
 
           {/* Google Sign In Container */}
           <div className="space-y-3">
-            <div id="googleSignInBtn" className="w-full min-h-[40px] flex justify-center text-center"></div>
+            <div id="googleSignInBtn" className="flex min-h-[40px] w-full min-w-0 justify-center overflow-hidden text-center"></div>
           </div>
 
           <p className="text-center text-sm text-muted-foreground">

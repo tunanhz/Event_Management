@@ -9,7 +9,7 @@ import EventIntro from "@/components/event-detail/EventIntro";
 import EventSchedule from "@/components/event-detail/EventSchedule";
 import EventOrganizer from "@/components/event-detail/EventOrganizer";
 import RelatedEvents from "@/components/event-detail/RelatedEvents";
-import { exploreEvents, findEventById, getEventDetail } from "@/lib/mockData";
+import { fetchEventDetail } from "@/lib/discovery-api";
 import styles from "./page.module.css";
 
 export async function generateMetadata({
@@ -18,7 +18,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const event = findEventById(id);
+  const detail = await fetchEventDetail(id);
+  const event = detail?.event;
   return {
     title: event ? `${event.title} | EventBox` : "Sự kiện | EventBox",
     description: event
@@ -33,11 +34,10 @@ export default async function EventDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const event = findEventById(id);
-  if (!event) notFound();
+  const detail = await fetchEventDetail(id);
+  if (!detail) notFound();
 
-  const detail = getEventDetail(event);
-  const related = exploreEvents.filter((e) => e.id !== event.id).slice(0, 4);
+  const { event, related } = detail;
 
   return (
     <>
@@ -48,7 +48,7 @@ export default async function EventDetailPage({
 
         <div className={styles.content}>
           <div className={styles.left}>
-            <EventIntro blocks={detail.description} />
+            <EventIntro blocks={detail.description} html={detail.descriptionHtml} />
             <EventSchedule showDates={detail.showDates} time={event.time} eventId={event.id} />
             <EventOrganizer organizer={detail.organizer} />
           </div>

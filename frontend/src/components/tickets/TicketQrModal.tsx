@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { buildQrMatrix, type UserTicket } from "./tickets-data"
+import { BrowserQRCodeSvgWriter } from "@zxing/browser"
+import type { UserTicket } from "./tickets-data"
 import styles from "./TicketQrModal.module.css"
 
 interface TicketQrModalProps {
@@ -12,6 +13,7 @@ interface TicketQrModalProps {
 /** Full e-ticket view with a (demo) QR code, shown in an accessible dialog. */
 export function TicketQrModal({ ticket, onClose }: TicketQrModalProps) {
   const closeRef = useRef<HTMLButtonElement>(null)
+  const qrRef = useRef<HTMLDivElement>(null)
 
   // Focus the close button on open, close on Esc, and lock body scroll.
   useEffect(() => {
@@ -28,8 +30,17 @@ export function TicketQrModal({ ticket, onClose }: TicketQrModalProps) {
     }
   }, [onClose])
 
-  const matrix = buildQrMatrix(ticket.orderCode)
-  const n = matrix.length
+  useEffect(() => {
+    const container = qrRef.current
+    if (!container) return
+    const writer = new BrowserQRCodeSvgWriter()
+    const svg = writer.write(ticket.orderCode, 184, 184)
+    svg.classList.add(styles.qr)
+    svg.setAttribute("role", "img")
+    svg.setAttribute("aria-label", `Mã QR cho vé ${ticket.orderCode}`)
+    container.replaceChildren(svg)
+    return () => container.replaceChildren()
+  }, [ticket.orderCode])
 
   return (
     <div
@@ -75,32 +86,8 @@ export function TicketQrModal({ ticket, onClose }: TicketQrModalProps) {
         <div className={styles.perforation} aria-hidden="true" />
 
         <div className={styles.stub}>
-        {/* QR code (decorative demo pattern) */}
-        <div className={styles.qrFrame}>
-          <svg
-            viewBox={`0 0 ${n} ${n}`}
-            className={styles.qr}
-            role="img"
-            aria-label={`Mã QR cho vé ${ticket.orderCode}`}
-            shapeRendering="crispEdges"
-          >
-            <rect x="0" y="0" width={n} height={n} fill="#ffffff" />
-            {matrix.map((row, r) =>
-              row.map((on, c) =>
-                on ? (
-                  <rect
-                    key={`${r}-${c}`}
-                    x={c}
-                    y={r}
-                    width="1"
-                    height="1"
-                    fill="#0f172a"
-                  />
-                ) : null
-              )
-            )}
-          </svg>
-        </div>
+        {/* Real, scannable QR generated from the registration ticketCode. */}
+        <div ref={qrRef} className={styles.qrFrame} />
         <p className={styles.orderCode}>#{ticket.orderCode}</p>
         <p className={styles.scanHint}>
           Xuất trình mã này tại cổng để soát vé

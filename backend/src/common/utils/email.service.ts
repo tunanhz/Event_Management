@@ -115,6 +115,48 @@ class EmailService {
       console.log(`🔗 Preview Email at: ${nodemailer.getTestMessageUrl(info)}`);
     }
   }
+
+  /** Sent once a registration is confirmed PAID — the only reliable delivery
+   *  channel available: User.email is required, User.phone is optional and
+   *  there is no SMS gateway in this codebase. */
+  async sendRegistrationConfirmation(
+    email: string,
+    info: {
+      eventTitle: string;
+      ticketName: string;
+      quantity: number;
+      totalAmount: number;
+      /** The organizer's custom "Tin nhắn xác nhận" (Event.confirmationMessage), if set. */
+      customMessage?: string;
+    }
+  ): Promise<void> {
+    const transporter = await this.getTransporter();
+    const amount = info.totalAmount.toLocaleString('vi-VN');
+    const mailOptions = {
+      from: config.smtp.from || '"EventBox Admin" <noreply@eventbox.com>',
+      to: email,
+      subject: `EventBox - Xác nhận đặt vé "${info.eventTitle}"`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <h2 style="color: #0891b2; text-align: center;">Đặt vé thành công!</h2>
+          <p>${info.customMessage ? info.customMessage : 'Cảm ơn bạn đã đặt vé trên EventBox.'}</p>
+          <div style="background-color: #f0fdfa; border: 1px dashed #0d9488; border-radius: 8px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><b>Sự kiện:</b> ${info.eventTitle}</p>
+            <p style="margin: 5px 0;"><b>Loại vé:</b> ${info.ticketName} x${info.quantity}</p>
+            <p style="margin: 5px 0;"><b>Tổng tiền:</b> ${amount}đ</p>
+          </div>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động, vui lòng không phản hồi email này.</p>
+        </div>
+      `,
+    };
+
+    const sent = await transporter.sendMail(mailOptions);
+    console.log(`📧 Registration confirmation email sent to ${email}. Message ID: ${sent.messageId}`);
+    if (sent.messageId && !config.smtp.user) {
+      console.log(`🔗 Preview Email at: ${nodemailer.getTestMessageUrl(sent)}`);
+    }
+  }
 }
 
 export const emailService = new EmailService();

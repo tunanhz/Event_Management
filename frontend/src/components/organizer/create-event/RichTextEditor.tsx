@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import {
   Bold,
   Italic,
@@ -29,8 +29,22 @@ export function RichTextEditor({
   onChange: (html: string) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  // Capture once (lazy init) so React never re-sets innerHTML and clobbers the caret.
-  const [seeded] = useState(initialHTML)
+  // Seed the DOM imperatively, once, on mount — never via the declarative
+  // dangerouslySetInnerHTML prop on every render. React re-applies that prop
+  // on each re-render regardless of whether the string value changed, which
+  // was silently reverting every keystroke back to the original seed a few
+  // ms later (confirmed with a MutationObserver: edit lands, then a second
+  // mutation puts the old content straight back). Setting innerHTML directly
+  // here means React has no opinion about this node's children afterward, so
+  // later re-renders (triggered by our own onChange → parent setState) can
+  // never touch it again — only the browser's native contentEditable
+  // handling and our onInput listener do from this point on.
+  useEffect(() => {
+    if (ref.current) ref.current.innerHTML = initialHTML
+    // Intentionally run once: re-seeding on every `initialHTML` change would
+    // reintroduce the same clobbering bug this effect exists to avoid.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const emit = () => onChange(ref.current?.innerHTML ?? "")
 
@@ -118,9 +132,8 @@ export function RichTextEditor({
         role="textbox"
         aria-multiline="true"
         aria-label="Nội dung thông tin sự kiện"
-        data-placeholder="Nhập thông tin chi tiết về sự kiện..."
+        data-placeholder="Giới thiệu sự kiện, chương trình chính, khách mời, trải nghiệm đặc biệt, điều khoản và điều kiện..."
         onInput={emit}
-        dangerouslySetInnerHTML={{ __html: seeded }}
       />
     </div>
   )

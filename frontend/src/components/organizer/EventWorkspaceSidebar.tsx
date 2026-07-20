@@ -10,7 +10,9 @@ import {
   CircleCheck,
   User,
   Pencil,
-  Armchair,
+  Wallet,
+  CalendarClock,
+  FileText,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -31,14 +33,16 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { key: "analytics", name: "Phân tích", icon: Megaphone },
       { key: "orders", name: "Danh sách đơn hàng", icon: ClipboardList },
       { key: "check-in", name: "Check-in", icon: CircleCheck },
+      { key: "withdrawal", name: "Rút tiền", icon: Wallet },
     ],
   },
   {
     label: "Cài đặt sự kiện",
     items: [
+      { key: "schedule", name: "Lịch trình", icon: CalendarClock },
+      { key: "permits", name: "Giấy phép", icon: FileText },
       { key: "members", name: "Thành viên", icon: User },
       { key: "edit", name: "Chỉnh sửa", icon: Pencil },
-      { key: "seatmap", name: "Sơ đồ ghế", icon: Armchair },
     ],
   },
 ]

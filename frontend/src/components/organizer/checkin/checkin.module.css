@@ -1,9 +1,15 @@
 /* ─── Check-in page ───────────────────────────────────────────────── */
+.headingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
 .pageHeading {
   font-size: 1.5rem;
   font-weight: 800;
   color: var(--foreground);
-  margin-bottom: 0.9rem;
 }
 .sectionLabel {
   font-size: 1.1rem;
@@ -12,25 +18,59 @@
   margin-bottom: 0.9rem;
 }
 
-/* Overview: donut card (left) + two mini cards (right) */
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 38px;
+  padding: 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.refreshBtn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.refreshBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Overview: donut card (check-in rate) + 3 supporting metrics filling the
+ * rest of the row — check-in is tracked once for the whole event (no
+ * per-show split, no exit/checkout, so no second donut column is needed). */
 .overviewGrid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: minmax(280px, 400px) 1fr;
   gap: 1.25rem;
-  align-items: stretch;
   margin-bottom: 2rem;
+  align-items: stretch;
 }
-.miniCol {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+.miniStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
 }
 .miniCard {
-  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 1.1rem 1.4rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem 1.4rem;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -39,30 +79,50 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  flex-shrink: 0;
-}
-.miniIconBlue {
-  background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
-}
-.miniIconRed {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-.miniLabel {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--foreground);
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
 }
 .miniValue {
-  margin-left: auto;
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 800;
   color: var(--foreground);
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.miniLabel {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+/* Per-attendee check-in roster (search + filter + table) */
+.attendeeSection {
+  margin-top: 0.25rem;
+}
+
+/* Empty state for the detail table */
+.emptyBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 200px;
+  padding: 2rem;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: var(--card);
+}
+.emptyIcon {
+  color: var(--muted-foreground);
+  opacity: 0.45;
+}
+.emptyText {
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+  margin: 0;
 }
 
 /* Detail table */
@@ -131,8 +191,17 @@
   text-align: right;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .overviewGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .miniStats {
+    grid-template-columns: 1fr;
+  }
+  .headingRow {
+    flex-wrap: wrap;
   }
 }

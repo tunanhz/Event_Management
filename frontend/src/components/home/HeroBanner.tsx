@@ -1,12 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { banners } from '@/lib/mockData';
 import styles from './HeroBanner.module.css';
 
 const INTERVAL_MS = 5000;
 
-export default function HeroBanner() {
+export interface HeroBannerItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  cta: string;
+  link: string;
+}
+
+export default function HeroBanner({ banners }: { banners: HeroBannerItem[] }) {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -40,6 +48,8 @@ export default function HeroBanner() {
     return () => clearInterval(timer);
   }, [goNext, isPaused, reducedMotion, total]);
 
+  if (total === 0) return null;
+
   return (
     <section
       className={styles.section}
@@ -59,20 +69,22 @@ export default function HeroBanner() {
                 key={banner.id}
                 className={`${styles.slide} ${index === current ? styles.slideActive : ''}`}
               >
-                <img
-                  src={banner.image}
-                  alt={banner.title}
-                  className={styles.slideImage}
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                />
-                <div className={styles.overlay} />
-                <div className={styles.content}>
-                  <h2 className={styles.title}>{banner.title}</h2>
-                  <p className={styles.subtitle}>{banner.subtitle}</p>
-                  <a href={banner.link} className={styles.ctaButton}>
-                    {banner.cta}
-                  </a>
-                </div>
+                <a href={banner.link} className={styles.slideLink}>
+                  <img
+                    src={banner.image}
+                    alt={banner.title}
+                    className={styles.slideImage}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                  />
+                  <div className={styles.overlay} />
+                  <div className={styles.content}>
+                    <h2 className={styles.title}>{banner.title}</h2>
+                    <p className={styles.subtitle}>{banner.subtitle}</p>
+                    <span className={styles.ctaButton}>
+                      {banner.cta}
+                    </span>
+                  </div>
+                </a>
               </div>
             ))}
           </div>

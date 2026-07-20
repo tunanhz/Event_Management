@@ -20,5 +20,18 @@ export const config = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
   },
+  vnpay: {
+    tmnCode: process.env.VNPAY_TMN_CODE || '',
+    hashSecret: process.env.VNPAY_HASH_SECRET || '',
+    // Sandbox payment page — swap to the production URL when going live.
+    url: process.env.VNPAY_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+    // Where VNPAY redirects the buyer's browser back to after paying — must be a backend
+    // route (not the frontend) so we can verify the signature server-side before the
+    // browser sees anything (see modules/payment).
+    returnUrl: process.env.VNPAY_RETURN_URL || 'http://localhost:5000/api/payments/vnpay/return',
+  },
+  groq: {
+    apiKey: process.env.GROQ_API_KEY || '',
+  },
 };
 

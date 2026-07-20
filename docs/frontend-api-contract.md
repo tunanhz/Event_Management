@@ -1,6 +1,6 @@
 # Frontend API Contract — Event Management (EventBox)
 
-> Cập nhật: 2026-07-02 · Branch: `develop`
+> Cập nhật: 2026-07-05 · Branch: `develop`
 > **Mục đích:** Tài liệu API dưới góc nhìn Frontend — **mỗi endpoint gọi thế nào & response trả về ra sao**.
 > Đọc kèm [`business.md`](./business.md), [`system-architecture.md`](./system-architecture.md), [`codebase-summary.md`](./codebase-summary.md).
 >
@@ -41,7 +41,11 @@
 | Prefix | Module |
 |--------|--------|
 | `/api/users` | User + Auth (`user.routes.ts`) |
-| `/api/events` | Event (`event.routes.ts`) |
+| `/api/events` | Event (`event.routes.ts`, public read + protected write) |
+| `/api/organizer` | Organizer event + ticket mgmt (`organizer.routes.ts`, ORGANIZER\|ADMIN) |
+| `/api/categories` | Category (`category.routes.ts`, public read + ADMIN write) |
+| `/api/stars` | Star (`star.routes.ts`, public read + ADMIN write) |
+| `/api/banners` | Banner (`banner.routes.ts`, public read + ADMIN write) |
 | `/api/health` | Health check → `{ status: "ok", timestamp }` (không bọc envelope) |
 
 ### 1.4 Xác thực (cookie `token`)
@@ -249,7 +253,7 @@ Khu **duy nhất** trong Admin dashboard đang gọi API thật (`dashboard/acco
 
 ### 3.5 Events — `/api/events`
 
-⚠️ **Cảnh báo bảo mật:** các route này **KHÔNG có middleware auth/role** (`event.routes.ts`) — ai cũng create/update/delete được. Cần bảo vệ trước khi mở public (business §9).
+✅ **Auth:** `GET` public (để trang chủ/khám phá); `POST/PUT/DELETE` gắn `authorize('ORGANIZER','ADMIN')`.
 
 **Kiểu `EventApi` thật** (`event.model.ts`) — **khác** kiểu FE participant/admin đang dùng (xem §5):
 
@@ -365,7 +369,7 @@ interface UserTicket {
 ```
 `status === "cancelled"` → ẩn nút xem vé. QR thật cần thêm field (`qrData`/`qrImageUrl` + QR động 30s, business §6.5). Đề xuất: `GET /api/me/tickets`.
 
-### 4.5 Organizer — Tạo/Sửa sự kiện (wizard) · `save()` hiện chỉ `console.log`
+### 4.5 Organizer — Tạo/Sửa sự kiện (wizard) · ✅ đã nối API thật
 
 **Payload FE sẽ GỬI (state form = request body):**
 ```ts
@@ -385,8 +389,86 @@ interface CreateEventForm {
 }
 ```
 `EVENT_CATEGORIES` = `["Nhạc sống","Sân khấu & Nghệ thuật","Thể thao","Hội thảo & Workshop","Triển lãm","Khác"]`.
-⚠️ **Wizard mới xong Step 1.** Step 2–4 (suất diễn, **loại vé**, cài đặt, thanh toán/ngân hàng) chưa có field → chốt schema khi hiện thực.
-Đề xuất: `POST /api/organizer/events`, `PUT /api/organizer/events/:id`, `POST /api/upload` (ảnh → URL). Để **edit round-trip đúng**, `GET detail` phải trả đủ mọi field `CreateEventForm`.
+✅ **Wizard đủ 6 bước + đã nối API** (Thông tin → Suất & vé → Cài đặt → Logistics & giấy phép → Hợp đồng ký số → Thanh toán). `save()`: upload ảnh/giấy phép/chữ ký trước rồi `POST /api/organizer/events` (tạo) hoặc `PUT /:id` + `PUT /:id/tickets` (lưu lại).
+Endpoint thật: `POST/PUT /api/organizer/events[/:id]`; upload tách theo loại — `POST /api/uploads/images` (PNG/JPG/WEBP ≤5MB), `/api/uploads/permits` (PDF/DOCX/PNG ≤15MB), `/api/uploads/signatures` (PNG ≤1MB) → trả `{name,url,sizeKb}`. `GET /api/organizer/events/:id` trả `{event, tickets}` đủ field cho edit round-trip.
+
+#### 4.5.1 Response JSON — vỏ chung `ApiResponse`
+
+Mọi API bọc trong `{ success, message, data, meta? }` (`meta` chỉ ở API danh sách; lỗi → `success:false` + `message`, không có `data`).
+
+| Endpoint | Status | `data` |
+|---|---|---|
+| `POST /api/organizer/events` (tạo) | **201** | `{ event, tickets: [...] }` |
+| `GET /api/organizer/events` (của tôi) | 200 | `[event, ...]` + `meta` phân trang |
+| `GET /api/organizer/events/:id` (chi tiết) | 200 | `{ event, tickets: [...] }` |
+| `PUT /api/organizer/events/:id` (sửa) | 200 | `event` |
+| `POST /api/organizer/events/:id/submit` | 200 | `event` (reviewStatus → `PENDING_REVIEW`) |
+| `POST /api/organizer/events/:id/tickets` | 201 | `ticket` |
+| `PUT /api/organizer/events/:id/tickets` (cấu hình cả bộ) | 200 | `[ticket, ...]` |
+| `PUT …/tickets/:ticketId` | 200 | `ticket` |
+| `DELETE …/tickets/:ticketId` | 200 | `null` |
+| `POST /api/uploads/{images\|permits\|signatures}` | 201 | `{ name, url, sizeKb }` |
+| `POST /api/admin/events/:id/approve` | 200 | `event` (→ `PUBLISHED`) |
+| `POST /api/admin/events/:id/reject` | 200 | `event` (→ `REJECTED` + `rejectionReason`) |
+
+**Ví dụ `POST /api/organizer/events` → 201** (mẫu thật, rút gọn):
+```json
+{
+  "success": true,
+  "message": "Tạo sự kiện (nháp) thành công",
+  "data": {
+    "event": {
+      "_id": "6a4aff7ed3a46a12a7bce5c6",
+      "title": "Workshop Nhiếp ảnh Đường phố",
+      "description": "<p>…HTML…</p>",
+      "reviewStatus": "DRAFT", "status": "draft",
+      "startDate": "2026-09-04T15:06:05.879Z", "endDate": "2026-09-04T18:06:05.879Z",
+      "capacity": 60, "banner": "https://.../banner.png", "posterImage": "/uploads/images/….png",
+      "locationType": "offline",
+      "venue": { "name": "…", "province": "…", "ward": "…", "street": "…" },
+      "location": "…, …, …, …",
+      "categoryId": "6a4a7cf7…", "category": "Nhạc sống", "categorySlug": "nhac-song",
+      "creatorId": "6a4aff…", "organizer": "Công ty Test", "organizerId": "6a4aff…",
+      "shows": [ { "_id": "…", "startTime": "…Z", "endTime": "…Z" } ],
+      "slug": "workshop-nhiep-anh", "privacy": "public",
+      "confirmationMessage": "…", "enableQuestions": false,
+      "logisticsServices": ["permit-support"],
+      "permitDocuments": [ { "name": "giay-phep.pdf", "url": "/uploads/permits/….pdf", "sizeKb": 842 } ],
+      "contract": { "repName": "…", "agreed": true, "agreedAt": "…Z",
+                    "signatureUrl": "/uploads/signatures/….png",
+                    "signatureHash": "8d07…(SHA-256)", "signedAt": "…Z" },
+      "paymentInfo": { "bankName": "Vietcombank (VCB)", "accountNumber": "1234567890", "accountHolder": "NGUYEN VAN A" },
+      "date": "2026-09-04T15:06:05.879Z", "maxAttendees": 60, "imageUrl": "https://.../banner.png",
+      "priceFrom": 200000, "isFree": false,
+      "createdAt": "2026-07-06T01:06:06.011Z", "updatedAt": "…Z", "__v": 0
+    },
+    "tickets": [
+      { "_id": "6a4aff7ed3a46a12a7bce5c7", "eventId": "6a4aff7ed3a46a12a7bce5c6",
+        "ticketName": "Vé workshop", "price": 200000, "quantity": 60, "soldQuantity": 0,
+        "minPerOrder": 1, "maxPerOrder": 10, "showId": "…",
+        "saleStart": "…Z", "saleEnd": "…Z", "status": "ACTIVE",
+        "createdAt": "…Z", "updatedAt": "…Z", "__v": 0 }
+    ]
+  }
+}
+```
+
+> **2 nhóm field song song trong `event`:** nhóm ERD mới (`startDate/endDate/capacity/reviewStatus/banner/venue/shows/slug/privacy/enableQuestions/logisticsServices/permitDocuments/contract/paymentInfo`) + nhóm legacy để listing public cũ chạy (`date/maxAttendees/imageUrl/organizer/status/priceFrom/isFree` + `contentBlocks/sessions` mặc định rỗng). `contract.signatureHash` = SHA-256(`repName|signatureUrl|signedAt`). **API public `/api/events/*` đã loại `paymentInfo/contract/permitDocuments`.**
+
+**Danh sách `GET /api/organizer/events` → 200:**
+```json
+{ "success": true, "message": "Lấy danh sách sự kiện thành công",
+  "data": [ { "…event…": "" } ],
+  "meta": { "currentPage": 1, "totalPages": 1, "totalItems": 7, "itemsPerPage": 100 } }
+```
+
+**Upload `POST /api/uploads/images` → 201:**
+```json
+{ "success": true, "message": "Tải file lên thành công",
+  "data": { "name": "poster.png", "url": "/uploads/images/1783…-ab12.png", "sizeKb": 63 } }
+```
+
+**Lỗi (400/401/403/404/409):** `{ "success": false, "message": "Ngày bắt đầu sự kiện phải ở tương lai" }` (dev thêm `stack`). 400 validate · 401 chưa đăng nhập · 403 sai role/không sở hữu · 404 không thấy · 409 duyệt trùng (AM-01).
 
 ### 4.6 Organizer — Sự kiện của tôi (`/organizer`)
 
@@ -400,7 +482,7 @@ interface OrganizerEvent {
   ticketTypes?: TicketType[];  // draft không có
 }
 ```
-Tabs `upcoming|past|pending|draft`, search `title`, `PAGE_SIZE=4`. Đề xuất: `GET /api/organizer/events?status=&q=&page=&pageSize=`.
+Tabs `upcoming|past|pending|draft`, search `title`, `PAGE_SIZE=4`. ✅ **Đã nối**: `GET /api/organizer/events?limit=100`; FE map `reviewStatus`→tab (PENDING_REVIEW→pending; DRAFT/REJECTED→draft; PUBLISHED→upcoming/past theo `startDate`). Nút "Gửi duyệt"/"Gửi duyệt lại" (DRAFT/REJECTED) → `POST /organizer/events/:id/submit`.
 
 ### 4.7 Organizer — Summary / Analytics / Check-in / Members / Orders
 
@@ -433,8 +515,10 @@ interface DashboardMetrics {
   revenueGrowth; attendeeGrowth: number; totalUsers; pendingApprovals: number;
 }
 interface RevenueData { month: string; revenue: number }  // month "T1".."T12"
-// GET /api/admin/moderation?status=  ·  POST /api/admin/events/:id/moderate { status, rejectionReason? }
-type ModerationStatus = "pending" | "approved" | "rejected";
+// ✅ Đã nối: GET /api/admin/events?reviewStatus=PENDING_REVIEW|PUBLISHED|REJECTED
+//   · POST /api/admin/events/:id/approve  · POST /api/admin/events/:id/reject { reason }  (reason bắt buộc)
+//   · GET /api/admin/events/:id → { event, tickets } cho panel chi tiết
+type ModerationStatus = "pending" | "approved" | "rejected"; // FE map ← reviewStatus (PENDING_REVIEW/PUBLISHED/REJECTED)
 interface ModerationEvent { id; title; organizer; category; location; submittedAt: string; status: ModerationStatus }
 // GET/PUT /api/admin/settings
 interface SystemSettings { platformName; hotline: string; autoApprove; emailAlerts; maintenance: boolean }

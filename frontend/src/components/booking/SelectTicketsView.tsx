@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Calendar, MapPin, ChevronRight } from "lucide-react";
-import type { EventItem, TicketType } from "@/lib/mockData";
+import type { EventItem, ShowOption, TicketType } from "@/lib/mockData";
 import { formatVnd } from "@/lib/utils";
 import {
   buildLines,
@@ -14,24 +14,53 @@ import {
   type Quantities,
 } from "@/lib/booking-selection";
 import { formatBookingDate } from "./format-booking-date";
+import { formatShowTime } from "./format-show-time";
 import styles from "./select-tickets-view.module.css";
 
 interface Props {
   event: EventItem;
   tickets: TicketType[];
+  shows: ShowOption[];
 }
 
-/** Step 1 of booking — pick ticket types and quantities. */
-export function SelectTicketsView({ event, tickets }: Props) {
+/** Step 1 of booking — pick a showing (if more than one), then ticket types and quantities. */
+export function SelectTicketsView({ event, tickets, shows }: Props) {
   const router = useRouter();
+  const hasMultipleShows = shows.length > 1;
+  const [selectedShowId, setSelectedShowId] = useState<string | undefined>(shows[0]?.id);
   const [quantities, setQuantities] = useState<Quantities>(() =>
     Object.fromEntries(tickets.map((t) => [t.id, 0])),
   );
+  const selectedShow = hasMultipleShows ? shows.find((s) => s.id === selectedShowId) : undefined;
+  const scheduleText = selectedShow
+    ? (() => {
+        const { time, date } = formatShowTime(selectedShow.startTime, selectedShow.endTime);
+        return `${selectedShow.label} · ${time}, ${date}`;
+      })()
+    : `${event.time}, ${formatBookingDate(event.date)}`;
 
-  const change = (id: string, delta: number) =>
-    setQuantities((q) => ({ ...q, [id]: Math.max(0, (q[id] ?? 0) + delta) }));
+  // Only tiers sold for the selected showing (tiers without a showId apply to every showing).
+  const visibleTickets = useMemo(
+    () =>
+      hasMultipleShows
+        ? tickets.filter((t) => !t.showId || t.showId === selectedShowId)
+        : tickets,
+    [tickets, hasMultipleShows, selectedShowId],
+  );
 
-  const lines = useMemo(() => buildLines(tickets, quantities), [tickets, quantities]);
+  const pickShow = (id: string) => {
+    if (id === selectedShowId) return;
+    setSelectedShowId(id);
+    // A cart line is tied to one showing — switching clears picks from the other.
+    setQuantities(Object.fromEntries(tickets.map((t) => [t.id, 0])));
+  };
+
+  const change = (id: string, delta: number) => {
+    const max = tickets.find((t) => t.id === id)?.maxPerOrder ?? Infinity;
+    setQuantities((q) => ({ ...q, [id]: Math.min(max, Math.max(0, (q[id] ?? 0) + delta)) }));
+  };
+
+  const lines = useMemo(() => buildLines(visibleTickets, quantities), [visibleTickets, quantities]);
   const total = totalAmount(lines);
   const count = totalQuantity(quantities);
 
@@ -54,8 +83,32 @@ export function SelectTicketsView({ event, tickets }: Props) {
             <span className={styles.topbarSpacer} aria-hidden="true" />
           </header>
 
+          {hasMultipleShows && (
+            <div className={styles.showPicker}>
+              <div className={styles.showPickerLabel}>Chọn xuất chiếu</div>
+              <div className={styles.showList}>
+                {shows.map((s) => {
+                  const { time, date } = formatShowTime(s.startTime, s.endTime);
+                  const active = s.id === selectedShowId;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`${styles.showPill} ${active ? styles.showPillActive : ""}`}
+                      aria-pressed={active}
+                      onClick={() => pickShow(s.id)}
+                    >
+                      <span className={styles.showPillTime}>{s.label} · {time}</span>
+                      <span className={styles.showPillDate}>{date}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <ul className={styles.ticketList}>
-            {tickets.map((t, i) => (
+            {visibleTickets.map((t, i) => (
               <li
                 key={t.id}
                 className={`${styles.ticketRow} ${(quantities[t.id] ?? 0) > 0 ? styles.ticketRowActive : ""}`}
@@ -80,6 +133,7 @@ export function SelectTicketsView({ event, tickets }: Props) {
                     type="button"
                     className={`${styles.stepBtn} ${styles.stepBtnPlus}`}
                     onClick={() => change(t.id, 1)}
+                    disabled={(quantities[t.id] ?? 0) >= t.maxPerOrder}
                     aria-label={`Tăng số lượng ${t.name}`}
                   >
                     +
@@ -95,7 +149,7 @@ export function SelectTicketsView({ event, tickets }: Props) {
           <h2 className={styles.eventTitle}>{event.title}</h2>
           <div className={styles.metaRow}>
             <Calendar size={18} className={styles.metaIcon} aria-hidden="true" />
-            <span>{event.time}, {formatBookingDate(event.date)}</span>
+            <span>{scheduleText}</span>
           </div>
           <div className={styles.metaRow}>
             <MapPin size={18} className={styles.metaIcon} aria-hidden="true" />
@@ -104,7 +158,7 @@ export function SelectTicketsView({ event, tickets }: Props) {
 
           <div className={styles.priceHead}>Giá vé</div>
           <ul className={styles.priceList}>
-            {tickets.map((t) => (
+            {visibleTickets.map((t) => (
               <li key={t.id} className={styles.priceItem}>
                 <span>{t.name}</span>
                 <span className={styles.priceValue}>{formatVnd(t.price)}</span>

@@ -1,17 +1,35 @@
-import { notFound } from "next/navigation"
-import { getOrganizerEventById } from "@/components/organizer/my-events-data"
+"use client"
+
+import { useWorkspaceEvent } from "@/components/organizer/EventWorkspaceContext"
 import { EventWizard } from "@/components/organizer/create-event/EventWizard"
-import { mapEventToForm } from "@/components/organizer/create-event/map-event-to-form"
+import { mapDetailToForm } from "@/components/organizer/create-event/map-event-to-form"
+import { PublishedInventoryPanel } from "@/components/organizer/inventory/PublishedInventoryPanel"
 
-/** Edit ("Chỉnh sửa"): the create-event wizard pre-filled with event data. */
-export default async function EventEditPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-  const event = getOrganizerEventById(id)
-  if (!event) notFound()
+/**
+ * Edit ("Chỉnh sửa") — adapts to the event's review lifecycle:
+ *  - DRAFT / REJECTED  → full create-event wizard, pre-filled and editable.
+ *  - PENDING_REVIEW    → the same wizard locked read-only (in the admin queue).
+ *  - PUBLISHED (not started) → stock-only inventory manager (restock / hide-show),
+ *                              allowed only while tickets are on sale (before it begins).
+ *  - PUBLISHED (started)     → inventory view-only: stock is frozen once the event
+ *                              is under way or over. Mirrors the backend guard.
+ * `event.status` ("past" = started, per the data layer's start-date bucketing) is
+ * precomputed, so there's no render-time clock read here.
+ */
+export default function EventEditPage() {
+  const { event, detail, refresh } = useWorkspaceEvent()
+  const status = detail.event.reviewStatus
 
-  return <EventWizard initialForm={mapEventToForm(event)} />
+  if (status === "PUBLISHED") {
+    return <PublishedInventoryPanel eventId={event.id} readOnly={event.status === "past"} />
+  }
+
+  return (
+    <EventWizard
+      initialForm={mapDetailToForm(detail)}
+      eventId={event.id}
+      readOnly={status === "PENDING_REVIEW"}
+      onSaved={refresh}
+    />
+  )
 }

@@ -1,6 +1,6 @@
 # System Architecture — Event Management (EventBox)
 
-> Cập nhật: 2026-06-30 · Branch: `develop`
+> Cập nhật: 2026-07-05 · Branch: `develop`
 > Đọc kèm [`codebase-summary.md`](./codebase-summary.md) và [`code-standards.md`](./code-standards.md).
 
 ## 1. Tổng quan topology
@@ -18,7 +18,7 @@ flowchart LR
   subgraph Exp["Express 5 — cổng 5000"]
     API["REST API /api/*"]
   end
-  DB[("MongoDB<br/>users · events · otps")]
+  DB[("MongoDB<br/>users · events · otps · categories<br/>stars · banners · tickets")]
   MAIL["Gmail SMTP"]
   GOOG["Google OAuth"]
 
@@ -64,8 +64,12 @@ flowchart TD
 
 ### Mount routes
 - `GET /api/health` — health check.
-- `/api/events` → `eventRoutes`.
-- `/api/users` → `userRoutes`.
+- `/api/events` → `eventRoutes` (public + protected write).
+- `/api/users` → `userRoutes` (auth + admin).
+- `/api/categories` → `categoryRoutes` (public read, ADMIN write).
+- `/api/stars` → `starRoutes` (public read, ADMIN write).
+- `/api/banners` → `bannerRoutes` (public read, ADMIN write).
+- `/api/organizer` → `organizerRoutes` (ORGANIZER|ADMIN only — event + ticket mgmt).
 
 ### Offline mock mode
 `config/database.ts` export cờ `isDbConnected`. Repository của `user` rẽ nhánh: nếu kết nối
@@ -181,9 +185,17 @@ erDiagram
     date   date
     string location
     number maxAttendees
-    string organizer "hiện là String, chưa ref USER"
+    string organizer
     string category
     enum   status "draft|published|cancelled|completed"
+    enum   reviewStatus "DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED"
+    ObjectId categoryId "ref CATEGORY"
+    ObjectId creatorId "ref USER (organizer)"
+    ObjectId approvedById "ref USER (admin)"
+    string banner
+    date   startDate
+    date   endDate
+    number capacity
     string imageUrl
   }
   USER ||..o{ EVENT : "organizes (logic, chưa ràng buộc FK)"
@@ -193,8 +205,7 @@ erDiagram
   khi auth); pre-save hook tự hash mật khẩu bằng bcrypt; method `comparePassword`.
   `accountStatus` enum gồm `ACTIVE` (mặc định, đăng nhập được), `PENDING` (STAFF chờ kích hoạt,
   không đăng nhập được), `BANNED` (khóa tài khoản, không đăng nhập).
-- **Event**: index trên `{date, status}`, `category`, `organizer`. `organizer` đang lưu dạng
-  chuỗi — chưa liên kết khóa ngoại tới `User`.
+- **Event**: index trên `{date, status}`, `category`, `organizer`. `organizerId` (creatorId) → ref User; `reviewStatus` riêng từ public `status`.
 - **OTP**: TTL index xóa tự động sau 300 giây.
 
 ## 5. Hợp đồng API (API contract)
@@ -231,13 +242,21 @@ Mọi response bọc trong `ApiResponse`:
 | POST | `/api/users/admin/:id/role` | ADMIN | Đổi role |
 | POST | `/api/users/admin/:id/status` | ADMIN | Khóa/mở khóa |
 | DELETE | `/api/users/admin/:id` | ADMIN | Xóa tài khoản |
-| GET | `/api/events` | — ⚠️ | Danh sách sự kiện |
+| GET | `/api/events` | — | Danh sách (public, status=published) |
+| GET | `/api/events/search` | — | Full-text search (EM-68) |
 | GET | `/api/events/:id` | — | Chi tiết sự kiện |
-| POST | `/api/events` | — ⚠️ | Tạo sự kiện |
-| PUT | `/api/events/:id` | — ⚠️ | Cập nhật sự kiện |
-| DELETE | `/api/events/:id` | — ⚠️ | Xóa sự kiện |
-
-⚠️ = hiện public, **nên** bổ sung `isAuthenticated` + `authorize('ORGANIZER','ADMIN')`.
+| GET | `/api/events/:id/detail` | — | Event + tickets + related (EM-72) |
+| POST | `/api/events` | ORGANIZER\|ADMIN | Tạo sự kiện |
+| PUT | `/api/events/:id` | ORGANIZER\|ADMIN | Cập nhật sự kiện |
+| DELETE | `/api/events/:id` | ORGANIZER\|ADMIN | Xóa sự kiện |
+| POST | `/api/organizer/events` | ORGANIZER\|ADMIN | Tạo DRAFT + tickets (EM-23) |
+| GET | `/api/organizer/events` | ORGANIZER\|ADMIN | My events (filter reviewStatus) |
+| PUT | `/api/organizer/events/:id` | ORGANIZER\|ADMIN | Sửa DRAFT (EM-24) |
+| POST | `/api/organizer/events/:id/submit` | ORGANIZER\|ADMIN | Submit for review |
+| GET/POST/PUT | `/api/organizer/events/:id/tickets` | ORGANIZER\|ADMIN | Ticket mgmt (EM-128) |
+| GET | `/api/categories` | — | Danh mục sự kiện |
+| GET | `/api/stars` | — | Sao nổi bật |
+| GET | `/api/banners` | — | Banner (active) |
 
 ## 6. Frontend — tầng & luồng render
 
@@ -264,13 +283,12 @@ flowchart TD
 - `helmet` đặt security headers; `cors` giới hạn theo `FRONTEND_URL` + cho phép credentials.
 - Mật khẩu hash **bcrypt** (salt 10). `passwordHash` không trả về client (`select:false`
   + xóa thủ công trong service).
-- **Rủi ro cần xử lý**: (a) event routes public; (b) Google OAuth dev-fallback tự đăng nhập;
-  (c) `JWT_SECRET` mặc định `'default_secret'` nếu thiếu env — phải đặt secret thật ở mọi
-  môi trường; (d) đảm bảo `.env` không bị commit.
+- **Rủi ro cần xử lý**: (a) Google OAuth dev-fallback tự đăng nhập;
+  (b) `JWT_SECRET` mặc định `'default_secret'` nếu thiếu env — phải đặt secret thật ở mọi
+  môi trường; (c) đảm bảo `.env` không bị commit.
 
 ## 8. Câu hỏi chưa giải quyết
 
 - Có triển khai refresh-token / xoay token không, hay chấp nhận JWT 7 ngày phẳng?
-- Event nên ràng buộc `organizer` theo `ObjectId` ref `User` ở thời điểm nào?
-- Chiến lược deploy (cùng host vs tách dịch vụ) và biến môi trường production — bổ sung vào
-  `deployment-guide.md` khi có quyết định.
+- Admin approve/reject event (ghi `approvedById`, chuyển `reviewStatus` → PUBLISHED|REJECTED)?
+- Chiến lược deploy (cùng host vs tách dịch vụ) và biến môi trường production.

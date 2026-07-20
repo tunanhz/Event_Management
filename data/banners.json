@@ -1,0 +1,86 @@
+[
+  {
+    "_id": {
+      "$oid": "65f0e0000000000000000001"
+    },
+    "title": "Đại Nhạc Hội Mùa Hè 2026",
+    "subtitle": "Trải nghiệm âm nhạc đỉnh cao cùng các nghệ sĩ hàng đầu",
+    "imageUrl": "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1400&h=500&fit=crop",
+    "ctaLabel": "Mua vé ngay",
+    "linkUrl": "/events/dai-nhac-hoi-mua-he-2026",
+    "eventId": {
+      "$oid": "65f0d0000000000000000001"
+    },
+    "order": 1,
+    "isActive": true,
+    "createdAt": {
+      "$date": "2026-06-01T00:00:00Z"
+    },
+    "updatedAt": {
+      "$date": "2026-06-01T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0e0000000000000000002"
+    },
+    "title": "Giải Chạy Marathon Thành Phố 2026",
+    "subtitle": "Đăng ký ngay để nhận ưu đãi sớm",
+    "imageUrl": "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?w=1400&h=500&fit=crop",
+    "ctaLabel": "Đăng ký ngay",
+    "linkUrl": "/events/giai-chay-marathon-thanh-pho-2026",
+    "eventId": {
+      "$oid": "65f0d0000000000000000003"
+    },
+    "order": 2,
+    "isActive": true,
+    "createdAt": {
+      "$date": "2026-06-15T00:00:00Z"
+    },
+    "updatedAt": {
+      "$date": "2026-06-15T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0e0000000000000000003"
+    },
+    "title": "Lễ Hội Âm Nhạc Điện Tử EDM Festival 2026",
+    "subtitle": "Đại tiệc âm thanh ánh sáng lớn nhất mùa hè này",
+    "imageUrl": "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&h=630&fit=crop",
+    "ctaLabel": "Mua vé ngay",
+    "linkUrl": "/events/le-hoi-am-nhac-dien-tu-edm-festival-2026",
+    "eventId": {
+      "$oid": "65f0d0000000000000000004"
+    },
+    "order": 3,
+    "isActive": true,
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "65f0e0000000000000000004"
+    },
+    "title": "Tour Du Thuyền Khám Phá Vịnh Hạ Long",
+    "subtitle": "Trải nghiệm kỳ quan thiên nhiên thế giới trong 2 ngày 1 đêm",
+    "imageUrl": "https://images.unsplash.com/photo-1528127269322-539801943592?w=1200&h=630&fit=crop",
+    "ctaLabel": "Khám phá ngay",
+    "linkUrl": "/events/tour-du-thuyen-kham-pha-vinh-ha-long-2n1d",
+    "eventId": {
+      "$oid": "65f0d0000000000000000018"
+    },
+    "order": 4,
+    "isActive": true,
+    "createdAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-07-05T00:00:00.000Z"
+    }
+  }
+]

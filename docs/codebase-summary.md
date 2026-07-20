@@ -1,6 +1,6 @@
 # Codebase Summary — Event Management (EventBox)
 
-> Cập nhật: 2026-06-30 · Branch: `develop`
+> Cập nhật: 2026-07-05 · Branch: `develop`
 > Tài liệu này tóm tắt cấu trúc, module và luồng chính của codebase. Đọc kèm
 > [`system-architecture.md`](./system-architecture.md) và [`code-standards.md`](./code-standards.md).
 
@@ -38,7 +38,12 @@ Event_Management/
 │       │   └── types/          # AuthRequest, PaginationQuery, PaginatedResult
 │       └── modules/
 │           ├── event/          # model · repository · service · controller · routes · index
-│           └── user/           # + otp.model.ts (auth + admin account management)
+│           ├── user/           # + otp.model.ts (auth + admin account management)
+│           ├── category/       # Danh mục sự kiện
+│           ├── star/           # Sao nổi bật
+│           ├── banner/         # Banner marketing
+│           ├── organizer/      # Event + ticket management (EM-23, EM-24, EM-128)
+│           └── scripts/        # seed-admin, seed-homepage
 └── frontend/
     ├── next.config.ts      # Rewrites /api/* → backend; cấu hình ảnh
     └── src/
@@ -93,9 +98,18 @@ Mỗi feature là một module độc lập theo mẫu **Controller → Service 
   STAFF không đăng nhập khi status `PENDING`.
 
 ### Module `event`
-- CRUD đầy đủ: `GET /`, `GET /:id`, `POST /`, `PUT /:id`, `DELETE /:id`.
+- **Công khai (public)**: `GET /`, `GET /search` (EM-68, full-text $or), `GET /:id`, `GET /:id/detail` (EM-72, trả event+tickets+related).
+- **Bảo vệ** (ORGANIZER|ADMIN): `POST /`, `PUT /:id`, `DELETE /:id` với middleware `isAuthenticated + authorize`.
 - Hỗ trợ lọc theo `status`, `category`, sắp xếp + phân trang ở repository.
-- **Chưa gắn middleware auth/authorize** → mọi route đang public (xem §7).
+
+### Module `organizer` (EM-23, EM-24, EM-128)
+- **Tất cả route gắn** `isAuthenticated + authorize('ORGANIZER','ADMIN')` — tạo DRAFT event + manage tickets.
+- POST `/events` — tạo DRAFT event + tickets mặc định.
+- GET `/events` — danh sách event của tôi (filter theo `reviewStatus`).
+- PUT `/events/:id` — sửa DRAFT event.
+- POST `/events/:id/submit` — chuyển status `DRAFT` → `PENDING_REVIEW`.
+- Ticket CRUD: GET `/events/:id/tickets`, POST `/events/:id/tickets`, PUT `/events/:id/tickets` (EM-128: bulk replace), PUT/DELETE `/:ticketId` (DRAFT only).
+- Event có `reviewStatus` (DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED) riêng, ghi `creatorId`, `approvedById` (chưa có endpoint approve/reject).
 
 ### Roles
 `ADMIN` · `ORGANIZER` · `PARTICIPANT` (mặc định) · `STAFF`.
@@ -122,7 +136,7 @@ Mỗi feature là một module độc lập theo mẫu **Controller → Service 
 
 ## 5. Dữ liệu & lưu trữ
 
-- **MongoDB + Mongoose** là kho chính. Hai collection: `users`, `events` (+ `otps` TTL).
+- **MongoDB + Mongoose** là kho chính. Collections: `users`, `events`, `otps` (TTL), `categories`, `stars`, `banners`, `tickets`.
 - **Offline mock mode**: nếu kết nối Mongo thất bại, `connectDatabase()` đặt
   `isDbConnected = false` và hệ thống tự chuyển sang **in-memory store** (RAM) cho `user`
   (đăng ký/đăng nhập/admin vẫn chạy được để demo). Dữ liệu mất khi restart. Module `event`
@@ -145,18 +159,15 @@ Biến môi trường backend (xem `SETUP_GUIDE.md`): `PORT`, `MONGODB_URI`, `JW
 
 ## 7. Nợ kỹ thuật & điểm cần lưu ý
 
-1. **Event routes không bảo vệ** — `POST/PUT/DELETE /api/events` thiếu `isAuthenticated`/
-   `authorize`; bất kỳ ai cũng tạo/sửa/xóa được sự kiện.
-2. **Google OAuth fallback** — ở môi trường `development`, khi verify token thất bại vẫn
+1. **Google OAuth fallback** — ở môi trường `development`, khi verify token thất bại vẫn
    tự đăng nhập bằng user demo (`user.service.ts`). Tiện demo nhưng rủi ro nếu `NODE_ENV`
    sai. Client ID trong `login/page.tsx` cũng đang là placeholder.
-3. **Trùng mock data** — tồn tại cả `lib/mockData.ts` (trang chủ) và `lib/mock-data.ts`
+2. **Trùng mock data** — tồn tại cả `lib/mockData.ts` (trang chủ) và `lib/mock-data.ts`
    (dashboard). Cân nhắc gộp/đặt tên rõ ràng (vi phạm DRY).
-4. **Dashboard chạy mock** — `/dashboard` và `/dashboard/events` chưa nối API thật; chỉ
+3. **Dashboard chạy mock** — `/dashboard` và `/dashboard/events` chưa nối API thật; chỉ
    `/dashboard/accounts` đã nối.
-5. **`event.organizer` là `String`** — chưa `ref` tới `User`; chưa gắn người tổ chức theo id.
-6. **Chưa có test**, chưa có CI. Cần bổ sung khi mở rộng.
-7. **`backend/.env` đang hiện diện trong thư mục làm việc** — đảm bảo nằm trong `.gitignore`
+4. **Event approval workflow chưa hoàn** — `approvedById` chưa được ghi; chưa có endpoint admin approve/reject.
+5. **`backend/.env` đang hiện diện trong thư mục làm việc** — đảm bảo nằm trong `.gitignore`
    và không bị commit (chứa secret).
 
 ## 8. Câu hỏi chưa giải quyết

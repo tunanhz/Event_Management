@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { featuredStars } from '@/lib/mockData';
+import type { FeaturedStar } from '@/lib/mockData';
 import styles from './FeaturedStars.module.css';
 
 /* Cyan "verified" badge — filled circle + white check (≥3:1 contrast) */
@@ -14,7 +14,8 @@ function VerifiedBadge() {
   );
 }
 
-export default function FeaturedStars() {
+export default function FeaturedStars({ stars }: { stars: FeaturedStar[] }) {
+  if (stars.length === 0) return null;
   return (
     <section className={styles.section} aria-labelledby="featured-stars-title">
       {/* Cyan aurora ambiance (decorative, gated by reduced-motion globally) */}
@@ -28,18 +29,12 @@ export default function FeaturedStars() {
             </svg>
             Featured Stars
           </h2>
-          <Link href="/nghe-si" className={styles.viewAll}>
-            Xem thêm
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </Link>
         </div>
 
         <ul className={styles.list}>
-          {featuredStars.map((star) => (
+          {stars.map((star) => (
             <li key={star.id} className={styles.item}>
-              <Link href={`/nghe-si/${star.slug}`} className={styles.card}>
+              <div className={styles.card}>
                 <span className={styles.avatarRing}>
                   <img
                     src={star.image}
@@ -52,7 +47,7 @@ export default function FeaturedStars() {
                   <span className={styles.name}>{star.name}</span>
                   {star.verified && <VerifiedBadge />}
                 </span>
-              </Link>
+              </div>
             </li>
           ))}
         </ul>

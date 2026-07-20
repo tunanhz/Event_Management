@@ -9,6 +9,7 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".next-mobile/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
@@ -21,6 +22,14 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-empty-object-type": "warn",
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/immutability": "warn",
+    },
+  },
+  // Node tooling scripts (predev, v.v.) chạy CommonJS vì package.json không đặt
+  // "type": "module" -> require() ở đây là hợp lệ, không phải nợ style.
+  {
+    files: ["scripts/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ]);

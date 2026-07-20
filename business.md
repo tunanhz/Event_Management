@@ -47,8 +47,8 @@ Tài liệu này định nghĩa chi tiết luồng nghiệp vụ, danh sách cá
 *   **Quyền hạn & Chức năng:**
     *   **Xem sự kiện được giao (Assigned Events):** Xem danh sách chi tiết các sự kiện mà mình được phân công hỗ trợ.
     *   **Xem lịch làm việc (Work Schedule):** Theo dõi lịch phân ca, ca làm việc cụ thể tương ứng với các sự kiện được chỉ định.
+    *   **Xác nhận ca:** Staff phải xác nhận nhận ca trước thời điểm sự kiện bắt đầu ít nhất 1 giờ. Quá hạn mà chưa xác nhận, phân công chuyển sang `EXPIRED`, được ghi nhận là không làm và không thể sử dụng các chức năng vận hành sự kiện.
     *   **Kiểm tra vé tại sự kiện (Attendee Check-in):** Quét mã QR code/mã vé của người tham gia khi họ đến cửa sự kiện và cập nhật trạng thái check-in thời gian thực lên hệ thống.
-    *   **Bán vé offline tại sự kiện (Offline Ticket Sales):** Hỗ trợ bán vé trực tiếp tại quầy của sự kiện cho khách hàng vãng lai chưa mua vé trước. Cập nhật dữ liệu bán vé offline về hệ thống.
     *   **Báo cáo vấn đề sự kiện (Issue Management):** Gửi báo cáo, cảnh báo sự cố hoặc vấn đề phát sinh tại sự kiện về cho Admin/Ban quản lý để kịp thời xử lý.
 
 ### 2.3. ORGANIZER (Nhà Tổ chức Sự kiện)
@@ -57,9 +57,8 @@ Tài liệu này định nghĩa chi tiết luồng nghiệp vụ, danh sách cá
     *   **Tạo & Thiết lập Sự kiện:**
         *   *Cấu hình vé (Ticket Configuration):* Tạo nhiều hạng vé khác nhau (VIP, Standard, Early Bird...), số lượng vé phát hành và giá vé cụ thể.
         *   *Sơ đồ chỗ ngồi (Seat Map):* Cấu hình và thiết lập sơ đồ ghế ngồi theo hàng/khối đối với các sự kiện trong khán phòng hoặc có đánh số ghế.
-    *   **Thuê thêm dịch vụ hệ thống (Services Request):** Gửi yêu cầu sử dụng các dịch vụ hỗ trợ từ hệ thống EventBox và chờ Admin duyệt:
-        *   *Xin giấy phép tổ chức (Permits Request).*
-        *   *Hỗ trợ hậu cần & nhân sự (Logistics & Equipment Support).*
+    *   **Thuê thêm dịch vụ hệ thống (Services Request):** Gửi yêu cầu sử dụng các dịch vụ hỗ trợ từ hệ thống EventBox (Dịch vụ trọn gói, Sân khấu, Âm thanh, Ánh sáng, Bàn ghế, Nhân sự, hoặc Dịch vụ khác tự nhập) và chờ Admin duyệt. Phải cọc trước 20% chi phí thuê dịch vụ (sau khi Admin xem xét hồ sơ và báo giá cụ thể).
+    *   **Giấy phép & Sơ đồ sự kiện:** Đính kèm giấy phép tổ chức sự kiện và sơ đồ bố trí không gian sự kiện để Admin/Staff thẩm định.
     *   **Xem & Quản lý hợp đồng (Contracts):** Xem chi tiết các hợp đồng, thỏa thuận chia sẻ doanh số và ký kết thỏa thuận điện tử với EventBox.
     *   **Quản lý bán hàng & Người tham gia:**
         *   Xem danh sách chi tiết những người tham gia đã đăng ký mua vé (thông tin liên hệ, loại vé đã mua).

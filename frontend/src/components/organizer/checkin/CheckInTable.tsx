@@ -1,10 +1,17 @@
-import { formatVnd, formatInt, type TicketType } from "../my-events-data"
+import { Ticket } from "lucide-react"
+import { formatVnd, formatInt } from "../my-events-data"
+import type { CheckInByTicket } from "./organizer-checkin-api"
 import styles from "./checkin.module.css"
 
-/** Check-in detail table: check-in count + rate per ticket type. */
-export function CheckInTable({ types }: { types: TicketType[] }) {
-  if (types.length === 0) {
-    return null
+/** Check-in detail table: real check-in count + rate per ticket type. */
+export function CheckInTable({ byTicket }: { byTicket: CheckInByTicket[] }) {
+  if (byTicket.length === 0) {
+    return (
+      <div className={styles.emptyBox}>
+        <Ticket size={32} aria-hidden="true" className={styles.emptyIcon} />
+        <p className={styles.emptyText}>Chưa có vé nào được bán cho sự kiện này.</p>
+      </div>
+    )
   }
 
   return (
@@ -19,16 +26,14 @@ export function CheckInTable({ types }: { types: TicketType[] }) {
           </tr>
         </thead>
         <tbody>
-          {types.map((t) => {
-            // No attendee has checked in yet, so checked-in is 0 for every type.
-            const checkedIn = 0
-            const pct = t.sold ? Math.round((checkedIn / t.sold) * 100) : 0
+          {byTicket.map((t) => {
+            const pct = t.sold ? Math.round((t.checkedIn / t.sold) * 100) : 0
             return (
-              <tr key={t.name}>
-                <td className={styles.ticketName}>{t.name}</td>
+              <tr key={t.ticketName}>
+                <td className={styles.ticketName}>{t.ticketName}</td>
                 <td>{formatVnd(t.price)}</td>
                 <td>
-                  {formatInt(checkedIn)} / {formatInt(t.sold)}
+                  {formatInt(t.checkedIn)} / {formatInt(t.sold)}
                 </td>
                 <td>
                   <div className={styles.progressCell}>

@@ -1,6 +1,6 @@
 # Code Standards — Event Management (EventBox)
 
-> Cập nhật: 2026-06-30 · Branch: `develop`
+> Cập nhật: 2026-07-05 · Branch: `develop`
 > Tài liệu mô tả **quy ước đang được áp dụng** trong codebase, để code mới đồng bộ với code cũ.
 > Đọc kèm [`codebase-summary.md`](./codebase-summary.md) và [`system-architecture.md`](./system-architecture.md).
 
@@ -108,7 +108,7 @@ không truy cập Mongoose trực tiếp). Mỗi module export qua `index.ts`.
 - Chỉ tạo `ADMIN` đầu tiên qua self-register (admin bootstrap); `STAFF` chỉ do ADMIN tạo.
 - Mật khẩu luôn hash bcrypt; OTP hết hạn sau 5 phút.
 - Mọi route ghi/nhạy cảm phải qua `isAuthenticated` (+ `authorize` nếu giới hạn role).
-  **Hiện event routes chưa tuân thủ — cần bổ sung.**
+  Event write routes (`POST/PUT/DELETE /api/events`) gắn `authorize('ORGANIZER','ADMIN')`.
 
 ## 6. Git & commit
 

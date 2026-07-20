@@ -1,0 +1,115 @@
+/* ─── Withdrawal Request Form ("Rút tiền") ─────────────────────────── */
+
+.balanceCard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  margin-bottom: 1.5rem;
+}
+.balanceIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.balanceLabel { font-size: 0.85rem; color: var(--muted-foreground); }
+.balanceValue {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.formCard {
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  margin-bottom: 2rem;
+}
+.formGrid {
+  display: grid;
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .formGrid { grid-template-columns: 1fr 1fr; }
+}
+.field { display: flex; flex-direction: column; gap: 0.35rem; }
+.fieldFull { grid-column: 1 / -1; }
+.label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.required { color: #e11d48; margin-right: 0.2rem; }
+.input,
+.select {
+  height: 44px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.input:focus,
+.select:focus { border-color: var(--primary); background: var(--card); }
+.hint { font-size: 0.78rem; color: var(--muted-foreground); }
+.fieldError { font-size: 0.8rem; color: #e11d48; }
+
+.submitRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+.submitBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.4rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+.submitBtn:hover { opacity: 0.9; }
+.submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.successNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+/* History status badges */
+.status {
+  display: inline-flex;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.statusPending { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+.statusApproved { background: rgba(16, 185, 129, 0.15); color: #059669; }
+.statusRejected { background: rgba(239, 68, 68, 0.12); color: #e11d48; }
+.bankCell { text-align: left !important; }
+.bankSub { font-size: 0.8rem; color: var(--muted-foreground); font-variant-numeric: normal; }

@@ -3,7 +3,7 @@
  * Kept dependency-free so both server and client components can import it.
  */
 
-export type WizardStep = 1 | 2 | 3 | 4 | 5
+export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6
 export type LocationType = "offline" | "online"
 /** Who can book: everyone (public) or link-holders only (private). */
 export type EventPrivacy = "public" | "private"
@@ -31,6 +31,9 @@ export interface TicketType {
 /** A single showing/occurrence with its own date range and ticket tiers. */
 export interface EventShow {
   id: string
+  /** Organizer-facing label, e.g. "Đêm khai mạc". Optional — views fall back
+   *  to an auto-numbered "Suất N". */
+  title: string
   startTime: string
   endTime: string
   tickets: TicketType[]
@@ -53,17 +56,52 @@ export interface CreateEventForm {
   orgLogo: string | null
   orgName: string
   orgInfo: string
-  /** Step 2 — one or more shows, each with its own ticket tiers. */
+  /** Step 2 — one or more shows (suất diễn), each with its own ticket tiers. */
   shows: EventShow[]
   /** Step 3 — settings. */
   slug: string
   privacy: EventPrivacy
   confirmationMessage: string
-  enableQuestions: boolean
-  /** Step 4 — service contract. */
+  /** Step 4 — logistics services requested from the platform. */
+  logisticsServices: string[]
+  /** Step 4 — uploaded legal permit / contract documents (metadata only). */
+  permitDocuments: PermitDocument[]
+  /** Step 5 — service contract. */
   contractRepName: string
   contractAgreed: boolean
+  /** Hand-drawn signature as PNG data URL; uploaded on save. */
+  signatureDataUrl: string | null
+  /** Step 6 — payout bank account (revenue settlement). */
+  bankName: string
+  bankAccountNumber: string
+  bankAccountHolder: string
 }
+
+/** An uploaded permit/contract file — `url` is returned by /api/uploads/permits. */
+export interface PermitDocument {
+  id: string
+  name: string
+  sizeKb: number
+  url: string
+}
+
+/** Platform support services the organizer can request (per SRS wizard step 3). */
+export const LOGISTICS_SERVICES: { id: string; label: string; description: string }[] = [
+  { id: "tron-goi", label: "Dịch vụ trọn gói", description: "Cung cấp toàn bộ sân khấu, âm thanh, ánh sáng, bàn ghế và nhân sự." },
+  { id: "san-khau", label: "Sân khấu", description: "Thiết kế, lắp đặt sân khấu theo yêu cầu." },
+  { id: "am-thanh", label: "Âm thanh", description: "Hệ thống loa, mic, amply chuyên nghiệp." },
+  { id: "anh-sang", label: "Ánh sáng", description: "Hệ thống đèn chiếu, đèn LED sự kiện." },
+  { id: "ban-ghe", label: "Bàn ghế", description: "Cho thuê bàn ghế, backdrop, thảm đỏ." },
+  { id: "nhan-su", label: "Nhân sự", description: "Staff hỗ trợ soát vé, PG, lễ tân, an ninh sự kiện." },
+  { id: "khac", label: "Dịch vụ khác", description: "Tùy chọn dịch vụ khác do Ban tổ chức tự nhập." },
+]
+
+/** Upload constraints for permit documents (per SRS: PDF/DOCX/PNG, ≤ 15MB). */
+export const PERMIT_FILE_RULES = {
+  accept: ".pdf,.docx,.png",
+  allowedExtensions: ["pdf", "docx", "png"],
+  maxSizeMb: 15,
+} as const
 
 /** Character limits mirrored from the reference UI. */
 export const LIMITS = {
@@ -136,15 +174,16 @@ export function createEmptyTicket(): TicketType {
 
 /** A blank show with an empty ticket list. */
 export function createEmptyShow(): EventShow {
-  return { id: genId("show"), startTime: "", endTime: "", tickets: [] }
+  return { id: genId("show"), title: "", startTime: "", endTime: "", tickets: [] }
 }
 
 export const WIZARD_STEPS: { id: WizardStep; label: string }[] = [
   { id: 1, label: "Thông tin sự kiện" },
   { id: 2, label: "Thời gian & Loại vé" },
   { id: 3, label: "Cài đặt" },
-  { id: 4, label: "Hợp đồng" },
-  { id: 5, label: "Thông tin thanh toán" },
+  { id: 4, label: "Logistics & Giấy phép" },
+  { id: 5, label: "Hợp đồng" },
+  { id: 6, label: "Thông tin thanh toán" },
 ]
 
 export const EVENT_CATEGORIES = [
@@ -156,53 +195,43 @@ export const EVENT_CATEGORIES = [
   "Khác",
 ]
 
-export const PROVINCES = [
-  "Hà Nội",
-  "TP. Hồ Chí Minh",
-  "Đà Nẵng",
-  "Hải Phòng",
-  "Cần Thơ",
-  "An Giang",
-  "Bà Rịa - Vũng Tàu",
-  "Bình Dương",
-  "Bình Định",
-  "Đồng Nai",
-  "Khánh Hòa",
-  "Lâm Đồng",
-  "Nghệ An",
-  "Quảng Ninh",
-  "Thừa Thiên Huế",
-]
+// Province/ward options come from the official 34-province dataset in
+// /public/data/vietnam-provinces-wards.json — see use-vietnam-address-data.ts.
 
 /**
- * Sample wards for the most common cities; other provinces fall back to a
- * generic centre option. Enough for a realistic dependent-select without
- * bundling the full administrative dataset.
+ * Starter content for the event-description editor. Shown pre-filled and fully
+ * editable (not a ghost placeholder) on new events, so organizers begin from a
+ * structured outline instead of a blank box. Bracketed "[…]" prompts mark the
+ * parts they should replace; the Điều khoản section is usable as-is. Structure
+ * maps to the editor toolbar (h3 headings / ul lists / p paragraphs).
  */
-const WARDS_BY_PROVINCE: Record<string, string[]> = {
-  "Hà Nội": ["Phường Hàng Bạc", "Phường Cửa Nam", "Phường Kim Mã", "Phường Dịch Vọng"],
-  "TP. Hồ Chí Minh": ["Phường Bến Nghé", "Phường Bến Thành", "Phường Đa Kao", "Phường Tân Định"],
-  "Đà Nẵng": ["Phường Hải Châu 1", "Phường Thạch Thang", "Phường Thanh Bình"],
-}
-
-export function getWards(province: string): string[] {
-  if (!province) return []
-  return WARDS_BY_PROVINCE[province] ?? ["Phường trung tâm", "Phường lân cận"]
-}
-
-/** Pre-filled description template shown in the reference editor. */
-export const DEFAULT_DESCRIPTION_HTML = `<p><strong>Giới thiệu sự kiện:</strong></p>
-<p>[Tóm tắt ngắn gọn về sự kiện: Nội dung chính của sự kiện, điểm đặc sắc nhất và lý do khiến người tham gia không nên bỏ lỡ]</p>
-<p><strong>Chi tiết sự kiện:</strong></p>
+export const DESCRIPTION_TEMPLATE = `<h3>🎬 Giới thiệu sự kiện</h3>
+<p>[Viết 2–3 câu giới thiệu tổng quan: sự kiện là gì, dành cho ai và điểm đặc biệt khiến khán giả không thể bỏ lỡ.]</p>
+<h3>✨ Điểm nhấn nổi bật</h3>
 <ul>
-<li><strong>Chương trình chính:</strong> [Liệt kê những hoạt động nổi bật trong sự kiện: các phần trình diễn, khách mời đặc biệt, lịch trình các tiết mục cụ thể nếu có.]</li>
-<li><strong>Khách mời:</strong> [Thông tin về các khách mời đặc biệt, nghệ sĩ, diễn giả sẽ tham gia sự kiện.]</li>
-<li><strong>Trải nghiệm đặc biệt:</strong> [Nếu có các hoạt động đặc biệt khác như workshop, khu trải nghiệm, photo booth, khu vực check-in hay các phần quà/ưu đãi dành riêng cho người tham dự.]</li>
+<li>[Điểm nhấn 1 — ví dụ: sân khấu hoành tráng, dàn nghệ sĩ đình đám…]</li>
+<li>[Điểm nhấn 2 — ví dụ: trải nghiệm độc quyền, quà tặng hấp dẫn…]</li>
+<li>[Điểm nhấn 3 — ví dụ: ưu đãi riêng cho khách đặt vé sớm…]</li>
 </ul>
-<p><strong>Điều khoản và điều kiện:</strong></p>
-<p>[TnC] sự kiện</p>
-<p>Lưu ý về điều khoản trẻ em</p>
-<p>Lưu ý về điều khoản VAT</p>`
+<h3>🗓️ Chương trình chính</h3>
+<ul>
+<li>[19:00] — [Đón khách &amp; check-in]</li>
+<li>[19:30] — [Khai mạc / tiết mục mở màn]</li>
+<li>[20:00] — [Nội dung chính của chương trình]</li>
+<li>[21:30] — [Bế mạc]</li>
+</ul>
+<h3>🎤 Khách mời</h3>
+<p>[Giới thiệu ngắn gọn về nghệ sĩ, diễn giả hoặc khách mời đặc biệt của chương trình.]</p>
+<h3>🎁 Trải nghiệm đặc biệt</h3>
+<p>[Mô tả những trải nghiệm dành riêng cho người tham dự: khu photobooth, hoạt động tương tác, ẩm thực, quà lưu niệm…]</p>
+<h3>📌 Điều khoản &amp; Điều kiện</h3>
+<ul>
+<li>Vui lòng có mặt trước giờ diễn ra ít nhất 30 phút để làm thủ tục soát vé.</li>
+<li>Mỗi vé chỉ có giá trị cho một lần vào cửa.</li>
+<li>Vé đã mua không hoàn, không huỷ, trừ trường hợp sự kiện bị huỷ bởi Ban tổ chức.</li>
+<li>Xuất trình vé điện tử (mã QR) tại cổng để được vào sự kiện.</li>
+<li>[Bổ sung quy định khác của Ban tổ chức nếu có…]</li>
+</ul>`
 
 export const INITIAL_FORM: CreateEventForm = {
   posterImage: null,
@@ -214,16 +243,55 @@ export const INITIAL_FORM: CreateEventForm = {
   ward: "",
   street: "",
   category: "",
-  description: DEFAULT_DESCRIPTION_HTML,
+  // Pre-filled editable template (not a placeholder) so the organizer starts
+  // from a structured scaffold and edits in place. The wizard validator still
+  // rejects the *untouched* template (see wizard-validation.ts) so this
+  // convenience can't be used to skip writing a real description.
+  description: DESCRIPTION_TEMPLATE,
   orgLogo: null,
   orgName: "",
   orgInfo: "",
   // Seed one show so the organizer lands on a ready-to-fill date range.
-  shows: [{ id: "show-1", startTime: "", endTime: "", tickets: [] }],
+  shows: [{ id: "show-1", title: "", startTime: "", endTime: "", tickets: [] }],
   slug: "",
   privacy: "public",
   confirmationMessage: "",
-  enableQuestions: false,
+  logisticsServices: [],
+  permitDocuments: [],
   contractRepName: "",
   contractAgreed: false,
+  signatureDataUrl: null,
+  bankName: "",
+  bankAccountNumber: "",
+  bankAccountHolder: "",
 }
+
+/** Common Vietnamese banks for the payout account select (step 6). */
+export const VN_BANKS = [
+  "Vietcombank (VCB)",
+  "VietinBank (CTG)",
+  "BIDV",
+  "Agribank",
+  "Techcombank (TCB)",
+  "MB Bank (MBB)",
+  "ACB",
+  "VPBank",
+  "Sacombank (STB)",
+  "TPBank",
+  "SHB",
+  "HDBank",
+  "VIB",
+  "MSB",
+  "OCB",
+  "SeABank",
+  "Eximbank",
+  "LPBank",
+  "Nam A Bank",
+  "SCB",
+] as const
+
+/** Value limits for the payment step. */
+export const PAYMENT_LIMITS = {
+  accountNumber: 30,
+  accountHolder: 100,
+} as const

@@ -1,0 +1,13 @@
+[
+  {
+    "_id": { "$oid": "65f110000000000000000001" },
+    "registrationId": { "$oid": "65f100000000000000000001" },
+    "amount": 1000000,
+    "paymentMethod": "MOCK",
+    "transactionCode": "TXN2026071000001",
+    "status": "PAID",
+    "paymentDate": { "$date": "2026-07-10T09:05:00.000Z" },
+    "createdAt": { "$date": "2026-07-10T09:05:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T09:05:00.000Z" }
+  }
+]

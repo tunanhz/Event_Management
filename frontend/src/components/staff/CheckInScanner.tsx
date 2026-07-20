@@ -1,11 +1,20 @@
 "use client"
 
 import { useRef, useState, type FormEvent } from "react"
-import { ScanLine, CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
+import { ScanLine, CheckCircle2, AlertTriangle, XCircle, Camera, Keyboard } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/badge"
+import { CameraQrScanner } from "./CameraQrScanner"
 import type { CheckInResult } from "./staff-checkin-data"
+
+type ScanMode = "manual" | "camera"
+
+const SCAN_MODES: { id: ScanMode; label: string; icon: typeof Camera }[] = [
+  { id: "manual", label: "Nhập mã", icon: Keyboard },
+  { id: "camera", label: "Camera QR", icon: Camera },
+]
 
 interface CheckInScannerProps {
   /** Fired with the raw scanned/typed code on submit. */
@@ -21,6 +30,7 @@ interface CheckInScannerProps {
  */
 export function CheckInScanner({ onScan, result, disabled }: CheckInScannerProps) {
   const [code, setCode] = useState("")
+  const [mode, setMode] = useState<ScanMode>("manual")
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (e: FormEvent) => {
@@ -35,42 +45,72 @@ export function CheckInScanner({ onScan, result, disabled }: CheckInScannerProps
   return (
     <Card>
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-xl">
-          <ScanLine className="text-primary" size={22} aria-hidden="true" />
-          Soát vé
-        </CardTitle>
-        <CardDescription>
-          Đặt con trỏ vào ô rồi quét mã QR, hoặc gõ mã vé và nhấn Enter.
-        </CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <ScanLine className="text-primary" size={22} aria-hidden="true" />
+              Soát vé
+            </CardTitle>
+            <CardDescription className="mt-1.5">
+              {mode === "manual"
+                ? "Đặt con trỏ vào ô rồi quét mã QR, hoặc gõ mã vé và nhấn Enter."
+                : "Hướng camera sau vào mã QR trên vé của người tham dự."}
+            </CardDescription>
+          </div>
+
+          {/* Dual-mode toggle: camera scanning + manual 8-char entry (SRS USA-02) */}
+          <div className="flex rounded-xl border border-border bg-muted p-1" role="tablist" aria-label="Chế độ soát vé">
+            {SCAN_MODES.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={mode === id}
+                onClick={() => setMode(id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors cursor-pointer",
+                  mode === id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon size={15} aria-hidden="true" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form className="flex gap-3" onSubmit={handleSubmit}>
-          <div className="relative flex-1">
-            <ScanLine
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-              size={20}
-              aria-hidden="true"
-            />
-            <input
-              ref={inputRef}
-              type="text"
-              inputMode="text"
-              autoComplete="off"
-              autoCapitalize="characters"
-              placeholder="Quét mã QR hoặc nhập mã vé…"
-              aria-label="Mã vé"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              disabled={disabled}
-              autoFocus
-              className="h-14 w-full rounded-xl border border-border bg-muted pl-11 pr-4 text-lg tracking-wide text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 disabled:opacity-50"
-            />
-          </div>
-          <Button type="submit" size="lg" disabled={disabled || !code.trim()} className="h-14 gap-2 px-6 text-base">
-            <ScanLine size={18} aria-hidden="true" />
-            Check-in
-          </Button>
-        </form>
+        {mode === "manual" ? (
+          <form className="flex gap-3" onSubmit={handleSubmit}>
+            <div className="relative flex-1">
+              <ScanLine
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                size={20}
+                aria-hidden="true"
+              />
+              <input
+                ref={inputRef}
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                autoCapitalize="characters"
+                placeholder="Quét mã QR hoặc nhập mã vé…"
+                aria-label="Mã vé"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                disabled={disabled}
+                autoFocus
+                className="h-14 w-full rounded-xl border border-border bg-muted pl-11 pr-4 text-lg tracking-wide text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 disabled:opacity-50"
+              />
+            </div>
+            <Button type="submit" size="lg" disabled={disabled || !code.trim()} className="h-14 gap-2 px-6 text-base">
+              <ScanLine size={18} aria-hidden="true" />
+              Check-in
+            </Button>
+          </form>
+        ) : (
+          <CameraQrScanner onScan={onScan} disabled={disabled} />
+        )}
 
         {result && <ResultCard result={result} />}
       </CardContent>

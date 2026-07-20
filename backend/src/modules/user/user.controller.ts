@@ -37,6 +37,12 @@ export class UserController {
     const { email, password } = req.body;
     const { user, token } = await this.userService.loginWithEmail(email, password);
 
+    // Audit Logging
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'Unknown Device';
+    const timestamp = new Date().toISOString();
+    console.log(`[AUDIT] Login Success - Email: ${email} | IP: ${ip} | Device: ${userAgent} | Time: ${timestamp}`);
+
     // Set HTTP-Only Cookie
     res.cookie('token', token, {
       httpOnly: true,
@@ -51,6 +57,12 @@ export class UserController {
   googleLogin = asyncHandler(async (req: Request, res: Response) => {
     const { credential } = req.body; // Google ID Token
     const { user, token } = await this.userService.loginWithGoogle(credential);
+
+    // Audit Logging
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'Unknown Device';
+    const timestamp = new Date().toISOString();
+    console.log(`[AUDIT] Google Login Success - Email: ${user?.email || 'Unknown'} | IP: ${ip} | Device: ${userAgent} | Time: ${timestamp}`);
 
     // Set HTTP-Only Cookie
     res.cookie('token', token, {

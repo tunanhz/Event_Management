@@ -5,11 +5,18 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   ClipboardCheck,
+  CalendarDays,
   Users,
+  UserCog,
+  Ticket,
+  Wallet,
   BarChart3,
   Settings,
   LogOut,
   ShieldCheck,
+  Tag,
+  Star,
+  Image as ImageIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
@@ -18,7 +25,14 @@ import { useAuth } from "@/context/AuthContext"
 const navigation = [
   { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
   { name: "Kiểm duyệt sự kiện", href: "/dashboard/moderation", icon: ClipboardCheck },
+  { name: "Quản trị sự kiện", href: "/dashboard/events", icon: CalendarDays },
   { name: "Quản lý người dùng", href: "/dashboard/accounts", icon: Users },
+  { name: "Phân công staff", href: "/dashboard/staff-assignment", icon: UserCog },
+  { name: "Theo dõi bán vé", href: "/dashboard/ticket-sales", icon: Ticket },
+  { name: "Danh mục sự kiện", href: "/dashboard/categories", icon: Tag },
+  { name: "Nghệ sĩ nổi bật", href: "/dashboard/stars", icon: Star },
+  { name: "Hero banner", href: "/dashboard/banners", icon: ImageIcon },
+  { name: "Tài chính", href: "/dashboard/finance", icon: Wallet },
   { name: "Báo cáo", href: "/dashboard/reports", icon: BarChart3 },
   { name: "Cài đặt", href: "/dashboard/settings", icon: Settings },
 ]

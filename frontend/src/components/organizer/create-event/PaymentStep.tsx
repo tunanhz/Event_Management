@@ -1,0 +1,163 @@
+"use client"
+
+import { Landmark, CreditCard, User as UserIcon, ChevronDown } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { SectionCard } from "./SectionCard"
+import { FieldError } from "./FieldError"
+import { VN_BANKS, PAYMENT_LIMITS, type CreateEventForm } from "./create-event-data"
+import type { Step6FieldKey } from "./wizard-validation"
+import formStyles from "./create-event-form.module.css"
+import styles from "./payment-step.module.css"
+import pageStyles from "@/app/organizer/create-event/create-event.module.css"
+
+interface PaymentStepProps {
+  form: CreateEventForm
+  update: (patch: Partial<CreateEventForm>) => void
+  /** Inline validation messages (already filtered by touched). */
+  errors?: Partial<Record<Step6FieldKey, string>>
+  /** Marks a field as touched so its error can surface without a save press. */
+  onBlur?: (key: Step6FieldKey) => void
+}
+
+/**
+ * Step 6 — default payout bank account. Fields map to the backend
+ * `paymentInfo` subdocument; it only pre-fills the "Rút tiền" request form
+ * later (organizer can still edit/correct it there before sending each
+ * request) — it does not itself trigger or target any transfer.
+ */
+export function PaymentStep({ form, update, errors, onBlur }: PaymentStepProps) {
+  return (
+    <div className={pageStyles.form}>
+      <SectionCard title="Thông tin thanh toán (nhận doanh thu)" icon={Landmark}>
+        <p className={styles.intro}>
+          Đây là tài khoản mặc định để nhận doanh thu bán vé. Khi gửi yêu cầu rút
+          tiền cho sự kiện này, form sẽ tự điền sẵn theo thông tin dưới đây — bạn
+          vẫn có thể chỉnh lại tại đó nếu cần đổi tài khoản. Thông tin này chỉ Ban
+          tổ chức và Admin nhìn thấy.
+        </p>
+
+        <div className={formStyles.field}>
+          <label className={formStyles.label} htmlFor="bank-name">
+            <span className={formStyles.required} aria-hidden="true">*</span>
+            Ngân hàng
+          </label>
+          <div className={formStyles.inputWrap}>
+            <span className={styles.leadingIcon} aria-hidden="true">
+              <Landmark size={18} />
+            </span>
+            <select
+              id="bank-name"
+              className={cn(
+                formStyles.input,
+                styles.select,
+                !form.bankName && styles.selectEmpty,
+                errors?.bankName && formStyles.inputError
+              )}
+              value={form.bankName}
+              aria-invalid={!!errors?.bankName || undefined}
+              aria-describedby={errors?.bankName ? "err-bank-name" : undefined}
+              onChange={(e) => {
+                update({ bankName: e.target.value })
+                onBlur?.("bankName")
+              }}
+              onBlur={() => onBlur?.("bankName")}
+            >
+              <option value="" disabled>
+                Chọn ngân hàng
+              </option>
+              {VN_BANKS.map((bank) => (
+                <option key={bank} value={bank}>
+                  {bank}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={18} className={styles.selectChevron} aria-hidden="true" />
+          </div>
+          <FieldError id="err-bank-name" msg={errors?.bankName} />
+        </div>
+
+        <div className={formStyles.field}>
+          <label className={formStyles.label} htmlFor="bank-account-number">
+            <span className={formStyles.required} aria-hidden="true">*</span>
+            Số tài khoản
+          </label>
+          <div className={formStyles.inputWrap}>
+            <span className={styles.leadingIcon} aria-hidden="true">
+              <CreditCard size={18} />
+            </span>
+            <input
+              id="bank-account-number"
+              className={cn(formStyles.input, styles.withIcon, errors?.bankAccountNumber && formStyles.inputError)}
+              type="text"
+              inputMode="numeric"
+              maxLength={PAYMENT_LIMITS.accountNumber}
+              placeholder="Số tài khoản nhận tiền"
+              value={form.bankAccountNumber}
+              aria-invalid={!!errors?.bankAccountNumber || undefined}
+              aria-describedby={errors?.bankAccountNumber ? "err-bank-account-number" : undefined}
+              // Chỉ giữ chữ số — số tài khoản VN không có ký tự khác.
+              onChange={(e) => {
+                update({ bankAccountNumber: e.target.value.replace(/[^0-9]/g, "") })
+                onBlur?.("bankAccountNumber")
+              }}
+              onBlur={() => onBlur?.("bankAccountNumber")}
+              autoComplete="off"
+            />
+          </div>
+          <FieldError id="err-bank-account-number" msg={errors?.bankAccountNumber} />
+        </div>
+
+        <div className={formStyles.field}>
+          <label className={formStyles.label} htmlFor="bank-account-holder">
+            <span className={formStyles.required} aria-hidden="true">*</span>
+            Chủ tài khoản
+          </label>
+          <div className={formStyles.inputWrap}>
+            <span className={styles.leadingIcon} aria-hidden="true">
+              <UserIcon size={18} />
+            </span>
+            <input
+              id="bank-account-holder"
+              className={cn(formStyles.input, styles.withIcon, styles.upper, errors?.bankAccountHolder && formStyles.inputError)}
+              type="text"
+              maxLength={PAYMENT_LIMITS.accountHolder}
+              placeholder="NGUYEN VAN A"
+              value={form.bankAccountHolder}
+              aria-invalid={!!errors?.bankAccountHolder || undefined}
+              aria-describedby={errors?.bankAccountHolder ? "err-bank-account-holder" : undefined}
+              // Chủ tài khoản in hoa không dấu như trên thẻ ngân hàng.
+              onChange={(e) => {
+                update({ bankAccountHolder: e.target.value.toUpperCase() })
+                onBlur?.("bankAccountHolder")
+              }}
+              onBlur={() => onBlur?.("bankAccountHolder")}
+              autoComplete="off"
+            />
+          </div>
+          <p className={styles.hint}>Nhập in hoa, không dấu — đúng như tên trên thẻ/tài khoản.</p>
+          <FieldError id="err-bank-account-holder" msg={errors?.bankAccountHolder} />
+        </div>
+      </SectionCard>
+
+      {/* Live preview of the payout account so the organizer can double-check. */}
+      {(form.bankName || form.bankAccountNumber || form.bankAccountHolder) && (
+        <SectionCard title="Xem trước tài khoản nhận tiền">
+          <div className={styles.previewCard}>
+            <div className={styles.previewRow}>
+              <span className={styles.previewLabel}>Ngân hàng</span>
+              <span className={styles.previewValue}>{form.bankName || "—"}</span>
+            </div>
+            <div className={styles.previewRow}>
+              <span className={styles.previewLabel}>Số tài khoản</span>
+              <span className={styles.previewValue}>{form.bankAccountNumber || "—"}</span>
+            </div>
+            <div className={styles.previewRow}>
+              <span className={styles.previewLabel}>Chủ tài khoản</span>
+              <span className={styles.previewValue}>{form.bankAccountHolder || "—"}</span>
+            </div>
+          </div>
+        </SectionCard>
+      )}
+    </div>
+  )
+}

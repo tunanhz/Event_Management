@@ -10,6 +10,15 @@
   min-width: 0;
 }
 
+/* Tab panel wrapping the filtered results — keeps the flex column so the empty
+   state can still stretch to fill the viewport. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Toolbar: search + tabs ────────────────────────────────────────── */
 .toolbar {
   display: flex;
@@ -92,10 +101,17 @@
   padding: 0.9rem 1.25rem;
   margin-bottom: 1.25rem;
   border-radius: 12px;
-  background: #fde047; /* amber-300 — high-contrast warning banner */
-  color: #422006; /* amber-950 */
+  background: var(--warning-surface);
+  color: var(--warning-fg);
+  border: 1px solid var(--warning-border);
   font-size: 0.92rem;
   line-height: 1.55;
+}
+/* Error variant (reused .notice layout) — danger colours, theme-aware. */
+.noticeError {
+  background: var(--danger-surface);
+  color: var(--danger-fg);
+  border-color: var(--danger-border);
 }
 .noticeStrong {
   font-weight: 700;

@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest", "node"],
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "isolatedModules": true,
+    // The app builds with the classic node10 resolver; TS 6 flags it as
+    // deprecated but ts-jest must keep emitting CommonJS for Jest.
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["src/**/*"]
+}

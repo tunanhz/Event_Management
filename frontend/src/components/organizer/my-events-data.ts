@@ -7,14 +7,19 @@
  * `ticketTypes` so there is a single source of truth.
  */
 
-export type OrgEventStatus = "upcoming" | "past" | "pending" | "draft"
+export type OrgEventStatus = "upcoming" | "past" | "pending" | "draft" | "waiting_deposit"
 
 export interface TicketType {
+  /** Backend ticket _id — absent for mock data, present for API-loaded events. */
+  id?: string
   name: string
   price: number // VND
   sold: number
   total: number
   locked: number
+  /** Owning show (suất diễn) — set for API-loaded events with shows, so
+   *  report views can filter per show; absent for mocks/legacy events. */
+  showId?: string
 }
 
 export interface OrganizerEvent {
@@ -26,6 +31,17 @@ export interface OrganizerEvent {
   address: string
   status: OrgEventStatus
   ticketTypes?: TicketType[]
+  /** Raw backend review state (set for API-loaded events; absent for mocks). */
+  reviewStatus?: "DRAFT" | "PENDING_REVIEW" | "APPROVED_WAITING_DEPOSIT" | "PUBLISHED" | "REJECTED"
+  /** Admin's correction note when reviewStatus is REJECTED. */
+  rejectionReason?: string
+  /** Service cost & deposit info (populated when reviewStatus involves services). */
+  serviceCost?: number
+  depositAmount?: number
+  depositStatus?: "UNPAID" | "PAID"
+  additionalCost?: number
+  finalPaymentAmount?: number
+  finalPaymentStatus?: "UNPAID" | "PAID"
 }
 
 const img = (id: string) =>
@@ -149,48 +165,12 @@ export function summarizeEvent(event: OrganizerEvent): EventSummary {
   }
 }
 
+/** One point on the summary sales chart. Real data comes from the backend
+ *  (`fetchEventSalesSeries`); this type is the shape {@link SummaryChart} renders. */
 export interface SummaryPoint {
   label: string
   revenue: number
   tickets: number
-}
-
-/**
- * Deterministic revenue / ticket time series for the summary chart. Sold totals
- * are spread across the period with a ramp weighting (all zeros when nothing is
- * sold, e.g. a pending event) — no Math.random / Date, so SSR and CSR match.
- */
-export function buildSummarySeries(
-  event: OrganizerEvent,
-  range: "24h" | "30d"
-): SummaryPoint[] {
-  const { soldTickets, soldRevenue } = summarizeEvent(event)
-  const n = range === "24h" ? 24 : 30
-  const labels =
-    range === "24h"
-      ? Array.from({ length: n }, (_, i) => `${i}:00`)
-      : Array.from({ length: n }, (_, i) => `${i + 1}/6`)
-
-  const weights = Array.from({ length: n }, (_, i) => i + 1)
-  const wsum = weights.reduce((a, b) => a + b, 0)
-
-  let accTickets = 0
-  let accRevenue = 0
-  return labels.map((label, i) => {
-    let tickets: number
-    let revenue: number
-    if (i === n - 1) {
-      // Last point absorbs rounding remainder so totals stay exact.
-      tickets = soldTickets - accTickets
-      revenue = soldRevenue - accRevenue
-    } else {
-      tickets = Math.round((soldTickets * weights[i]) / wsum)
-      revenue = Math.round((soldRevenue * weights[i]) / wsum)
-      accTickets += tickets
-      accRevenue += revenue
-    }
-    return { label, revenue: Math.max(0, revenue), tickets: Math.max(0, tickets) }
-  })
 }
 
 /** Full VND amount with Vietnamese grouping, e.g. 1011111100 → "1.011.111.100đ". */

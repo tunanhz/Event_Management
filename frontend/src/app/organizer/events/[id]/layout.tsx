@@ -1,25 +1,24 @@
-import { notFound } from "next/navigation"
-import { getOrganizerEventById } from "@/components/organizer/my-events-data"
-import { SetOrganizerTitle } from "@/components/organizer/SetOrganizerTitle"
+"use client"
+
+import { useParams } from "next/navigation"
+import { EventWorkspaceProvider } from "@/components/organizer/EventWorkspaceContext"
 import styles from "@/components/organizer/manage/event-manage.module.css"
 
-/** Shell for a single event's management workspace (sidebar lives in the parent
- *  organizer layout, which swaps to the event nav for these routes). */
-export default async function EventManageLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-  const event = getOrganizerEventById(id)
-  if (!event) notFound()
+/**
+ * Shell for a single event's management workspace. Loads the event once via the
+ * workspace provider (shared by every sub-page) from the live API — the sidebar
+ * lives in the parent organizer layout, which swaps to the event nav here.
+ */
+export default function EventManageLayout({ children }: { children: React.ReactNode }) {
+  const params = useParams<{ id: string }>()
+  const id = params?.id
+  if (!id) return null
 
   return (
     <div className={styles.wrap}>
-      <SetOrganizerTitle title={event.title} />
-      {children}
+      <EventWorkspaceProvider key={id} eventId={id}>
+        {children}
+      </EventWorkspaceProvider>
     </div>
   )
 }

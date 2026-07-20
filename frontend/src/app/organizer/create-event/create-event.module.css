@@ -60,3 +60,34 @@
 @media (max-width: 640px) {
   .form { padding: 1rem; }
 }
+
+/* ── Save status banner (API result of "Lưu") ─────────────────────── */
+.saveBanner {
+  margin: 0.9rem auto 0;
+  max-width: 900px;
+  width: calc(100% - 3rem);
+  padding: 0.8rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+.saveBannerOk {
+  background: var(--success-surface);
+  border-color: var(--success-border);
+  color: var(--success-fg);
+}
+.saveBannerErr {
+  background: var(--danger-surface);
+  border-color: var(--danger-border);
+  color: var(--danger-fg);
+}
+.errorList {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+  list-style: disc;
+  font-weight: 400;
+}
+.errorList li { margin-top: 0.2rem; }

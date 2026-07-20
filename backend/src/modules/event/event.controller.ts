@@ -34,22 +34,31 @@ export class EventController {
     // `collection` is a homepage-friendly alias: featured | trending | upcoming
     // (upcoming = default published events sorted by soonest date, no extra flag needed)
     const isFeatured = collection === 'featured' ? true : undefined;
-    const isTrending = collection === 'trending' ? true : undefined;
+    
+    let sortParam = sort as string;
+    let orderParam = order as 'asc' | 'desc';
+    if (collection === 'trending') {
+      sortParam = 'views';
+      orderParam = 'desc';
+    } else if (collection === 'upcoming') {
+      sortParam = 'date';
+      orderParam = 'asc';
+    }
 
     const categorySlugFilter = parseCategorySlugParam(categorySlug);
 
     const result = await this.eventService.getAllEvents({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
-      sort: sort as string,
-      order: order as 'asc' | 'desc',
+      sort: sortParam,
+      order: orderParam,
       status: status as string,
       category: category as string,
       categorySlug: categorySlugFilter,
       city: city as string,
       isFree: isFree === undefined ? undefined : isFree === 'true',
       isFeatured,
-      isTrending,
+      isTrending: undefined, // Sorted by views, no hardcoded flag needed
       search: search as string,
       excludeId: excludeId as string,
       dateFrom: parseDateParam(dateFrom),

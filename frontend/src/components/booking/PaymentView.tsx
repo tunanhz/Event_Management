@@ -2,21 +2,25 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Calendar, MapPin, CreditCard, QrCode, Wallet, Smartphone, Tag } from "lucide-react";
-import type { EventItem, TicketType } from "@/lib/mockData";
+import type { EventItem, ShowOption, TicketType } from "@/lib/mockData";
 import { useAuth } from "@/context/AuthContext";
 import { formatVnd } from "@/lib/utils";
 import { buildLines, totalAmount, type Quantities } from "@/lib/booking-selection";
+import { holdSelection, confirmMockPayments, createVnpayPaymentUrl } from "@/lib/booking-api";
 import { formatBookingDate } from "./format-booking-date";
+import { formatShowTime } from "./format-show-time";
 import styles from "./payment-view.module.css";
 
 interface Props {
   event: EventItem;
   tickets: TicketType[];
   quantities: Quantities;
+  shows: ShowOption[];
 }
 
-const HOLD_SECONDS = 15 * 60; // 15-minute reservation window
+const HOLD_SECONDS = 10 * 60; // 10-minute reservation window (matches backend hold)
 
 const PAYMENT_METHODS = [
   { id: "vnpay", label: "VNPAY/Ứng dụng ngân hàng", Icon: Smartphone, tint: "#0d5cab" },
@@ -31,13 +35,28 @@ function pad(n: number) {
 }
 
 /** Step 2 of booking — payment. */
-export function PaymentView({ event, tickets, quantities }: Props) {
+export function PaymentView({ event, tickets, quantities, shows }: Props) {
   const { user } = useAuth();
+  const router = useRouter();
   const lines = buildLines(tickets, quantities);
   const total = totalAmount(lines);
 
+  // The order is always for a single showing — every line's ticket shares the
+  // same showId — so surface that showing's own time instead of the event's
+  // generic date/time whenever the event runs more than one.
+  const selectedShow =
+    shows.length > 1 ? shows.find((s) => s.id === lines[0]?.ticket.showId) : undefined;
+  const scheduleText = selectedShow
+    ? (() => {
+        const { time, date } = formatShowTime(selectedShow.startTime, selectedShow.endTime);
+        return `${selectedShow.label} · ${time}, ${date}`;
+      })()
+    : `${event.time}, ${formatBookingDate(event.date)}`;
+
   const [remaining, setRemaining] = useState(HOLD_SECONDS);
   const [method, setMethod] = useState<string>(PAYMENT_METHODS[0].id);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -49,6 +68,59 @@ export function PaymentView({ event, tickets, quantities }: Props) {
   const expired = remaining <= 0;
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
+  const isFree = total === 0;
+
+  // Hold one registration per selected tier, then either redirect to the real
+  // VNPAY gateway (leaves the SPA — the buyer lands back on
+  // /thanh-toan/vnpay-return after paying) or confirm the remaining, still-
+  // simulated methods immediately. Requires a signed-in PARTICIPANT. Free
+  // tickets skip the payment method entirely and go straight to the mock
+  // confirm — there is nothing to charge, so VNPAY/QR/etc make no sense here.
+  const pay = async () => {
+    if (paying || expired) return;
+    setPaying(true);
+    setPayError(null);
+    try {
+      const registrationIds = await holdSelection(
+        event.id,
+        lines.map((l) => ({ ticketId: l.ticket.id, quantity: l.qty }))
+      );
+
+      if (!isFree && method === "vnpay") {
+        const paymentUrl = await createVnpayPaymentUrl(registrationIds);
+        window.location.href = paymentUrl;
+        return;
+      }
+
+      await confirmMockPayments(registrationIds);
+
+      // Add payment success notification
+      const uId = user?._id || "guest";
+      const notifList = [];
+      try {
+        const raw = localStorage.getItem("eventbox:notifications-list:" + uId);
+        if (raw) notifList.push(...JSON.parse(raw));
+      } catch {}
+      const notifiedAt = new Date();
+      notifList.unshift({
+        id: "payment-" + notifiedAt.getTime(),
+        type: "payment_success",
+        title: "Thanh toán thành công",
+        message: `Bạn đã mua thành công ${lines.reduce((sum, l) => sum + l.qty, 0)} vé cho sự kiện “${event.title}”. Vé điện tử kèm mã QR đã sẵn sàng trong mục Vé của tôi.`,
+        createdAt: notifiedAt.toISOString(),
+        href: "/ve-cua-toi",
+      });
+      localStorage.setItem("eventbox:notifications-list:" + uId, JSON.stringify(notifList));
+      window.dispatchEvent(new CustomEvent("eventbox:notifications-change"));
+
+      router.push("/ve-cua-toi");
+    } catch (err) {
+      setPayError(
+        err instanceof Error ? err.message : "Thanh toán thất bại — vui lòng thử lại."
+      );
+      setPaying(false);
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -59,7 +131,7 @@ export function PaymentView({ event, tickets, quantities }: Props) {
             <h1 className={styles.eventTitle}>{event.title}</h1>
             <div className={styles.metaRow}>
               <Calendar size={17} className={styles.metaIcon} aria-hidden="true" />
-              <span>{event.time}, {formatBookingDate(event.date)}</span>
+              <span>{scheduleText}</span>
             </div>
             <div className={styles.metaRow}>
               <MapPin size={17} className={styles.metaIcon} aria-hidden="true" />
@@ -91,39 +163,32 @@ export function PaymentView({ event, tickets, quantities }: Props) {
               </p>
             </section>
 
-            <section className={styles.card}>
-              <div className={styles.cardHeadRow}>
-                <h3 className={styles.cardTitle}>Mã khuyến mãi</h3>
-                <button type="button" className={styles.linkBtn}>Chọn voucher</button>
-              </div>
-              <button type="button" className={styles.promoAdd}>
-                <Tag size={15} aria-hidden="true" /> Thêm khuyến mãi
-              </button>
-            </section>
 
-            <section className={styles.card}>
-              <h3 className={styles.cardTitle}>Phương thức thanh toán</h3>
-              <ul className={styles.methodList}>
-                {PAYMENT_METHODS.map(({ id, label, Icon, tint }) => (
-                  <li key={id}>
-                    <label className={`${styles.method} ${method === id ? styles.methodActive : ""}`}>
-                      <input
-                        type="radio"
-                        name="payment-method"
-                        value={id}
-                        checked={method === id}
-                        onChange={() => setMethod(id)}
-                        className={styles.radio}
-                      />
-                      <span className={styles.methodIcon} style={{ backgroundColor: tint }}>
-                        <Icon size={16} aria-hidden="true" />
-                      </span>
-                      <span className={styles.methodLabel}>{label}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            {!isFree && (
+              <section className={styles.card}>
+                <h3 className={styles.cardTitle}>Phương thức thanh toán</h3>
+                <ul className={styles.methodList}>
+                  {PAYMENT_METHODS.map(({ id, label, Icon, tint }) => (
+                    <li key={id}>
+                      <label className={`${styles.method} ${method === id ? styles.methodActive : ""}`}>
+                        <input
+                          type="radio"
+                          name="payment-method"
+                          value={id}
+                          checked={method === id}
+                          onChange={() => setMethod(id)}
+                          className={styles.radio}
+                        />
+                        <span className={styles.methodIcon} style={{ backgroundColor: tint }}>
+                          <Icon size={16} aria-hidden="true" />
+                        </span>
+                        <span className={styles.methodLabel}>{label}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </div>
 
           {/* Right column */}
@@ -166,8 +231,24 @@ export function PaymentView({ event, tickets, quantities }: Props) {
                 Bằng việc tiến hành đặt mua, bạn đã đồng ý với{" "}
                 <a href="#" className={styles.termsLink}>Điều Kiện Giao Dịch Chung</a>
               </p>
-              <button type="button" className={styles.payBtn} disabled={expired || total === 0}>
-                {expired ? "Hết thời gian giữ vé" : "Thanh toán"}
+              {payError && (
+                <p role="alert" className={styles.terms} style={{ color: "#ef4444" }}>
+                  {payError}
+                </p>
+              )}
+              <button
+                type="button"
+                className={styles.payBtn}
+                disabled={expired || paying}
+                onClick={pay}
+              >
+                {expired
+                  ? "Hết thời gian giữ vé"
+                  : paying
+                    ? "Đang xử lý…"
+                    : isFree
+                      ? "Đặt vé miễn phí"
+                      : "Thanh toán"}
               </button>
             </section>
           </aside>

@@ -23,6 +23,7 @@ class ClientApiClient {
     const url = `${this.prefix}${endpoint}`;
 
     const response = await fetch(url, {
+      cache: "no-store",
       ...options,
       credentials: options.credentials || "include",
       headers: {
@@ -65,6 +66,18 @@ class ClientApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: "PUT",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async patch<T>(
+    endpoint: string,
+    body: unknown,
+    options?: ClientFetchOptions
+  ): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: "PATCH",
       body: JSON.stringify(body),
     });
   }

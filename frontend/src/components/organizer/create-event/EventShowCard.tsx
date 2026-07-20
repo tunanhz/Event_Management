@@ -4,13 +4,21 @@ import { useState } from "react"
 import { ChevronUp, ChevronDown, X, GripVertical, Ticket, Pencil, Trash2, PlusCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { EventShow, TicketType } from "./create-event-data"
+import { FieldError } from "./FieldError"
+import type { ShowFieldKey } from "./wizard-validation"
 import formStyles from "./create-event-form.module.css"
 import styles from "./time-and-tickets.module.css"
 
 interface EventShowCardProps {
   show: EventShow
+  /** 1-based position, used for the "Suất N" fallback when no title is set. */
+  index: number
   /** Whether the delete-show control is shown (hidden for the only show). */
   canDelete: boolean
+  /** Inline validation messages for this show (already filtered by touched). */
+  errors?: Partial<Record<ShowFieldKey, string>>
+  /** Marks a field as touched so its error can surface without a save press. */
+  onFieldBlur?: (key: ShowFieldKey) => void
   onUpdate: (patch: Partial<EventShow>) => void
   onDelete: () => void
   onAddTicket: () => void
@@ -20,12 +28,16 @@ interface EventShowCardProps {
 }
 
 /**
- * One show ("Ngày sự kiện"): a collapsible card with a start/end date range and
- * its list of ticket tiers. Rows support drag-to-reorder via native DnD.
+ * One show (suất diễn): a collapsible card with an optional label, its own
+ * start/end date range and its list of ticket tiers. Rows support
+ * drag-to-reorder via native DnD.
  */
 export function EventShowCard({
   show,
+  index,
   canDelete,
+  errors,
+  onFieldBlur,
   onUpdate,
   onDelete,
   onAddTicket,
@@ -59,9 +71,17 @@ export function EventShowCard({
         >
           {open ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </button>
-        <span className={styles.showTitle}>Ngày sự kiện</span>
+        <input
+          type="text"
+          className={styles.showTitleInput}
+          value={show.title}
+          maxLength={100}
+          placeholder={`Suất ${index}`}
+          aria-label="Tên suất diễn"
+          onChange={(e) => onUpdate({ title: e.target.value })}
+        />
         {canDelete && (
-          <button type="button" className={styles.deleteShowBtn} onClick={onDelete} aria-label="Xóa ngày sự kiện">
+          <button type="button" className={styles.deleteShowBtn} onClick={onDelete} aria-label="Xóa suất diễn">
             <X size={20} />
           </button>
         )}
@@ -73,23 +93,35 @@ export function EventShowCard({
             <div className={formStyles.field} style={{ marginBottom: 0 }}>
               <label className={formStyles.label}>Thời gian bắt đầu</label>
               <input
-                className={styles.dateInput}
+                className={cn(styles.dateInput, errors?.startTime && formStyles.inputError)}
                 type="datetime-local"
                 value={show.startTime}
-                onChange={(e) => onUpdate({ startTime: e.target.value })}
+                aria-invalid={!!errors?.startTime || undefined}
+                onChange={(e) => {
+                  onUpdate({ startTime: e.target.value })
+                  onFieldBlur?.("startTime")
+                }}
+                onBlur={() => onFieldBlur?.("startTime")}
                 aria-label="Thời gian bắt đầu"
               />
+              <FieldError msg={errors?.startTime} />
             </div>
             <div className={formStyles.field} style={{ marginBottom: 0 }}>
               <label className={formStyles.label}>Thời gian kết thúc</label>
               <input
-                className={styles.dateInput}
+                className={cn(styles.dateInput, errors?.endTime && formStyles.inputError)}
                 type="datetime-local"
                 value={show.endTime}
                 min={show.startTime || undefined}
-                onChange={(e) => onUpdate({ endTime: e.target.value })}
+                aria-invalid={!!errors?.endTime || undefined}
+                onChange={(e) => {
+                  onUpdate({ endTime: e.target.value })
+                  onFieldBlur?.("endTime")
+                }}
+                onBlur={() => onFieldBlur?.("endTime")}
                 aria-label="Thời gian kết thúc"
               />
+              <FieldError msg={errors?.endTime} />
             </div>
           </div>
 
@@ -160,6 +192,7 @@ export function EventShowCard({
                 Tạo loại vé mới
               </button>
             </div>
+            <FieldError msg={errors?.tickets} />
           </div>
         </>
       )}

@@ -1,69 +1,134 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import {
-  CalendarClock,
-  MapPin,
-  CheckCircle2,
-  Clock,
-  Ticket,
-  type LucideIcon,
-} from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { CalendarClock, MapPin, CheckCircle2, Clock, Ticket, type LucideIcon, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { CheckInScanner } from "./CheckInScanner"
 import { CheckInProgressRing } from "./CheckInProgressRing"
+import type { CheckInResult } from "./staff-checkin-data"
 import {
-  normalizeCode,
-  nowHHmm,
-  summarizeTickets,
-  breakdownByType,
-  type StaffEvent,
-  type StaffTicket,
-  type CheckInResult,
-} from "./staff-checkin-data"
+  checkInTicket,
+  fetchCheckInStats,
+  type CheckInStats,
+  type CheckInResult as ApiCheckInResult,
+  type CheckInResponse,
+} from "@/lib/staff-api"
+
+// Re-use the existing CheckInResult type shape for scanner feedback
+type ScanResult = CheckInResult | null
+
+/** Map API response → legacy CheckInResult shape that CheckInScanner expects */
+function formatScanTime(value?: string): string | null {
+  if (!value) return null
+  return new Date(value).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+function mapToScannerResult(response: CheckInResponse, code: string): CheckInResult {
+  const statusMap: Record<ApiCheckInResult, CheckInResult["status"]> = {
+    success: "success",
+    duplicate: "duplicate",
+    invalid: "invalid",
+    wrong_event: "invalid",
+    cancelled: "invalid",
+  }
+  const status = statusMap[response.result] ?? "invalid"
+  if (status === "invalid") return { status }
+
+  return {
+    status,
+    ticket: {
+      code: code.trim().toUpperCase(),
+      attendeeName: response.attendeeName ?? "Người tham dự",
+      email: "",
+      orderCode: "",
+      ticketType: response.ticketName ?? "Vé sự kiện",
+      checkedInAt: formatScanTime(response.checkedInAt),
+    },
+    previousTime: formatScanTime(response.previousCheckedInAt) ?? undefined,
+  }
+}
+
+const POLL_INTERVAL_MS = 15_000 // Refresh stats every 15s
 
 /**
- * Staff check-in station for one assigned event (picked on /staff). Scan/enter
- * ticket codes to admit attendees, watch live counters + a recent-admissions
- * feed. Render with key={event.id} so state resets when the event changes.
+ * Staff check-in station for one assigned event.
+ * Replaces mock data with real API calls:
+ *  - POST /api/staff/check-in   → scan a ticket
+ *  - GET  /api/staff/events/:id/checkin-stats → live counters
  */
-export function StaffCheckInView({ event }: { event: StaffEvent }) {
-  // Ticket state is a working copy so admissions mutate without touching seed.
-  const [tickets, setTickets] = useState<StaffTicket[]>(() =>
-    event.tickets.map((t) => ({ ...t }))
-  )
-  const [result, setResult] = useState<CheckInResult | null>(null)
+export function StaffCheckInView({ eventId }: { eventId: string }) {
+  const checkingRef = useRef(false)
+  const [stats, setStats] = useState<CheckInStats | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [checking, setChecking] = useState(false)
+  const [result, setResult] = useState<ScanResult>(null)
+  const [recentScans, setRecentScans] = useState<Array<{
+    code: string
+    result: ApiCheckInResult
+    message: string
+    checkedInAt?: string
+  }>>([])
 
-  const stats = summarizeTickets(tickets)
-  const types = breakdownByType(tickets)
-  const recent = useMemo(
-    () =>
-      tickets
-        .filter((t) => t.checkedInAt)
-        .sort((a, b) => (b.checkedInAt ?? "").localeCompare(a.checkedInAt ?? ""))
-        .slice(0, 8),
-    [tickets]
-  )
+  // ── Load live stats ──────────────────────────────────────────────────────
+  const loadStats = useCallback(async () => {
+    try {
+      const s = await fetchCheckInStats(eventId)
+      setStats(s)
+    } catch {
+      // Silently ignore poll errors — don't disrupt scanning
+    } finally {
+      setStatsLoading(false)
+    }
+  }, [eventId])
 
-  const handleScan = (raw: string) => {
-    const code = normalizeCode(raw)
-    const idx = tickets.findIndex((t) => normalizeCode(t.code) === code)
-    if (idx === -1) {
+  useEffect(() => {
+    loadStats()
+    const interval = setInterval(loadStats, POLL_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [loadStats])
+
+  // ── Handle scan ──────────────────────────────────────────────────────────
+  const handleScan = async (raw: string) => {
+    if (checkingRef.current) return
+    checkingRef.current = true
+    setChecking(true)
+
+    try {
+      const response = await checkInTicket({ ticketCode: raw.trim(), eventId })
+      setResult(mapToScannerResult(response, raw))
+
+      // Push to recent feed
+      setRecentScans((prev) => [
+        { code: raw.trim().toUpperCase(), ...response },
+        ...prev.slice(0, 7),
+      ])
+
+      // Optimistically update counter on success
+      if (response.result === "success") {
+        setStats((prev) =>
+          prev
+            ? {
+                ...prev,
+                checkedIn: prev.checkedIn + 1,
+                remaining: prev.remaining - 1,
+                percent: prev.total > 0 ? Math.round(((prev.checkedIn + 1) / prev.total) * 100) : 0,
+              }
+            : prev
+        )
+      }
+    } catch {
       setResult({ status: "invalid" })
-      return
+    } finally {
+      checkingRef.current = false
+      setChecking(false)
     }
-    const ticket = tickets[idx]
-    if (ticket.checkedInAt) {
-      setResult({ status: "duplicate", ticket, previousTime: ticket.checkedInAt })
-      return
-    }
-    const admitted = { ...ticket, checkedInAt: nowHHmm() }
-    const next = [...tickets]
-    next[idx] = admitted
-    setTickets(next)
-    setResult({ status: "success", ticket: admitted })
   }
+
+  const pct = stats?.percent ?? 0
 
   return (
     <div className="space-y-6">
@@ -74,104 +139,85 @@ export function StaffCheckInView({ event }: { event: StaffEvent }) {
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
               Soát vé &amp; Check-in
             </h1>
-            <p className="mt-1 truncate text-lg font-semibold text-primary">{event.title}</p>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarClock size={15} aria-hidden="true" />
-                {event.dateTime}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin size={15} aria-hidden="true" />
-                {event.venueName}
-              </span>
-            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Sự kiện ID: <span className="font-mono text-primary">{eventId}</span>
+            </p>
           </div>
 
-          <CheckInProgressRing value={stats.percent} />
+          {statsLoading ? (
+            <Loader2 className="animate-spin text-primary" size={32} />
+          ) : (
+            <CheckInProgressRing value={pct} />
+          )}
         </div>
       </div>
 
       {/* ── Live counters ───────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
-        <StatCard icon={CheckCircle2} tone="emerald" value={stats.checkedIn} label="Đã check-in" />
-        <StatCard icon={Clock} tone="amber" value={stats.remaining} label="Chưa vào" />
-        <StatCard icon={Ticket} tone="primary" value={stats.total} label="Tổng vé đã bán" />
+        <StatCard icon={CheckCircle2} tone="emerald" value={stats?.checkedIn ?? 0} label="Đã check-in" />
+        <StatCard icon={Clock} tone="amber" value={stats?.remaining ?? 0} label="Chưa vào" />
+        <StatCard icon={Ticket} tone="primary" value={stats?.total ?? 0} label="Tổng vé đã bán" />
       </div>
 
-      {/* ── Scanner + side panels ───────────────────────────────────── */}
+      {/* ── Scanner + recent feed ───────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <CheckInScanner onScan={handleScan} result={result} />
+        <CheckInScanner onScan={handleScan} result={result} disabled={checking} />
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Theo loại vé</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {types.map((t) => {
-                const pct = t.total ? Math.round((t.checkedIn / t.total) * 100) : 0
-                return (
-                  <div key={t.type} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-semibold text-foreground">{t.type}</span>
-                      <span className="tabular-nums text-muted-foreground">
-                        {t.checkedIn} / {t.total}
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Check-in gần đây</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recent.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  Chưa có lượt check-in nào.
-                </p>
-              ) : (
-                <div>
-                  {recent.map((t) => (
-                    <div
-                      key={t.code}
-                      className="flex items-center gap-3 border-t border-border py-2.5 first:border-t-0 first:pt-0"
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Check-in gần đây</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentScans.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                Chưa có lượt check-in nào.
+              </p>
+            ) : (
+              <div>
+                {recentScans.map((s, idx) => (
+                  <div
+                    key={`${s.code}-${idx}`}
+                    className="flex items-center gap-3 border-t border-border py-2.5 first:border-t-0 first:pt-0"
+                  >
+                    <span
+                      className={cn(
+                        "grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold",
+                        s.result === "success"
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : s.result === "duplicate"
+                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          : "bg-destructive/15 text-destructive"
+                      )}
+                      aria-hidden="true"
                     >
-                      <span
-                        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary"
-                        aria-hidden="true"
-                      >
-                        {t.attendeeName.charAt(0).toUpperCase()}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold text-foreground">
-                          {t.attendeeName}
-                        </div>
-                        <div className="text-xs text-muted-foreground">{t.ticketType}</div>
+                      {s.result === "success" ? "✓" : s.result === "duplicate" ? "⚠" : "✗"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-mono text-xs font-semibold text-foreground">
+                        {s.code}
                       </div>
-                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        {t.checkedInAt}
-                      </span>
+                      <div className="text-xs text-muted-foreground">{s.message}</div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    {s.checkedInAt && (
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {new Date(s.checkedInAt).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
 }
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
 
 const TONES: Record<string, { chip: string; icon: string }> = {
   emerald: { chip: "bg-emerald-500/15", icon: "text-emerald-600 dark:text-emerald-400" },
@@ -179,7 +225,6 @@ const TONES: Record<string, { chip: string; icon: string }> = {
   primary: { chip: "bg-primary/12", icon: "text-primary" },
 }
 
-/** Compact counter tile with an icon chip. */
 function StatCard({
   icon: Icon,
   tone,

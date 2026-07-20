@@ -54,6 +54,19 @@
     --accent-foreground: #0369a1; /* sky-700 */
     --destructive: #f43f5e;
     --destructive-foreground: #ffffff;
+
+    /* Semantic status tokens — foreground meets WCAG AA (≥4.5:1) on its own
+       surface; `.dark` overrides below keep parity in dark mode. */
+    --success-fg: #15803d;      /* green-700 */
+    --success-surface: #dcfce7; /* green-100 */
+    --success-border: #86efac;  /* green-300 */
+    --warning-fg: #b45309;      /* amber-700 */
+    --warning-surface: #fef3c7; /* amber-100 */
+    --warning-border: #fcd34d;  /* amber-300 */
+    --danger-fg: #b91c1c;       /* red-700 */
+    --danger-surface: #fee2e2;  /* red-100 */
+    --danger-border: #fca5a5;   /* red-300 */
+
     --border: #e2e8f0;
     --input: #e2e8f0;
     --ring: #0891b2;
@@ -128,6 +141,17 @@
     --chart-3: #34d399;
     --chart-4: #fb7185;
     --chart-5: #60a5fa;
+
+    /* Semantic status tokens — lighter foreground on a deep surface for dark UI. */
+    --success-fg: #4ade80;      /* green-400 */
+    --success-surface: #052e16; /* green-950 */
+    --success-border: #166534;  /* green-800 */
+    --warning-fg: #fbbf24;      /* amber-400 */
+    --warning-surface: #451a03; /* amber-950 */
+    --warning-border: #92400e;  /* amber-800 */
+    --danger-fg: #fb7185;       /* rose-400 */
+    --danger-surface: #450a0a;  /* red-950 */
+    --danger-border: #991b1b;   /* red-800 */
 
     /* Literal extended tokens */
     --color-surface-hover: #1e293b;

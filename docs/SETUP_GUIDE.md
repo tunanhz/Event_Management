@@ -1,5 +1,7 @@
 # 🛠️ HƯỚNG DẪN CẤU HÌNH HỆ THỐNG THỰC TẾ (PRODUCTION/DEVELOPMENT SETUP)
 
+> Cập nhật: 2026-07-05 · Branch: `develop`
+
 Tài liệu này hướng dẫn chi tiết cách cấu hình cơ sở dữ liệu MongoDB thực tế, hệ thống gửi email OTP qua Gmail SMTP, cơ chế Đăng nhập Google (Google OAuth) và cách tự tạo tài khoản Admin trực tiếp trong cơ sở dữ liệu của bạn.
 
 ---
@@ -45,7 +47,7 @@ Nếu nhóm của bạn muốn dùng chung một cơ sở dữ liệu trên đá
    mongodb+srv://dbuser:<password>@cluster0.xxxx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
    ```
 4. Thay thế `<password>` bằng mật khẩu của Database User bạn đã tạo ở **Bước 2**.
-5. Mở file [backend/.env](file:///c:/Users/ADIM/OneDrive/Documents/.FPTU/SUMMER2026/WDP301/Event_Management/backend/.env) và cập nhật biến `MONGODB_URI`:
+5. Mở file `backend/.env` và cập nhật biến `MONGODB_URI`:
    ```env
    MONGODB_URI=mongodb+srv://dbuser:Mật_Khẩu_Của_Bạn@cluster0.xxxx.mongodb.net/event_management?retryWrites=true&w=majority
    ```
@@ -64,7 +66,7 @@ Hệ thống cần gửi mã xác thực OTP về email khi người dùng đăn
 5. Sau khi bật Xác minh 2 bước, nhấp vào mũi tên bên phải của nó. Kéo xuống cuối trang, bạn sẽ thấy mục **Mật khẩu ứng dụng (App Passwords)**.
 6. Nhập tên ứng dụng (ví dụ: `EventBox Node App`) và nhấp **Tạo (Create)**.
 7. Google sẽ cung cấp một mật khẩu gồm **16 ký tự viết liền** (không có dấu cách, ví dụ: `abcd efgh ijkl mnop`). Hãy sao chép nó.
-8. Mở file [backend/.env](file:///c:/Users/ADIM/OneDrive/Documents/.FPTU/SUMMER2026/WDP301/Event_Management/backend/.env) và điền cấu hình:
+8. Mở file `backend/.env` và điền cấu hình:
    ```env
    SMTP_HOST=smtp.gmail.com
    SMTP_PORT=587
@@ -167,6 +169,26 @@ SMTP_FROM="EventBox System" <gmail_cua_ban@gmail.com>
 
 # Google OAuth Client ID
 GOOGLE_CLIENT_ID=chuoi_id_cua_ban.apps.googleusercontent.com
+```
+
+---
+
+## 6. Seed dữ liệu ban đầu (tùy chọn)
+
+Sau khi khởi động backend lần đầu tiên, bạn có thể chạy các script để seed dữ liệu trang chủ:
+
+### Seed Admin (tạo tài khoản admin nếu chưa có)
+```bash
+cd backend
+npm run seed:admin
+# Kết quả: admin@eventbox.vn / Admin@123456 được tạo
+```
+
+### Seed Homepage (tạo categories, stars, banners, events demo)
+```bash
+cd backend
+npm run seed:homepage
+# Kết quả: 6 categories + 5 stars + 2 banners + 5 published events
 ```
 
 ---
