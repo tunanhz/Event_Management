@@ -62,7 +62,7 @@ export class UserController {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'] || 'Unknown Device';
     const timestamp = new Date().toISOString();
-    console.log(`[AUDIT] Google Login Success - Email: ${user.email} | IP: ${ip} | Device: ${userAgent} | Time: ${timestamp}`);
+    console.log(`[AUDIT] Google Login Success - Email: ${user?.email || 'Unknown'} | IP: ${ip} | Device: ${userAgent} | Time: ${timestamp}`);
 
     // Set HTTP-Only Cookie
     res.cookie('token', token, {
