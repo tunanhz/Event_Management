@@ -23,6 +23,7 @@ class ClientApiClient {
     const url = `${this.prefix}${endpoint}`;
 
     const response = await fetch(url, {
+      cache: "no-store",
       ...options,
       credentials: options.credentials || "include",
       headers: {

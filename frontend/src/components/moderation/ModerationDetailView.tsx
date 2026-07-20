@@ -334,17 +334,41 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
 
         {tab === "documents" && (
           <ul className="space-y-2">
-            {detail.documents.map((doc) => (
-              <li key={doc.name} className="flex items-center gap-3 rounded-xl border border-border bg-background p-3">
-                <FileText className="h-5 w-5 flex-shrink-0 text-cyan-500" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-foreground">{doc.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {DOCUMENT_TYPE_LABELS[doc.type]}{doc.sizeKb ? ` · ${Math.round(doc.sizeKb)} KB` : ""}
-                  </p>
-                </div>
-              </li>
-            ))}
+            {detail.documents.map((doc) => {
+              const innerContent = (
+                <>
+                  <FileText className="h-5 w-5 flex-shrink-0 text-cyan-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground group-hover:text-cyan-500 transition-colors">{doc.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {DOCUMENT_TYPE_LABELS[doc.type]}{doc.sizeKb ? ` · ${Math.round(doc.sizeKb)} KB` : ""}
+                    </p>
+                  </div>
+                </>
+              )
+              if (doc.url) {
+                const absUrl = doc.url.startsWith("http")
+                  ? doc.url
+                  : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}${doc.url}`
+                return (
+                  <li key={doc.name}>
+                    <a
+                      href={absUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:bg-muted/50"
+                    >
+                      {innerContent}
+                    </a>
+                  </li>
+                )
+              }
+              return (
+                <li key={doc.name} className="flex items-center gap-3 rounded-xl border border-border bg-background p-3">
+                  {innerContent}
+                </li>
+              )
+            })}
             {detail.documents.length === 0 && (
               <p className="py-6 text-center text-sm text-muted-foreground">Ban tổ chức chưa đính kèm hồ sơ nào.</p>
             )}

@@ -114,9 +114,15 @@ export async function fetchModerationDetail(id: string): Promise<ModerationEvent
     name: d.name,
     type: "permit",
     sizeKb: d.sizeKb ?? 0,
+    url: d.url,
   }))
   if (e.contract?.signatureUrl) {
-    documents.push({ name: "Hợp đồng dịch vụ đã ký", type: "contract", sizeKb: 0 })
+    documents.push({
+      name: "Hợp đồng dịch vụ đã ký",
+      type: "contract",
+      sizeKb: 0,
+      url: e.contract.signatureUrl,
+    })
   }
   return {
     ...toModerationEvent(e),

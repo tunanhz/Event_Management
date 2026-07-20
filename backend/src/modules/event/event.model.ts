@@ -48,6 +48,7 @@ export interface IEvent extends Document {
   isFree: boolean;
   isFeatured: boolean;
   isTrending: boolean;
+  views: number;
   createdAt: Date;
   updatedAt: Date;
 
@@ -141,6 +142,7 @@ const eventSchema = new Schema<IEvent>(
     isFree: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
     isTrending: { type: Boolean, default: false },
+    views: { type: Number, default: 0 },
 
     // ── ERD-aligned fields (EM-23 Event Creation / organizer module) ──
     categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
@@ -197,6 +199,7 @@ eventSchema.index({ organizer: 1 });
 eventSchema.index({ city: 1 });
 eventSchema.index({ isFeatured: 1 });
 eventSchema.index({ isTrending: 1 });
+eventSchema.index({ views: -1 });
 eventSchema.index({ categoryId: 1 });
 eventSchema.index({ creatorId: 1 });
 eventSchema.index({ reviewStatus: 1 });

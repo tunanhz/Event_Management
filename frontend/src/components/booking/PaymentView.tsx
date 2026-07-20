@@ -93,6 +93,26 @@ export function PaymentView({ event, tickets, quantities, shows }: Props) {
       }
 
       await confirmMockPayments(registrationIds);
+
+      // Add payment success notification
+      const uId = user?._id || "guest";
+      const notifList = [];
+      try {
+        const raw = localStorage.getItem("eventbox:notifications-list:" + uId);
+        if (raw) notifList.push(...JSON.parse(raw));
+      } catch {}
+      const notifiedAt = new Date();
+      notifList.unshift({
+        id: "payment-" + notifiedAt.getTime(),
+        type: "payment_success",
+        title: "Thanh toán thành công",
+        message: `Bạn đã mua thành công ${lines.reduce((sum, l) => sum + l.qty, 0)} vé cho sự kiện “${event.title}”. Vé điện tử kèm mã QR đã sẵn sàng trong mục Vé của tôi.`,
+        createdAt: notifiedAt.toISOString(),
+        href: "/ve-cua-toi",
+      });
+      localStorage.setItem("eventbox:notifications-list:" + uId, JSON.stringify(notifList));
+      window.dispatchEvent(new CustomEvent("eventbox:notifications-change"));
+
       router.push("/ve-cua-toi");
     } catch (err) {
       setPayError(
@@ -143,15 +163,6 @@ export function PaymentView({ event, tickets, quantities, shows }: Props) {
               </p>
             </section>
 
-            <section className={styles.card}>
-              <div className={styles.cardHeadRow}>
-                <h3 className={styles.cardTitle}>Mã khuyến mãi</h3>
-                <button type="button" className={styles.linkBtn}>Chọn voucher</button>
-              </div>
-              <button type="button" className={styles.promoAdd}>
-                <Tag size={15} aria-hidden="true" /> Thêm khuyến mãi
-              </button>
-            </section>
 
             {!isFree && (
               <section className={styles.card}>

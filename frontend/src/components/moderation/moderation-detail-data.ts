@@ -17,6 +17,7 @@ export interface ModerationDocument {
   name: string
   type: "permit" | "contract" | "proposal"
   sizeKb: number
+  url?: string
 }
 
 export interface ModerationEventDetail extends ModerationEvent {
