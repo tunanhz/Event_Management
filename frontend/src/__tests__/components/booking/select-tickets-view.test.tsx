@@ -32,9 +32,9 @@ describe('SelectTicketsView', () => {
   };
 
   const mockTickets: TicketType[] = [
-    { id: 'ticket-1', name: 'Standard', price: 500000, maxPerOrder: 10 },
-    { id: 'ticket-2', name: 'VIP', price: 1000000, maxPerOrder: 5 },
-    { id: 'ticket-3', name: 'Early Bird', price: 300000, maxPerOrder: 3 },
+    { id: 'ticket-1', name: 'Standard', price: 500000, minPerOrder: 1, maxPerOrder: 10 },
+    { id: 'ticket-2', name: 'VIP', price: 1000000, minPerOrder: 1, maxPerOrder: 5 },
+    { id: 'ticket-3', name: 'Early Bird', price: 300000, minPerOrder: 1, maxPerOrder: 3 },
   ];
 
   const mockShow: ShowOption = {
@@ -68,12 +68,12 @@ describe('SelectTicketsView', () => {
 
     it('should render all visible tickets with name and price', () => {
       const { container } = render(<SelectTicketsView event={mockEvent} tickets={mockTickets} shows={[mockShow]} />);
-      const ticketList = container.querySelector('ul.ticketList')!;
+      const ticketList = container.querySelector('ul.ticketList') as HTMLElement;
       mockTickets.forEach((ticket) => {
         expect(within(ticketList).getByText(ticket.name)).toBeInTheDocument();
       });
       // Verify prices exist in sidebar
-      const priceList = container.querySelector('ul.priceList')!;
+      const priceList = container.querySelector('ul.priceList') as HTMLElement;
       expect(within(priceList).getByText(mockTickets[0].name)).toBeInTheDocument();
     });
 
@@ -240,7 +240,7 @@ describe('SelectTicketsView', () => {
     it('should update quantities live as user changes them', async () => {
       const user = userEvent.setup();
       const { container } = render(<SelectTicketsView event={mockEvent} tickets={mockTickets} shows={[mockShow]} />);
-      const ticketList = container.querySelector('ul.ticketList')!;
+      const ticketList = container.querySelector('ul.ticketList') as HTMLElement;
       const incrButtons = within(ticketList).getAllByLabelText(/tăng số lượng/i);
 
       await user.click(incrButtons[0]);
@@ -260,7 +260,7 @@ describe('SelectTicketsView', () => {
   describe('pricing and total', () => {
     it('should display per-ticket price in sidebar', () => {
       const { container } = render(<SelectTicketsView event={mockEvent} tickets={mockTickets} shows={[mockShow]} />);
-      const priceList = container.querySelector('ul.priceList')!;
+      const priceList = container.querySelector('ul.priceList') as HTMLElement;
       // Verify price list has items
       expect(priceList.querySelectorAll('li').length).toBeGreaterThan(0);
       // Verify first ticket name appears in sidebar

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, MapPin, CreditCard, QrCode, Wallet, Smartphone, Tag } from "lucide-react";
+import { Calendar, MapPin, CreditCard, QrCode, Wallet, Smartphone } from "lucide-react";
 import type { EventItem, ShowOption, TicketType } from "@/lib/mockData";
 import { useAuth } from "@/context/AuthContext";
 import { formatVnd } from "@/lib/utils";
@@ -101,12 +101,14 @@ export function PaymentView({ event, tickets, quantities, shows }: Props) {
         const raw = localStorage.getItem("eventbox:notifications-list:" + uId);
         if (raw) notifList.push(...JSON.parse(raw));
       } catch {}
+      // eslint-disable-next-line react-hooks/purity
+      const notificationTime = Date.now();
       notifList.unshift({
-        id: "payment-" + Date.now(),
+        id: "payment-" + notificationTime,
         type: "payment_success",
         title: "Thanh toán thành công",
         message: `Bạn đã mua thành công ${lines.reduce((sum, l) => sum + l.qty, 0)} vé cho sự kiện “${event.title}”. Vé điện tử kèm mã QR đã sẵn sàng trong mục Vé của tôi.`,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(notificationTime).toISOString(),
         href: "/ve-cua-toi",
       });
       localStorage.setItem("eventbox:notifications-list:" + uId, JSON.stringify(notifList));

@@ -69,7 +69,9 @@ export function useNotifications() {
 
   // Initial welcome notification when first logging in / visiting
   useEffect(() => {
+    // We intentionally synchronize local storage state on mount.
     if (userId === "guest") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       sync();
       return;
     }
@@ -86,6 +88,7 @@ export function useNotifications() {
       };
       saveNotificationsList(userId, [welcomeNotif, ...currentList]);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     sync();
   }, [userId, sync]);
 
