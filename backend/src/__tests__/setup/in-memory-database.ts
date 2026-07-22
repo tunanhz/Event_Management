@@ -5,10 +5,10 @@
  * file), so suites can run in parallel without colliding on collection state.
  */
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet, MongoMemoryServer } from 'mongodb-memory-server';
 import * as databaseModule from '../../config/database';
 
-let mongod: MongoMemoryServer | null = null;
+let mongod: MongoMemoryServer | MongoMemoryReplSet | null = null;
 
 /**
  * Boot mongod and connect mongoose. Call from `beforeAll`.
@@ -20,8 +20,10 @@ let mongod: MongoMemoryServer | null = null;
  * would silently exercise the mock branch rather than the real persistence
  * code. Flipping it here keeps the integration tests honest.
  */
-export async function connectInMemoryDatabase(): Promise<void> {
-  mongod = await MongoMemoryServer.create();
+export async function connectInMemoryDatabase(options?: { replicaSet?: boolean }): Promise<void> {
+  mongod = options?.replicaSet
+    ? await MongoMemoryReplSet.create({ replSet: { count: 1 } })
+    : await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri(), { dbName: 'event_management_test' });
   (databaseModule as { isDbConnected: boolean }).isDbConnected = true;
 }

@@ -13,7 +13,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
 import { fetchMyAssignments, fetchCheckInHistory, type StaffAssignment, type CheckInLogEntry } from "@/lib/staff-api"
 
@@ -22,8 +21,6 @@ export function StaffShiftSummaryView({ eventId }: { eventId: string }) {
   const [history, setHistory] = useState<CheckInLogEntry[]>([])
   
   const [loading, setLoading] = useState(true)
-  const [note, setNote] = useState("")
-  const [saved, setSaved] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -49,19 +46,10 @@ export function StaffShiftSummaryView({ eventId }: { eventId: string }) {
     loadData()
   }, [loadData])
 
-  // Lọc log của chính mình nếu tìm thấy assignment, ngược lại lấy tất cả
-  const myStaffId = assignment 
-    ? (typeof assignment.staffId === 'string' ? assignment.staffId : assignment.staffId._id) 
-    : null
-    
-  // History API currently returns staffId object { fullName, email }. We don't have _id.
-  // We can just show total stats or try to match fullName if myStaffId isn't enough, 
-  // but let's just use all history for this event as "Ca của chúng ta" (Our shift)
   const success = history.filter((e) => e.result === "success")
   const failed = history.filter((e) => e.result !== "success" && e.result !== "invalid")
   const invalid = history.filter((e) => e.result === "invalid" || e.result === "wrong_event")
 
-  const byType = new Map<string, number>()
   // Since ticketType isn't in CheckInLogEntry from API, we will just count total successful for now
   const totalSuccess = success.length
 
@@ -139,67 +127,25 @@ export function StaffShiftSummaryView({ eventId }: { eventId: string }) {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Khách đã đón</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {totalSuccess === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">
-                Chưa có lượt check-in thành công nào.
-              </p>
-            ) : (
-              <div>
-                <div className="flex items-center justify-between border-border py-2.5 text-sm">
-                  <span className="font-semibold text-foreground">Tất cả vé</span>
-                  <span className="tabular-nums text-muted-foreground">{totalSuccess} khách</span>
-                </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Khách đã đón</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {totalSuccess === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Chưa có lượt check-in thành công nào.
+            </p>
+          ) : (
+            <div>
+              <div className="flex items-center justify-between border-border py-2.5 text-sm">
+                <span className="font-semibold text-foreground">Tất cả vé</span>
+                <span className="tabular-nums text-muted-foreground">{totalSuccess} khách</span>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* ── Handover note ─────────────────────────────────────────── */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Ghi chú bàn giao ca</CardTitle>
-            <CardDescription>
-              Lưu lại tình hình tại cổng cho ca sau (sự cố, khách cần lưu ý…).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <label htmlFor="shift-handover-note" className="sr-only">
-              Ghi chú bàn giao ca
-            </label>
-            <textarea
-              id="shift-handover-note"
-              rows={4}
-              value={note}
-              onChange={(e) => {
-                setNote(e.target.value)
-                setSaved(false)
-              }}
-              placeholder="Ví dụ: máy quét cổng A chập chờn, đã báo kỹ thuật…"
-              className="w-full resize-y rounded-xl border border-border bg-muted p-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
-            />
-            <div className="flex items-center gap-3">
-              <Button className="h-10 rounded-lg" disabled={!note.trim()} onClick={() => setSaved(true)}>
-                Lưu ghi chú
-              </Button>
-              {saved && (
-                <span
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400"
-                  role="status"
-                >
-                  <CheckCircle2 size={15} aria-hidden="true" />
-                  Đã lưu ghi chú bàn giao.
-                </span>
-              )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
