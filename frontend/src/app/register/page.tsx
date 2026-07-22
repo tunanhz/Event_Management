@@ -1,19 +1,56 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { useAuth } from "@/context/AuthContext"
 import { clientApi } from "@/lib/client-api"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel"
-import { Ticket, Sparkles, Mail, Lock, User as UserIcon, AlertCircle, KeyRound, Eye, EyeOff } from "lucide-react"
+import { Ticket, Sparkles, Mail, Lock, User as UserIcon, AlertCircle, KeyRound, Eye, EyeOff, Phone, CheckCircle2, XCircle } from "lucide-react"
+
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+/** Validate Vietnamese phone number (10 digits, starts with 0) */
+const isValidVietnamesePhone = (phone: string) =>
+  /^(0[3-9]\d{8})$/.test(phone)
+
+/** Password strength: returns 0-4 */
+const getPasswordStrength = (pwd: string): number => {
+  if (!pwd) return 0
+  let score = 0
+  if (pwd.length >= 8) score++
+  if (/[A-Z]/.test(pwd)) score++
+  if (/[0-9]/.test(pwd)) score++
+  if (/[^A-Za-z0-9]/.test(pwd)) score++
+  return score
+}
+
+const strengthLabel = ["", "Yếu", "Trung bình", "Khá", "Mạnh"]
+const strengthColor = [
+  "",
+  "bg-rose-500",
+  "bg-amber-400",
+  "bg-yellow-400",
+  "bg-emerald-500",
+]
+const strengthTextColor = [
+  "",
+  "text-rose-500",
+  "text-amber-500",
+  "text-yellow-500",
+  "text-emerald-600 dark:text-emerald-400",
+]
+
+// ────────────────────────────────────────────────────────────────────────────
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [role, setRole] = useState("PARTICIPANT")
   const [otpCode, setOtpCode] = useState("")
 
@@ -24,6 +61,11 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [otpLoading, setOtpLoading] = useState(false)
 
+  // Touch states for inline validation
+  const [phoneTouched, setPhoneTouched] = useState(false)
+  const [passwordTouched, setPasswordTouched] = useState(false)
+  const [confirmTouched, setConfirmTouched] = useState(false)
+
   const { register } = useAuth()
 
   // Countdown timer for OTP resend
@@ -32,8 +74,33 @@ export default function RegisterPage() {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
       return () => clearTimeout(timer)
     }
-  }, [countdown]);
+  }, [countdown])
 
+  // ── derived validation ──
+  const phoneError = useMemo(() => {
+    if (!phone) return ""                         // optional – ok if empty
+    if (!isValidVietnamesePhone(phone))
+      return "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)"
+    return ""
+  }, [phone])
+
+  const passwordStrength = useMemo(() => getPasswordStrength(password), [password])
+
+  const passwordError = useMemo(() => {
+    if (!password) return ""
+    if (password.length < 8) return "Mật khẩu phải có ít nhất 8 ký tự"
+    return ""
+  }, [password])
+
+  const confirmError = useMemo(() => {
+    if (!confirmPassword) return ""
+    if (confirmPassword !== password) return "Mật khẩu nhập lại không khớp"
+    return ""
+  }, [confirmPassword, password])
+
+  const passwordsMatch = confirmPassword.length > 0 && confirmPassword === password
+
+  // ── handlers ──
   const handleSendOTP = async () => {
     if (!email) {
       setError("Vui lòng điền địa chỉ email trước khi nhận OTP")
@@ -49,7 +116,7 @@ export default function RegisterPage() {
 
       if (res.success) {
         setOtpSent(true)
-        setCountdown(60) // 1 minute cooldown
+        setCountdown(60)
         setSuccessMsg("Mã OTP đã được gửi! Vui lòng kiểm tra hộp thư email của bạn (bao gồm cả mục Spam).")
       }
     } catch (err: any) {
@@ -57,14 +124,40 @@ export default function RegisterPage() {
     } finally {
       setOtpLoading(false)
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Phone validation (optional but must be valid if filled)
+    if (phone && phoneError) {
+      setError(phoneError)
+      document.getElementById("phone")?.focus()
+      return
+    }
+
     if (!fullName || !email || !password || !otpCode) {
       setError("Vui lòng điền đầy đủ các thông tin bắt buộc và mã OTP")
       const firstEmpty = !fullName ? "fullName" : !email ? "email" : !otpCode ? "otp" : "password"
       document.getElementById(firstEmpty)?.focus()
+      return
+    }
+
+    if (passwordError) {
+      setError(passwordError)
+      document.getElementById("password")?.focus()
+      return
+    }
+
+    if (!confirmPassword) {
+      setError("Vui lòng nhập lại mật khẩu để xác nhận")
+      document.getElementById("confirmPassword")?.focus()
+      return
+    }
+
+    if (confirmError) {
+      setError(confirmError)
+      document.getElementById("confirmPassword")?.focus()
       return
     }
 
@@ -86,7 +179,7 @@ export default function RegisterPage() {
     } finally {
       setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="flex min-h-dvh bg-background">
@@ -166,24 +259,49 @@ export default function RegisterPage() {
               {/* Phone Input */}
               <div>
                 <label htmlFor="phone" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1">
-                  Số điện thoại (Tùy chọn)
+                  Số điện thoại <span className="normal-case font-normal text-muted-foreground">(Tùy chọn)</span>
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
+                    <Phone className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <input
                     id="phone"
                     type="tel"
                     autoComplete="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="block w-full rounded-xl border border-border bg-muted py-2.5 pl-10 pr-3 text-foreground placeholder-slate-400 focus:border-cyan-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500/20 sm:text-sm transition-all"
+                    onChange={(e) => {
+                      // Allow only digits
+                      const val = e.target.value.replace(/\D/g, "")
+                      setPhone(val)
+                    }}
+                    onBlur={() => setPhoneTouched(true)}
+                    maxLength={10}
+                    className={`block w-full rounded-xl border py-2.5 pl-10 pr-10 text-foreground placeholder-slate-400 focus:outline-none focus:ring-2 sm:text-sm transition-all bg-muted focus:bg-card ${
+                      phoneTouched && phoneError
+                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/20"
+                        : phoneTouched && phone && !phoneError
+                        ? "border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/20"
+                        : "border-border focus:border-cyan-500 focus:ring-cyan-500/20"
+                    }`}
                     placeholder="09xxxxxxxx"
                   />
+                  {/* Inline validity icon */}
+                  {phoneTouched && phone && (
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      {phoneError
+                        ? <XCircle className="h-4 w-4 text-rose-500" />
+                        : <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      }
+                    </div>
+                  )}
                 </div>
+                {phoneTouched && phoneError && (
+                  <p className="mt-1 text-xs text-rose-500 flex items-center gap-1">
+                    <XCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                    {phoneError}
+                  </p>
+                )}
               </div>
 
               {/* Email Input + Send OTP Button */}
@@ -260,7 +378,12 @@ export default function RegisterPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full rounded-xl border border-border bg-muted py-2.5 pl-10 pr-11 text-foreground placeholder-slate-400 focus:border-cyan-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500/20 sm:text-sm transition-all"
+                    onBlur={() => setPasswordTouched(true)}
+                    className={`block w-full rounded-xl border py-2.5 pl-10 pr-11 text-foreground placeholder-slate-400 focus:outline-none focus:ring-2 sm:text-sm transition-all bg-muted focus:bg-card ${
+                      passwordTouched && passwordError
+                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/20"
+                        : "border-border focus:border-cyan-500 focus:ring-cyan-500/20"
+                    }`}
                     placeholder="••••••••"
                   />
                   <button
@@ -272,6 +395,88 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
+
+                {/* Password strength bar */}
+                {password.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                            passwordStrength >= i ? strengthColor[passwordStrength] : "bg-muted-foreground/20"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className={`text-xs font-medium ${strengthTextColor[passwordStrength]}`}>
+                      Độ mạnh: {strengthLabel[passwordStrength]}
+                    </p>
+                  </div>
+                )}
+
+                {passwordTouched && passwordError && (
+                  <p className="mt-1 text-xs text-rose-500 flex items-center gap-1">
+                    <XCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                    {passwordError}
+                  </p>
+                )}
+
+                {/* Password requirements hint */}
+                {!passwordError && password.length > 0 && passwordStrength < 4 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Gợi ý: thêm chữ hoa, số và ký tự đặc biệt để tăng độ mạnh
+                  </p>
+                )}
+              </div>
+
+              {/* Confirm Password Input */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1">
+                  Nhập lại mật khẩu
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <Lock className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onBlur={() => setConfirmTouched(true)}
+                    className={`block w-full rounded-xl border py-2.5 pl-10 pr-11 text-foreground placeholder-slate-400 focus:outline-none focus:ring-2 sm:text-sm transition-all bg-muted focus:bg-card ${
+                      confirmTouched && confirmError
+                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/20"
+                        : passwordsMatch
+                        ? "border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/20"
+                        : "border-border focus:border-cyan-500 focus:ring-cyan-500/20"
+                    }`}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {confirmTouched && confirmError && (
+                  <p className="mt-1 text-xs text-rose-500 flex items-center gap-1">
+                    <XCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                    {confirmError}
+                  </p>
+                )}
+                {passwordsMatch && (
+                  <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                    Mật khẩu khớp nhau
+                  </p>
+                )}
               </div>
 
               {/* Role Selector Cards */}
