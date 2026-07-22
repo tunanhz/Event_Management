@@ -29,6 +29,7 @@ interface ApiEvent {
   date?: string
   time?: string
   startDate?: string
+  endDate?: string
   location?: string
   imageUrl?: string
   banner?: string
@@ -155,6 +156,41 @@ export interface HomeData {
   upcoming: EventItem[]
 }
 
+export function isUpcomingEvent(e: ApiEvent): boolean {
+  const now = Date.now()
+
+  const parseDate = (dStr?: string | Date) => {
+    if (!dStr) return NaN
+    if (typeof dStr === "number") return dStr
+    if (dStr instanceof Date) return dStr.getTime()
+    const str = String(dStr)
+    if (str.includes("/")) {
+      const parts = str.split(" ")
+      const datePart = parts[0]
+      const timePart = parts[1] || "00:00"
+      const [d, m, y] = datePart.split("/")
+      const [hh, mm] = timePart.split(":")
+      if (d && m && y) {
+        return new Date(
+          parseInt(y, 10),
+          parseInt(m, 10) - 1,
+          parseInt(d, 10),
+          parseInt(hh || "0", 10),
+          parseInt(mm || "0", 10)
+        ).getTime()
+      }
+    }
+    return new Date(str).getTime()
+  }
+
+  const start = parseDate(e.startDate || e.date)
+  if (!Number.isNaN(start)) {
+    return start >= now
+  }
+
+  return false
+}
+
 /** Everything the homepage needs, fetched in parallel. */
 export async function fetchHomeData(): Promise<HomeData> {
   const [activeBanners, eventsForBanners, stars, featured, trending, upcoming] = await Promise.all([
@@ -175,7 +211,7 @@ export async function fetchHomeData(): Promise<HomeData> {
         cta: b.ctaLabel || "Khám phá ngay",
         link: b.linkUrl || "#",
       }))
-    : eventsForBanners.map((e) => ({
+    : eventsForBanners.filter(isUpcomingEvent).map((e) => ({
         id: e._id,
         title: e.title,
         subtitle: e.description ? e.description.replace(/<[^>]*>/g, "").slice(0, 120) : "Khám phá sự kiện nổi bật trên EventBox.",
@@ -187,22 +223,22 @@ export async function fetchHomeData(): Promise<HomeData> {
   return {
     banners: bannersMapped,
     stars: stars.map((s) => ({ id: s._id, name: s.name, slug: s.slug, image: s.imageUrl || DEFAULT_AVATAR_IMAGE, verified: s.verified })),
-    featured: featured.map(toEventItem),
-    trending: trending.map(toEventItem),
-    upcoming: upcoming.map(toEventItem),
+    featured: featured.filter(isUpcomingEvent).map(toEventItem),
+    trending: trending.filter(isUpcomingEvent).map(toEventItem),
+    upcoming: upcoming.filter(isUpcomingEvent).map(toEventItem),
   }
 }
 
 /** Listing page pool — every published event, mapped for the explorer/filters. */
 export async function fetchExploreEvents(): Promise<ExploreEvent[]> {
   const events = await apiGet<ApiEvent[]>("/events?limit=100", [])
-  return events.map(toExploreEvent)
+  return events.filter(isUpcomingEvent).map(toExploreEvent)
 }
 
 /** Header search bar — GET /api/events/search?q=..., matches title/description/location/organizer/category. */
 export async function fetchSearchEvents(q: string): Promise<ExploreEvent[]> {
   const events = await apiGet<ApiEvent[]>(`/events/search?q=${encodeURIComponent(q)}&limit=100`, [])
-  return events.map(toExploreEvent)
+  return events.filter(isUpcomingEvent).map(toExploreEvent)
 }
 
 export interface EventDetailData {
@@ -245,6 +281,6 @@ export async function fetchEventDetail(id: string): Promise<EventDetailData | nu
       maxPerOrder: t.maxPerOrder,
       showId: t.showId,
     })),
-    related: (data.related ?? []).map(toEventItem),
+    related: (data.related ?? []).filter(isUpcomingEvent).map(toEventItem),
   }
 }

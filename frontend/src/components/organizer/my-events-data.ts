@@ -7,7 +7,7 @@
  * `ticketTypes` so there is a single source of truth.
  */
 
-export type OrgEventStatus = "upcoming" | "past" | "pending" | "draft" | "waiting_deposit"
+export type OrgEventStatus = "upcoming" | "ongoing" | "past" | "pending" | "draft" | "waiting_deposit"
 
 export interface TicketType {
   /** Backend ticket _id — absent for mock data, present for API-loaded events. */

@@ -304,4 +304,14 @@ export class OrganizerController {
     });
     res.json(ApiResponse.ok(event, 'Đã thanh toán khoản còn lại'));
   });
+
+  cancelEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const reason = asOptionalString(req.body?.reason) || 'Organizer hủy sự kiện';
+    const event = await this.organizerService.cancelEvent(
+      req.params.id as string,
+      req.user!.id,
+      reason
+    );
+    res.json(ApiResponse.ok(event, 'Đã hủy sự kiện thành công'));
+  });
 }

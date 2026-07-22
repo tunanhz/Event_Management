@@ -55,6 +55,10 @@ export interface AdminEventListParams {
   reviewStatus?: ReviewStatus | ""
   categoryId?: string
   creatorId?: string
+  privacy?: "public" | "private" | ""
+  timeStatus?: "upcoming" | "ongoing" | "completed" | "cancelled" | ""
+  fromDate?: string
+  toDate?: string
 }
 
 export interface PaginationMeta {

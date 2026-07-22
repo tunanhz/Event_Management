@@ -394,13 +394,52 @@ export class AdminEventService {
       .populate('creatorId', 'fullName')
       .lean();
 
+    // Compute actual month-over-month growth for Users and Revenue
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+    const [thisMonthUsers, prevMonthUsers] = await Promise.all([
+      User.countDocuments({ createdAt: { $gte: currentMonthStart } }),
+      User.countDocuments({ createdAt: { $gte: prevMonthStart, $lte: prevMonthEnd } }),
+    ]);
+
+    let attendeeGrowth = 0;
+    if (prevMonthUsers > 0) {
+      attendeeGrowth = Number((((thisMonthUsers - prevMonthUsers) / prevMonthUsers) * 100).toFixed(1));
+    } else if (thisMonthUsers > 0) {
+      attendeeGrowth = 100;
+    }
+
+    const [thisMonthRevAgg, prevMonthRevAgg] = await Promise.all([
+      Registration.aggregate([
+        { $match: { status: 'PAID', registerDate: { $gte: currentMonthStart } } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      ]),
+      Registration.aggregate([
+        { $match: { status: 'PAID', registerDate: { $gte: prevMonthStart, $lte: prevMonthEnd } } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      ]),
+    ]);
+
+    const thisMonthRev = thisMonthRevAgg[0]?.total || 0;
+    const prevMonthRev = prevMonthRevAgg[0]?.total || 0;
+
+    let revenueGrowth = 0;
+    if (prevMonthRev > 0) {
+      revenueGrowth = Number((((thisMonthRev - prevMonthRev) / prevMonthRev) * 100).toFixed(1));
+    } else if (thisMonthRev > 0) {
+      revenueGrowth = 100;
+    }
+
     return {
       totalUsers,
-      attendeeGrowth: 15.2, // mock growth percentage
+      attendeeGrowth,
       totalEvents,
       activeEvents,
       totalRevenue,
-      revenueGrowth: 20.1, // mock growth percentage
+      revenueGrowth,
       pendingApprovals,
       monthlyRevenue,
       pendingEvents: pendingEvents.map((e: any) => ({

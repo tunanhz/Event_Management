@@ -13,15 +13,16 @@ import {
 } from "@/components/moderation/moderation-api"
 import type { ModerationEvent, ModerationStatus } from "@/types"
 
-type ReviewQueueTab = Extract<ModerationStatus, "pending" | "waiting_deposit">
+type ReviewQueueTab = Extract<ModerationStatus, "pending" | "waiting_deposit" | "approved">
 
 const TABS: { id: ReviewQueueTab; label: string }[] = [
   { id: "pending", label: "Chờ duyệt" },
   { id: "waiting_deposit", label: "Chờ cọc" },
+  { id: "approved", label: "Đã duyệt" },
 ]
 
 type Buckets = Record<ReviewQueueTab, ModerationEvent[]>
-const EMPTY: Buckets = { pending: [], waiting_deposit: [] }
+const EMPTY: Buckets = { pending: [], waiting_deposit: [], approved: [] }
 
 /** Admin moderation queue — wired to /api/admin/events. */
 export default function ModerationPage() {
@@ -36,11 +37,12 @@ export default function ModerationPage() {
     setLoading(true)
     setError(null)
     try {
-      const [pending, waiting_deposit] = await Promise.all([
+      const [pending, waiting_deposit, approved] = await Promise.all([
         fetchModerationQueue("pending"),
         fetchModerationQueue("waiting_deposit"),
+        fetchModerationQueue("approved"),
       ])
-      setData({ pending, waiting_deposit })
+      setData({ pending, waiting_deposit, approved })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được danh sách kiểm duyệt")
     } finally {
@@ -79,8 +81,8 @@ export default function ModerationPage() {
     }
   }
 
-  const count = (status: ReviewQueueTab) => data[status].length
-  const rows = data[tab]
+  const count = (status: ReviewQueueTab) => data[status]?.length ?? 0
+  const rows = data[tab] ?? []
 
   return (
     <div className="space-y-6 animate-fade-up">

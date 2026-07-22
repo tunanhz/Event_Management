@@ -25,6 +25,10 @@ export class AdminEventController {
       categoryId: asOptionalString(req.query.categoryId),
       creatorId: asOptionalString(req.query.creatorId),
       search: asOptionalString(req.query.search),
+      privacy: asOptionalString(req.query.privacy),
+      timeStatus: asOptionalString(req.query.timeStatus),
+      fromDate: asOptionalString(req.query.fromDate),
+      toDate: asOptionalString(req.query.toDate),
     });
     res.json(ApiResponse.ok(result.data, 'Lấy danh sách sự kiện thành công', result.pagination));
   });

@@ -34,6 +34,7 @@ router.put('/events/:id/permits', organizerController.configurePermits); // bulk
 // ─── Deposit & settlement (quotation workflow) ────────────────────────
 router.post('/events/:id/pay-deposit', organizerController.payDeposit);
 router.post('/events/:id/pay-remaining', organizerController.payRemaining);
+router.post('/events/:id/cancel', organizerController.cancelEvent);
 
 // ─── Attendee tracker / orders ("Đơn hàng") ───────────────────────────
 router.get('/events/:id/registrations', organizerController.listEventRegistrations);

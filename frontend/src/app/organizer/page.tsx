@@ -12,6 +12,7 @@ import styles from "./my-events.module.css"
 
 const TABS = [
   { id: "upcoming", label: "Sắp tới" },
+  { id: "ongoing", label: "Đang diễn ra" },
   { id: "past", label: "Đã qua" },
   { id: "pending", label: "Chờ duyệt" },
   { id: "waiting_deposit", label: "Chờ cọc" },

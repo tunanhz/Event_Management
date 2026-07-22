@@ -14,6 +14,7 @@ export interface EventQuery extends PaginationQuery {
   excludeId?: string;
   dateFrom?: Date;
   dateTo?: Date;
+  includePast?: boolean;
 }
 
 export interface EventSearchQuery extends PaginationQuery {
@@ -25,6 +26,7 @@ export interface EventSearchQuery extends PaginationQuery {
   isFree?: boolean;
   dateFrom?: Date;
   dateTo?: Date;
+  includePast?: boolean;
 }
 
 // Organizer-private wizard fields must never leave the public API surface
@@ -50,6 +52,7 @@ export class EventRepository {
       excludeId,
       dateFrom,
       dateTo,
+      includePast,
     } = query;
     const filter: Record<string, any> = {};
 
@@ -68,6 +71,19 @@ export class EventRepository {
       filter.date = {};
       if (dateFrom) filter.date.$gte = dateFrom;
       if (dateTo) filter.date.$lte = dateTo;
+    }
+
+    // By default for public browsing, exclude events whose start date/date is in the past (only upcoming events)
+    if (!includePast && !dateFrom) {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { startDate: { $gte: startOfToday } },
+          { startDate: { $exists: false }, date: { $gte: startOfToday } },
+        ],
+      });
     }
 
     const skip = (page - 1) * limit;
@@ -112,6 +128,7 @@ export class EventRepository {
       isFree,
       dateFrom,
       dateTo,
+      includePast,
     } = query;
     const filter: Record<string, any> = {};
 
@@ -126,6 +143,17 @@ export class EventRepository {
       filter.date = {};
       if (dateFrom) filter.date.$gte = dateFrom;
       if (dateTo) filter.date.$lte = dateTo;
+    }
+    if (!includePast && !dateFrom) {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { startDate: { $gte: startOfToday } },
+          { startDate: { $exists: false }, date: { $gte: startOfToday } },
+        ],
+      });
     }
     if (q) {
       const regex = { $regex: q, $options: 'i' };
@@ -173,12 +201,19 @@ export class EventRepository {
   }
 
   // "You might also like" rail: other published events in the same category,
-  // soonest first, capped to a small carousel-sized page.
+  // soonest first, capped to a small carousel-sized page. Excludes ongoing and past events.
   async findRelated(event: IEvent, limit = 4): Promise<IEvent[]> {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
     return Event.find({
       _id: { $ne: event._id },
       status: 'published',
       categorySlug: event.categorySlug,
+      $or: [
+        { startDate: { $gte: startOfToday } },
+        { startDate: { $exists: false }, date: { $gte: startOfToday } },
+      ],
     })
       .select(PUBLIC_EVENT_EXCLUDE)
       .sort({ date: 1 })
