@@ -8,6 +8,8 @@ export interface EventItem {
   image: string;
   category: string;
   isFeatured?: boolean;
+  /** Computed by the data layer so render functions stay deterministic. */
+  isPast?: boolean;
 }
 
 export interface CategoryItem {

@@ -14,21 +14,7 @@ export default function EventDetailHero({ event, extraDates }: EventDetailHeroPr
   const [venue, ...rest] = event.location.split(',');
   const address = rest.join(',').trim();
 
-  // Check if event is in the past
-  let isPast = false;
-  if (event.date) {
-    // Parse formatted string "dd/mm/yyyy" or ISO string
-    const parts = event.date.split('/');
-    let d: Date | null = null;
-    if (parts.length === 3) {
-      d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10), 23, 59, 59);
-    } else {
-      d = new Date(event.date);
-    }
-    if (d && !Number.isNaN(d.getTime())) {
-      isPast = d.getTime() < Date.now();
-    }
-  }
+  const isPast = event.isPast ?? false;
 
   return (
     <section className={styles.hero}>
