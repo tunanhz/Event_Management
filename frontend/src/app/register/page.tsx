@@ -61,6 +61,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [otpLoading, setOtpLoading] = useState(false)
 
+  // Email already exists banner state
+  const [emailAlreadyExists, setEmailAlreadyExists] = useState(false)
+
   // Touch states for inline validation
   const [phoneTouched, setPhoneTouched] = useState(false)
   const [passwordTouched, setPasswordTouched] = useState(false)
@@ -104,6 +107,7 @@ export default function RegisterPage() {
   const handleSendOTP = async () => {
     if (!email) {
       setError("Vui lòng điền địa chỉ email trước khi nhận OTP")
+      document.getElementById("email")?.focus()
       return
     }
 
@@ -111,6 +115,7 @@ export default function RegisterPage() {
       setOtpLoading(true)
       setError("")
       setSuccessMsg("")
+      setEmailAlreadyExists(false)
 
       const res = await clientApi.post<{ success: boolean; message: string }>("/users/otp/send", { email })
 
@@ -120,7 +125,13 @@ export default function RegisterPage() {
         setSuccessMsg("Mã OTP đã được gửi! Vui lòng kiểm tra hộp thư email của bạn (bao gồm cả mục Spam).")
       }
     } catch (err: any) {
-      setError(err.message || "Gửi OTP thất bại. Vui lòng kiểm tra lại email.")
+      // Detect email-already-registered error (409)
+      const msg: string = err.message || ""
+      if (msg.includes("đã được đăng ký") || msg.toLowerCase().includes("already registered")) {
+        setEmailAlreadyExists(true)
+      } else {
+        setError(msg || "Gửi OTP thất bại. Vui lòng kiểm tra lại email.")
+      }
     } finally {
       setOtpLoading(false)
     }
@@ -319,8 +330,15 @@ export default function RegisterPage() {
                       type="email"
                       required
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full rounded-xl border border-border bg-muted py-2.5 pl-10 pr-3 text-foreground placeholder-slate-400 focus:border-cyan-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500/20 sm:text-sm transition-all"
+                      onChange={(e) => {
+                        setEmail(e.target.value)
+                        if (emailAlreadyExists) setEmailAlreadyExists(false)
+                      }}
+                      className={`block w-full rounded-xl border py-2.5 pl-10 pr-3 text-foreground placeholder-slate-400 focus:outline-none focus:ring-2 sm:text-sm transition-all bg-muted focus:bg-card ${
+                        emailAlreadyExists
+                          ? "border-amber-400 focus:border-amber-500 focus:ring-amber-500/20"
+                          : "border-border focus:border-cyan-500 focus:ring-cyan-500/20"
+                      }`}
                       placeholder="name@example.com"
                     />
                   </div>
@@ -333,6 +351,23 @@ export default function RegisterPage() {
                     {otpLoading ? "Đang gửi..." : countdown > 0 ? `${countdown}s` : "Gửi OTP"}
                   </button>
                 </div>
+
+                {/* Email already exists warning */}
+                {emailAlreadyExists && (
+                  <div
+                    role="alert"
+                    className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:border-amber-800/50 dark:text-amber-300"
+                  >
+                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-500" />
+                    <span>
+                      Email này đã được đăng ký.{" "}
+                      <Link href="/login" className="font-bold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-200">
+                        Đăng nhập ngay
+                      </Link>
+                      {" "}hoặc dùng email khác.
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* OTP Code Input */}
