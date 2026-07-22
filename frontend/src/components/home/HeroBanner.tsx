@@ -79,7 +79,6 @@ export default function HeroBanner({ banners }: { banners: HeroBannerItem[] }) {
                   <div className={styles.overlay} />
                   <div className={styles.content}>
                     <h2 className={styles.title}>{banner.title}</h2>
-                    <p className={styles.subtitle}>{banner.subtitle}</p>
                     <span className={styles.ctaButton}>
                       {banner.cta}
                     </span>

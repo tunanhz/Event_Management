@@ -50,6 +50,12 @@ export class RegistrationService {
     if (!event || event.status !== 'published') {
       throw new AppError('Sự kiện không tồn tại hoặc chưa mở bán', 404);
     }
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDate = event.endDate || event.startDate || event.date;
+    if (eventDate && new Date(eventDate) < startOfToday) {
+      throw new AppError('Sự kiện đã kết thúc, không thể đăng ký mua vé nữa', 400);
+    }
 
     const ticket = await this.registrationRepository.findTicketById(ticketId);
     if (!ticket || ticket.eventId.toString() !== eventId) {
@@ -58,7 +64,6 @@ export class RegistrationService {
     if (ticket.status !== 'ACTIVE') {
       throw new AppError('Loại vé này hiện không mở bán', 400);
     }
-    const now = new Date();
     if (ticket.saleStart && now < ticket.saleStart) {
       throw new AppError('Chưa đến thời gian mở bán vé', 400);
     }

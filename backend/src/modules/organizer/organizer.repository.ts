@@ -216,12 +216,32 @@ export class OrganizerRepository {
   }
 
   /**
-   * Mark the final (post-event) payment as paid.
+   * Mark the final payment as paid and update finalPaymentAmount if needed.
    */
-  async payRemaining(id: string): Promise<IEvent | null> {
+  async payRemaining(id: string, amount?: number): Promise<IEvent | null> {
+    const updateObj: Record<string, any> = { finalPaymentStatus: 'PAID' };
+    if (typeof amount === 'number' && amount > 0) {
+      updateObj.finalPaymentAmount = amount;
+    }
     return Event.findOneAndUpdate(
-      { _id: id, finalPaymentStatus: 'UNPAID' },
-      { $set: { finalPaymentStatus: 'PAID' } },
+      { _id: id },
+      { $set: updateObj },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  /**
+   * Cancel an event by organizer.
+   */
+  async cancelEvent(id: string, reason: string): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      { _id: id },
+      {
+        $set: {
+          status: 'cancelled',
+          rejectionReason: reason,
+        },
+      },
       { new: true, runValidators: true }
     ).lean();
   }

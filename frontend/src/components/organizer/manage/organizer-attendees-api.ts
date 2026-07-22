@@ -39,6 +39,14 @@ function toDisplayStatus(row: ServerAttendeeRow): AttendeeStatus {
   return "cancelled"
 }
 
+function formatTimeSafe(iso?: string): string | undefined {
+  if (!iso) return undefined
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return undefined
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 function toAttendee(row: ServerAttendeeRow): EventAttendee {
   return {
     id: row.registrationId,
@@ -50,12 +58,7 @@ function toAttendee(row: ServerAttendeeRow): EventAttendee {
     quantity: row.quantity,
     purchasedAt: row.registerDate,
     status: toDisplayStatus(row),
-    checkedInAt: row.checkInTime
-      ? new Date(row.checkInTime).toLocaleTimeString("vi-VN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : undefined,
+    checkedInAt: formatTimeSafe(row.checkInTime),
   }
 }
 

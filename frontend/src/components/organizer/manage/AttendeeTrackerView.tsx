@@ -33,10 +33,17 @@ interface AttendeeTrackerViewProps {
   attendees: EventAttendee[]
 }
 
+function formatDateSafe(iso?: string): string {
+  if (!iso) return "—"
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return "—"
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+}
+
 /**
  * "Attendee Tracker" — participant matrix for one event: search, check-in
- * status filter and CSV export. Mock data; manual check-in stays on the staff
- * station, this view is read-only for the organizer.
+ * status filter and CSV export.
  */
 export function AttendeeTrackerView({ eventId, eventTitle, attendees }: AttendeeTrackerViewProps) {
   const [query, setQuery] = useState("")
@@ -74,7 +81,7 @@ export function AttendeeTrackerView({ eventId, eventTitle, attendees }: Attendee
   }
 
   return (
-    <div>
+    <div suppressHydrationWarning>
       <h1 className={tableStyles.pageHeading}>Người tham dự</h1>
 
       {/* Summary chips */}
@@ -156,13 +163,7 @@ export function AttendeeTrackerView({ eventId, eventTitle, attendees }: Attendee
                   <td>{a.orderCode}</td>
                   <td>{a.ticketType}</td>
                   <td>{a.quantity}</td>
-                  <td>
-                    {new Date(a.purchasedAt).toLocaleDateString("vi-VN", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
-                  </td>
+                  <td>{formatDateSafe(a.purchasedAt)}</td>
                   <td>
                     <span className={cn(styles.status, STATUS_CLASS[a.status])}>
                       {ATTENDEE_STATUS_LABELS[a.status]}

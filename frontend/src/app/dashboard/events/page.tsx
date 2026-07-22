@@ -40,12 +40,18 @@ const REVIEW_OPTIONS: { value: ReviewStatus | ""; label: string }[] = [
   { value: "REJECTED", label: "Từ chối" },
 ]
 
-const STATUS_OPTIONS: { value: LifecycleStatus | ""; label: string }[] = [
-  { value: "", label: "Tất cả vòng đời" },
-  { value: "draft", label: "Nháp" },
-  { value: "published", label: "Công khai" },
+const TIME_STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "Tất cả mốc thời gian" },
+  { value: "upcoming", label: "Sắp tới" },
+  { value: "ongoing", label: "Đang diễn ra" },
+  { value: "completed", label: "Đã qua" },
   { value: "cancelled", label: "Đã hủy" },
-  { value: "completed", label: "Hoàn tất" },
+]
+
+const PRIVACY_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "Tất cả loại" },
+  { value: "public", label: "Công khai" },
+  { value: "private", label: "Riêng tư" },
 ]
 
 const REVIEW_LABEL: Record<ReviewStatus, string> = {
@@ -139,18 +145,25 @@ function reviewBadge(reviewStatus: ReviewStatus): "secondary" | "success" | "war
   return "secondary"
 }
 
-function statusLabel(event: AdminEvent): string {
-  if (event.privacy === "private") return "Riêng tư"
-  if (event.status === "completed") return "Đã qua"
-  if (event.status === "cancelled") return "Đã hủy"
-  return "Công khai"
-}
+function getEventTimeStatus(event: AdminEvent): { label: string; className: string } {
+  if (event.status === "cancelled") {
+    return { label: "Đã hủy", className: "text-rose-600 dark:text-rose-400 font-semibold" }
+  }
+  if (event.status === "completed") {
+    return { label: "Đã qua", className: "text-slate-500 dark:text-slate-400 font-medium" }
+  }
 
-function statusClass(event: AdminEvent): string {
-  if (event.privacy === "private") return "text-amber-600"
-  if (event.status === "completed") return "text-cyan-600"
-  if (event.status === "cancelled") return "text-rose-600"
-  return "text-emerald-600"
+  const now = new Date()
+  const start = event.startDate ? new Date(event.startDate) : (event.date ? new Date(event.date) : null)
+  const end = event.endDate ? new Date(event.endDate) : start
+
+  if (end && end.getTime() < now.getTime()) {
+    return { label: "Đã qua", className: "text-slate-500 dark:text-slate-400 font-medium" }
+  }
+  if (start && start.getTime() <= now.getTime() && end && end.getTime() >= now.getTime()) {
+    return { label: "Đang diễn ra", className: "text-amber-500 font-bold" }
+  }
+  return { label: "Sắp tới", className: "text-emerald-600 dark:text-emerald-400 font-semibold" }
 }
 
 /* ───────── Modal component ───────── */
@@ -184,6 +197,10 @@ export default function AdminEventsPage() {
   const [submittedSearch, setSubmittedSearch] = useState("")
   const [status, setStatus] = useState<LifecycleStatus | "">("")
   const [reviewStatus, setReviewStatus] = useState<ReviewStatus | "">("")
+  const [timeStatus, setTimeStatus] = useState<"upcoming" | "ongoing" | "completed" | "cancelled" | "">("")
+  const [privacy, setPrivacy] = useState<"public" | "private" | "">("")
+  const [fromDate, setFromDate] = useState("")
+  const [toDate, setToDate] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -205,6 +222,10 @@ export default function AdminEventsPage() {
         search: submittedSearch,
         status,
         reviewStatus,
+        timeStatus,
+        privacy,
+        fromDate,
+        toDate,
       })
       setEvents(result.events)
       setMeta(result.meta)
@@ -224,7 +245,17 @@ export default function AdminEventsPage() {
 
   useEffect(() => {
     let cancelled = false
-    fetchAdminEvents({ page, limit: 10, search: submittedSearch, status, reviewStatus })
+    fetchAdminEvents({
+      page,
+      limit: 10,
+      search: submittedSearch,
+      status,
+      reviewStatus,
+      timeStatus,
+      privacy,
+      fromDate,
+      toDate,
+    })
       .then((eventResult) => {
         if (cancelled) return
         setEvents(eventResult.events)
@@ -241,7 +272,20 @@ export default function AdminEventsPage() {
     return () => {
       cancelled = true
     }
-  }, [page, submittedSearch, status, reviewStatus])
+  }, [page, submittedSearch, status, reviewStatus, timeStatus, privacy, fromDate, toDate])
+
+  const toggleFeatured = async (event: AdminEvent) => {
+    setSaving(true)
+    setError(null)
+    try {
+      await updateAdminEvent(event._id, { isFeatured: !event.isFeatured })
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Cập nhật Nổi bật thất bại")
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const submitSearch = (event: React.FormEvent) => {
     event.preventDefault()
@@ -366,7 +410,7 @@ export default function AdminEventsPage() {
         <div>
           <h2 className="text-2xl font-bold text-foreground">Quản trị sự kiện</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Xem toàn bộ sự kiện, theo dõi trạng thái, hủy hoặc xóa khi cần.
+            Xem toàn bộ sự kiện, theo dõi trạng thái và phân loại sự kiện.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -390,8 +434,8 @@ export default function AdminEventsPage() {
       )}
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
-        <div className="border-b border-border p-4">
-          <div className="grid gap-3 xl:grid-cols-[1fr_180px_200px]">
+        <div className="border-b border-border p-4 space-y-3">
+          <div className="grid gap-3 xl:grid-cols-[1fr_160px_150px_160px]">
             <form onSubmit={submitSearch} className="flex gap-2" role="search">
               <div className="relative min-w-0 flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -405,14 +449,28 @@ export default function AdminEventsPage() {
               <Button type="submit">Tìm</Button>
             </form>
             <select
-              value={status}
+              value={timeStatus}
               onChange={(event) => {
-                setStatus(event.target.value as LifecycleStatus | "")
+                setTimeStatus(event.target.value as any)
                 setPage(1)
               }}
               className={inputClass}
             >
-              {STATUS_OPTIONS.map((item) => (
+              {TIME_STATUS_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={privacy}
+              onChange={(event) => {
+                setPrivacy(event.target.value as any)
+                setPage(1)
+              }}
+              className={inputClass}
+            >
+              {PRIVACY_OPTIONS.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>
@@ -433,6 +491,52 @@ export default function AdminEventsPage() {
               ))}
             </select>
           </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground pt-1">
+            <span className="font-semibold text-foreground">Lọc theo thời gian tổ chức:</span>
+            <div className="flex items-center gap-1.5">
+              <span>Từ:</span>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => {
+                  setFromDate(e.target.value)
+                  setPage(1)
+                }}
+                className="h-9 rounded-lg border border-border bg-muted px-2 text-foreground outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span>Đến:</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => {
+                  setToDate(e.target.value)
+                  setPage(1)
+                }}
+                className="h-9 rounded-lg border border-border bg-muted px-2 text-foreground outline-none focus:border-cyan-500"
+              />
+            </div>
+            {(fromDate || toDate || timeStatus || privacy || reviewStatus || submittedSearch) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFromDate("")
+                  setToDate("")
+                  setTimeStatus("")
+                  setPrivacy("")
+                  setReviewStatus("")
+                  setSearch("")
+                  setSubmittedSearch("")
+                  setPage(1)
+                }}
+                className="ml-auto text-cyan-600 hover:underline cursor-pointer"
+              >
+                Xóa bộ lọc
+              </button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -449,60 +553,83 @@ export default function AdminEventsPage() {
                   <th className="px-4 py-3 font-bold">Organizer</th>
                   <th className="px-4 py-3 font-bold">Lịch</th>
                   <th className="px-4 py-3 font-bold">Trạng thái</th>
+                  <th className="px-4 py-3 font-bold">Loại sự kiện</th>
                   <th className="px-4 py-3 font-bold">Xét duyệt</th>
                   <th className="px-4 py-3 font-bold">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {events.map((event) => (
-                  <tr key={event._id} className="align-top">
-                    <td className="px-4 py-4">
-                      <div className="font-semibold text-foreground">{event.title}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">{refLabel(event.categoryId, "name") || event.category || "Chưa phân loại"}</div>
-                    </td>
-                    <td className="px-4 py-4 text-muted-foreground">
-                      <div>{event.organizer || refLabel(event.creatorId, "fullName") || "—"}</div>
-                      <div className="mt-1 text-xs">{refLabel(event.creatorId, "email")}</div>
-                    </td>
-                    <td className="px-4 py-4 text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <CalendarClock className="h-4 w-4" />
-                        {formatDate(event.startDate ?? event.date)}
-                      </div>
-                      <div className="mt-1 text-xs">Sức chứa: {event.capacity ?? event.maxAttendees ?? "—"}</div>
-                    </td>
-                    <td className={cn("px-4 py-4 font-semibold", statusClass(event))}>
-                      {statusLabel(event)}
-                    </td>
-                    <td className="px-4 py-4">
-                      <Badge variant={reviewBadge(event.reviewStatus)}>
-                        {REVIEW_LABEL[event.reviewStatus]}
-                      </Badge>
-                      {event.rejectionReason && (
-                        <p className="mt-1 max-w-56 text-xs text-rose-600 dark:text-rose-400">{event.rejectionReason}</p>
-                      )}
-                    </td>
+                {events.map((event) => {
+                  const timeStatus = getEventTimeStatus(event)
+                  const isPrivate = event.privacy === "private"
+                  return (
+                    <tr key={event._id} className="align-top">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground">{event.title}</span>
+                          {event.isFeatured && (
+                            <Badge variant="warning" className="text-[10px] px-1.5 py-0 bg-amber-500/15 text-amber-600 border-amber-300">
+                              ⭐ Nổi bật
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">{refLabel(event.categoryId, "name") || event.category || "Chưa phân loại"}</div>
+                      </td>
+                      <td className="px-4 py-4 text-muted-foreground">
+                        <div>{event.organizer || refLabel(event.creatorId, "fullName") || "—"}</div>
+                        <div className="mt-1 text-xs">{refLabel(event.creatorId, "email")}</div>
+                      </td>
+                      <td className="px-4 py-4 text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <CalendarClock className="h-4 w-4" />
+                          {formatDate(event.startDate ?? event.date)}
+                        </div>
+                        <div className="mt-1 text-xs">Sức chứa: {event.capacity ?? event.maxAttendees ?? "—"}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={timeStatus.className}>{timeStatus.label}</span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <Badge
+                          variant={isPrivate ? "secondary" : "outline"}
+                          className={isPrivate ? "bg-amber-500/10 text-amber-600 border-amber-300 dark:bg-amber-500/20 dark:text-amber-400" : "bg-cyan-500/10 text-cyan-600 border-cyan-300 dark:bg-cyan-500/20 dark:text-cyan-400"}
+                        >
+                          {isPrivate ? "Riêng tư" : "Công khai"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-4">
+                        <Badge variant={reviewBadge(event.reviewStatus)}>
+                          {REVIEW_LABEL[event.reviewStatus]}
+                        </Badge>
+                        {event.rejectionReason && (
+                          <p className="mt-1 max-w-56 text-xs text-rose-600 dark:text-rose-400">{event.rejectionReason}</p>
+                        )}
+                      </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={event.isFeatured ? "default" : "outline"}
+                          className={event.isFeatured ? "bg-amber-500 hover:bg-amber-600 text-white" : ""}
+                          onClick={() => void toggleFeatured(event)}
+                          disabled={saving}
+                          title="Bật/Tắt hiển thị ở mục Sự kiện nổi bật ngoài Trang chủ"
+                        >
+                          {event.isFeatured ? "★ Nổi bật" : "☆ Gắn Nổi bật"}
+                        </Button>
                         <Button asChild size="sm" variant="outline">
                           <Link href={`/dashboard/moderation/${event._id}`}>
                             <Eye className="mr-1.5 h-3.5 w-3.5" />
                             Chi tiết
                           </Link>
                         </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => void cancelEvent(event)}>
-                          <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
-                          Hủy
-                        </Button>
-                        <Button type="button" size="sm" variant="destructive" onClick={() => void removeEvent(event)}>
-                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                          Xóa
-                        </Button>
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                )
+              })}
+            </tbody>
             </table>
           </div>
         )}

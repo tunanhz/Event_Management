@@ -1444,22 +1444,42 @@ export class OrganizerService {
   }
 
   /**
-   * Organizer pays remaining balance after event ends.
-   * Remaining = 80% serviceCost + additionalCost.
+   * Organizer pays remaining balance anytime after deposit is paid.
+   * Remaining = 80% serviceCost + additionalCost (or serviceCost - depositAmount).
    */
   async payRemaining(eventId: string, actor: { id: string; role: string }): Promise<IEvent> {
     const event = await this.getOwnedEvent(eventId, actor);
-    if (event.finalPaymentAmount <= 0) {
-      throw new AppError('Không có khoản thanh toán nào còn lại', 400);
-    }
     if (event.finalPaymentStatus === 'PAID') {
       throw new AppError('Khoản thanh toán đã được thanh toán trước đó', 400);
     }
-    const updated = await this.organizerRepository.payRemaining(eventId);
+    
+    let remaining = event.finalPaymentAmount;
+    if (!remaining || remaining <= 0) {
+      const serviceCost = event.serviceCost || 0;
+      const depositAmount = event.depositAmount || 0;
+      const additionalCost = event.additionalCost || 0;
+      remaining = Math.max(0, serviceCost - depositAmount + additionalCost);
+    }
+
+    const updated = await this.organizerRepository.payRemaining(eventId, remaining);
     if (!updated) {
       throw new AppError('Thanh toán thất bại — vui lòng thử lại', 409);
     }
     return updated;
   }
 
+  /**
+   * Organizer cancels their event.
+   */
+  async cancelEvent(eventId: string, userId: string, reason: string): Promise<IEvent> {
+    const event = await this.getOwnedEvent(eventId, { id: userId, role: 'ORGANIZER' });
+    if (event.status === 'cancelled') {
+      throw new AppError('Sự kiện đã bị hủy trước đó', 400);
+    }
+    const updated = await this.organizerRepository.cancelEvent(eventId, reason);
+    if (!updated) {
+      throw new AppError('Không thể hủy sự kiện', 409);
+    }
+    return updated;
+  }
 }

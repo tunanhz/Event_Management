@@ -62,8 +62,18 @@ export function StaffAssignmentView() {
   useEffect(() => {
     fetchAdminEvents({ status: "published", limit: 100 })
       .then(({ events: ev }) => {
-        setEvents(ev)
-        if (ev.length > 0) setSelectedEventId(ev[0]._id)
+        const now = new Date()
+        now.setHours(0, 0, 0, 0)
+        
+        const activeEvents = ev.filter((event) => {
+          const dateStr = event.endDate || event.startDate || event.date
+          if (!dateStr) return true
+          const eventDate = new Date(dateStr)
+          return eventDate >= now
+        })
+
+        setEvents(activeEvents)
+        if (activeEvents.length > 0) setSelectedEventId(activeEvents[0]._id)
       })
       .catch(console.error)
       .finally(() => setEventsLoading(false))

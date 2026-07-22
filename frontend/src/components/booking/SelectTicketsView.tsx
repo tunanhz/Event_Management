@@ -64,8 +64,22 @@ export function SelectTicketsView({ event, tickets, shows }: Props) {
   const total = totalAmount(lines);
   const count = totalQuantity(quantities);
 
+  let isPast = false;
+  if (event.date) {
+    const parts = event.date.split('/');
+    let d: Date | null = null;
+    if (parts.length === 3) {
+      d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10), 23, 59, 59);
+    } else {
+      d = new Date(event.date);
+    }
+    if (d && !Number.isNaN(d.getTime())) {
+      isPast = d.getTime() < Date.now();
+    }
+  }
+
   const proceed = () => {
-    if (count === 0) return;
+    if (count === 0 || isPast) return;
     router.push(`/su-kien/${event.id}/thanh-toan?${encodeSelection(quantities)}`);
   };
 
@@ -82,6 +96,12 @@ export function SelectTicketsView({ event, tickets, shows }: Props) {
             <h1 className={styles.stepTitle}>Chọn vé</h1>
             <span className={styles.topbarSpacer} aria-hidden="true" />
           </header>
+
+          {isPast && (
+            <div role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-center text-sm font-bold text-rose-500 mb-5">
+              🔴 Sự kiện này đã diễn ra/kết thúc. Bạn không thể mua vé cho sự kiện này nữa.
+            </div>
+          )}
 
           {hasMultipleShows && (
             <div className={styles.showPicker}>
@@ -123,7 +143,7 @@ export function SelectTicketsView({ event, tickets, shows }: Props) {
                     type="button"
                     className={styles.stepBtn}
                     onClick={() => change(t.id, -1)}
-                    disabled={(quantities[t.id] ?? 0) === 0}
+                    disabled={isPast || (quantities[t.id] ?? 0) === 0}
                     aria-label={`Giảm số lượng ${t.name}`}
                   >
                     –
@@ -133,7 +153,7 @@ export function SelectTicketsView({ event, tickets, shows }: Props) {
                     type="button"
                     className={`${styles.stepBtn} ${styles.stepBtnPlus}`}
                     onClick={() => change(t.id, 1)}
-                    disabled={(quantities[t.id] ?? 0) >= t.maxPerOrder}
+                    disabled={isPast || (quantities[t.id] ?? 0) >= t.maxPerOrder}
                     aria-label={`Tăng số lượng ${t.name}`}
                   >
                     +
@@ -168,7 +188,11 @@ export function SelectTicketsView({ event, tickets, shows }: Props) {
 
           {/* Action button — pinned to the bottom of the summary card */}
           <div className={styles.sidebarCta}>
-            {count === 0 ? (
+            {isPast ? (
+              <button type="button" className={styles.cta} disabled>
+                Sự kiện đã kết thúc
+              </button>
+            ) : count === 0 ? (
               <button type="button" className={styles.cta} disabled>
                 Vui lòng chọn vé
               </button>

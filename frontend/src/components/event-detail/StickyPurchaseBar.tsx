@@ -16,6 +16,20 @@ export default function StickyPurchaseBar({ event }: StickyPurchaseBarProps) {
 
   const [venue] = event.location.split(',');
 
+  let isPast = false;
+  if (event.date) {
+    const parts = event.date.split('/');
+    let d: Date | null = null;
+    if (parts.length === 3) {
+      d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10), 23, 59, 59);
+    } else {
+      d = new Date(event.date);
+    }
+    if (d && !Number.isNaN(d.getTime())) {
+      isPast = d.getTime() < Date.now();
+    }
+  }
+
   return (
     <div className={`${styles.bar} ${visible ? styles.visible : ''}`} aria-hidden={!visible}>
       <div className={styles.inner}>
@@ -29,9 +43,15 @@ export default function StickyPurchaseBar({ event }: StickyPurchaseBarProps) {
           <span>{venue}</span>
         </div>
 
-        <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.buyBtn} tabIndex={visible ? 0 : -1}>
-          Mua vé ngay
-        </Link>
+        {!isPast ? (
+          <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.buyBtn} tabIndex={visible ? 0 : -1}>
+            Mua vé ngay
+          </Link>
+        ) : (
+          <button disabled className={`${styles.buyBtn} opacity-50 cursor-not-allowed pointer-events-none bg-slate-700`}>
+            Sự kiện đã kết thúc
+          </button>
+        )}
       </div>
     </div>
   );
