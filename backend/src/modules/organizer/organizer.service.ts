@@ -1287,7 +1287,7 @@ export class OrganizerService {
     return this.getOwnedReport(reportId, actor);
   }
 
-  /** Map registrations to AttendeeRow with their SUCCESS check-in joined. */
+  /** Map registrations to AttendeeRow with their canonical SUCCESS audit row joined. */
   private async joinCheckIns(registrations: any[]): Promise<AttendeeRow[]> {
     const ids = registrations.map((r) => String(r._id));
     const checkins = await this.organizerRepository.findSuccessCheckInsByRegistrationIds(ids);
@@ -1310,8 +1310,7 @@ export class OrganizerService {
         registerDate: r.registerDate,
         status: r.status,
         checkedIn: !!checkin,
-        checkInTime: checkin?.checkInTime,
-        checkInNote: checkin?.note,
+        checkInTime: checkin?.checkedInAt,
       };
     });
   }

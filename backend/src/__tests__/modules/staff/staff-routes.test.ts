@@ -11,11 +11,90 @@ import { Ticket } from '../../../modules/organizer/ticket.model';
 import { Registration } from '../../../modules/registration/registration.model';
 import { StaffAssignment } from '../../../modules/staff/assignment.model';
 import { IncidentReport } from '../../../modules/staff/incident.model';
+import { CheckInLog } from '../../../modules/staff/checkin-log.model';
+import { StaffRepository } from '../../../modules/staff/staff.repository';
 import mongoose from 'mongoose';
+
+async function createCheckInEvent(creatorId?: string) {
+  const eventId = new mongoose.Types.ObjectId();
+  await Event.create({
+    _id: eventId,
+    title: 'Check-in Test Event',
+    description: 'Test',
+    contentBlocks: [],
+    date: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    sessions: [],
+    location: 'Test Location',
+    city: 'hcm',
+    maxAttendees: 100,
+    organizer: 'Test Organizer',
+    category: 'Test',
+    categorySlug: 'test',
+    status: 'published',
+    isFree: false,
+    isFeatured: false,
+    isTrending: false,
+    priceFrom: 100000,
+    reviewStatus: 'PUBLISHED',
+    serviceCost: 0,
+    depositAmount: 0,
+    depositStatus: 'UNPAID',
+    additionalCost: 0,
+    finalPaymentAmount: 0,
+    finalPaymentStatus: 'UNPAID',
+    privacy: 'public',
+    logisticsServices: [],
+    shows: [],
+    permitDocuments: [],
+    ...(creatorId ? { creatorId: new mongoose.Types.ObjectId(creatorId) } : {}),
+  });
+  return eventId;
+}
+
+async function createPaidRegistration(
+  eventId: mongoose.Types.ObjectId,
+  participantId: string,
+  ticketCode: string
+) {
+  const ticketId = new mongoose.Types.ObjectId();
+  await Ticket.create({
+    _id: ticketId,
+    eventId,
+    ticketName: 'General Admission',
+    price: 100000,
+    quantity: 50,
+    soldQuantity: 1,
+    minPerOrder: 1,
+    maxPerOrder: 10,
+    status: 'ACTIVE',
+  });
+  return Registration.create({
+    participantId: new mongoose.Types.ObjectId(participantId),
+    eventId,
+    ticketId,
+    quantity: 1,
+    unitPrice: 100000,
+    totalAmount: 100000,
+    registerDate: new Date(),
+    status: 'PAID',
+    ticketCode,
+  });
+}
+
+async function assignConfirmedStaff(eventId: mongoose.Types.ObjectId, staffId: string) {
+  return StaffAssignment.create({
+    eventId,
+    staffId: new mongoose.Types.ObjectId(staffId),
+    gate: 'Cổng A',
+    shift: '08:00 - 12:00',
+    responsibility: 'Soát vé',
+    status: 'confirmed',
+  });
+}
 
 describe('Staff Routes', () => {
   beforeAll(async () => {
-    await connectInMemoryDatabase();
+    await connectInMemoryDatabase({ replicaSet: true });
   });
 
   afterEach(async () => {
@@ -245,6 +324,179 @@ describe('Staff Routes', () => {
         .send({});
 
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('Check-in consistency and event isolation', () => {
+    it('should reject a manual check-in for a registration from another event', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const assignedEventId = await createCheckInEvent();
+      const otherEventId = await createCheckInEvent();
+      const foreignRegistration = await createPaidRegistration(
+        otherEventId,
+        participant.id,
+        'OTHER-EVENT-TICKET'
+      );
+      await assignConfirmedStaff(assignedEventId, staff.id);
+
+      const res = await request(app)
+        .post(
+          `/api/staff/events/${assignedEventId}/attendees/${foreignRegistration._id}/check-in`
+        )
+        .set('Cookie', staff.cookie);
+
+      expect(res.status).toBe(404);
+      const unchanged = await Registration.findById(foreignRegistration._id).lean();
+      expect(unchanged?.checkedIn).toBe(false);
+      expect(await CheckInLog.countDocuments()).toBe(0);
+    });
+
+    it('should expose a Staff check-in consistently to Staff, Admin and Organizer', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const organizer = await createAuthedUser('ORGANIZER');
+      const admin = await createAuthedUser('ADMIN');
+      const eventId = await createCheckInEvent(organizer.id);
+      const registration = await createPaidRegistration(
+        eventId,
+        participant.id,
+        'SYNC-CHECKIN-TICKET'
+      );
+      await assignConfirmedStaff(eventId, staff.id);
+
+      const checkIn = await request(app)
+        .post('/api/staff/check-in')
+        .set('Cookie', staff.cookie)
+        .send({ ticketCode: 'SYNC-CHECKIN-TICKET', eventId: eventId.toString(), gate: 'Cổng A' });
+
+      expect(checkIn.status).toBe(200);
+      expect(checkIn.body.data.result).toBe('success');
+      const updated = await Registration.findById(registration._id).lean();
+      expect(updated?.checkedIn).toBe(true);
+
+      const successLog = await CheckInLog.findOne({ registrationId: registration._id }).lean();
+      expect(successLog).toMatchObject({
+        result: 'success',
+        ticketCode: 'SYNC-CHECKIN-TICKET',
+      });
+      expect(String(successLog?.eventId)).toBe(String(eventId));
+      expect(String(successLog?.staffId)).toBe(staff.id);
+
+      const staffStats = await request(app)
+        .get(`/api/staff/events/${eventId}/checkin-stats`)
+        .set('Cookie', staff.cookie);
+      expect(staffStats.status).toBe(200);
+      expect(staffStats.body.data).toMatchObject({ total: 1, checkedIn: 1, remaining: 0 });
+
+      const adminHistory = await request(app)
+        .get(`/api/staff/events/${eventId}/checkin-history`)
+        .set('Cookie', admin.cookie);
+      expect(adminHistory.status).toBe(200);
+      expect(adminHistory.body.data).toHaveLength(1);
+      expect(adminHistory.body.data[0].result).toBe('success');
+
+      const organizerReport = await request(app)
+        .get(`/api/organizer/events/${eventId}/checkins`)
+        .set('Cookie', organizer.cookie);
+      expect(organizerReport.status).toBe(200);
+      expect(organizerReport.body.data.stats).toMatchObject({
+        paidTickets: 1,
+        checkedInTickets: 1,
+        rate: 100,
+      });
+    });
+
+    it('should accept only one of two simultaneous scans for the same ticket', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const eventId = await createCheckInEvent();
+      const registration = await createPaidRegistration(
+        eventId,
+        participant.id,
+        'CONCURRENT-CHECKIN-TICKET'
+      );
+      await assignConfirmedStaff(eventId, staff.id);
+
+      const sendScan = () =>
+        request(app)
+          .post('/api/staff/check-in')
+          .set('Cookie', staff.cookie)
+          .send({ ticketCode: 'CONCURRENT-CHECKIN-TICKET', eventId: eventId.toString() });
+      const responses = await Promise.all([sendScan(), sendScan()]);
+      const results = responses.map((response) => response.body.data.result).sort();
+
+      expect(responses.every((response) => response.status === 200)).toBe(true);
+      expect(results).toEqual(['duplicate', 'success']);
+      expect(
+        await CheckInLog.countDocuments({ registrationId: registration._id, result: 'success' })
+      ).toBe(1);
+    });
+
+    it('should roll back the registration update when writing the audit log fails', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const eventId = await createCheckInEvent();
+      const registration = await createPaidRegistration(
+        eventId,
+        participant.id,
+        'ROLLBACK-CHECKIN-TICKET'
+      );
+      await assignConfirmedStaff(eventId, staff.id);
+
+      const logFailure = jest
+        .spyOn(StaffRepository.prototype, 'createCheckInLog')
+        .mockRejectedValueOnce(new Error('forced audit failure'));
+
+      const res = await request(app)
+        .post('/api/staff/check-in')
+        .set('Cookie', staff.cookie)
+        .send({ ticketCode: 'ROLLBACK-CHECKIN-TICKET', eventId: eventId.toString() });
+      logFailure.mockRestore();
+
+      expect(res.status).toBe(500);
+      const unchanged = await Registration.findById(registration._id).lean();
+      expect(unchanged?.checkedIn).toBe(false);
+      expect(unchanged?.checkedInAt).toBeUndefined();
+      expect(await CheckInLog.countDocuments({ registrationId: registration._id })).toBe(0);
+    });
+
+    it('should safely fall back when local MongoDB does not support transactions', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const eventId = await createCheckInEvent();
+      const registration = await createPaidRegistration(
+        eventId,
+        participant.id,
+        'STANDALONE-MONGO-TICKET'
+      );
+      await assignConfirmedStaff(eventId, staff.id);
+
+      const unsupported = Object.assign(
+        new Error('Transaction numbers are only allowed on a replica set member or mongos'),
+        { code: 20 }
+      );
+      const fakeSession = {
+        withTransaction: jest.fn().mockRejectedValue(unsupported),
+        endSession: jest.fn().mockResolvedValue(undefined),
+      };
+      const sessionSpy = jest
+        .spyOn(mongoose, 'startSession')
+        .mockResolvedValueOnce(fakeSession as any);
+
+      const res = await request(app)
+        .post('/api/staff/check-in')
+        .set('Cookie', staff.cookie)
+        .send({ ticketCode: 'STANDALONE-MONGO-TICKET', eventId: eventId.toString() });
+      sessionSpy.mockRestore();
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.result).toBe('success');
+      expect(fakeSession.endSession).toHaveBeenCalledTimes(1);
+      expect((await Registration.findById(registration._id).lean())?.checkedIn).toBe(true);
+      expect(
+        await CheckInLog.countDocuments({ registrationId: registration._id, result: 'success' })
+      ).toBe(1);
     });
   });
 

@@ -39,7 +39,7 @@ router.post('/events/:id/cancel', organizerController.cancelEvent);
 // ─── Attendee tracker / orders ("Đơn hàng") ───────────────────────────
 router.get('/events/:id/registrations', organizerController.listEventRegistrations);
 
-// ─── Check-in attendance report (reads CheckIn written by staff flow) ──
+// ─── Check-in attendance report (reads canonical staff CheckInLog) ──
 router.get('/events/:id/checkins', organizerController.getEventCheckIns);
 
 // ─── Members — staff assigned by ADMIN, organizer reads ───────────────

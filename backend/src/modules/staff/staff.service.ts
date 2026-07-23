@@ -252,14 +252,19 @@ export class StaffService {
     }
 
     // Atomic check-in
-    const updated = await this.staffRepository.markCheckedIn(
-      (regAny._id as mongoose.Types.ObjectId).toString()
-    );
+    const registrationId = (regAny._id as mongoose.Types.ObjectId).toString();
+    const updated = await this.staffRepository.completeCheckIn({
+      registrationId,
+      eventId,
+      staffId,
+      ticketCode: code,
+      gate,
+    });
     if (!updated) {
       // Race condition — another scanner got it first
       await this.staffRepository.createCheckInLog({
         eventId, staffId, ticketCode: code,
-        registrationId: (regAny._id as mongoose.Types.ObjectId).toString(),
+        registrationId,
         result: 'duplicate', gate,
       });
       return {
@@ -269,12 +274,6 @@ export class StaffService {
         ticketName,
       };
     }
-
-    await this.staffRepository.createCheckInLog({
-      eventId, staffId, ticketCode: code,
-      registrationId: (updated._id as mongoose.Types.ObjectId).toString(),
-      result: 'success', gate,
-    });
 
     return {
       result: 'success',
@@ -312,19 +311,30 @@ export class StaffService {
   async manualCheckIn(registrationId: string, staffId: string, eventId: string): Promise<IRegistration> {
     this.assertValidObjectIds(registrationId, staffId, eventId);
 
-    const updated = await this.staffRepository.markCheckedIn(registrationId);
-    if (!updated) {
-      throw new AppError('Không thể check-in: vé đã được check-in hoặc không tồn tại', 400);
+    const registration = await this.staffRepository.findRegistrationByIdForEvent(
+      registrationId,
+      eventId
+    );
+    if (!registration) {
+      throw new AppError('Vé không tồn tại trong sự kiện này', 404);
+    }
+    if (registration.status !== 'PAID') {
+      throw new AppError('Không thể check-in: vé chưa thanh toán hoặc không còn hiệu lực', 400);
+    }
+    if (registration.checkedIn) {
+      throw new AppError('Vé đã được check-in trước đó', 409);
     }
 
-    await this.staffRepository.createCheckInLog({
-      eventId,
-      staffId,
-      ticketCode: updated.ticketCode ?? registrationId,
+    const updated = await this.staffRepository.completeCheckIn({
       registrationId,
-      result: 'success',
+      staffId,
+      eventId,
+      ticketCode: registration.ticketCode ?? registrationId,
       gate: 'Manual',
     });
+    if (!updated) {
+      throw new AppError('Vé vừa được check-in bởi nhân viên khác', 409);
+    }
 
     return updated;
   }
