@@ -217,6 +217,8 @@ export class OrganizerRepository {
 
   /**
    * Mark the final payment as paid and update finalPaymentAmount if needed.
+   * Guards against `finalPaymentStatus` already PAID so a racing VNPAY return-redirect
+   * and IPN callback (VNPAY fires both for the same order) can never double-process it.
    */
   async payRemaining(id: string, amount?: number): Promise<IEvent | null> {
     const updateObj: Record<string, any> = { finalPaymentStatus: 'PAID' };
@@ -224,7 +226,7 @@ export class OrganizerRepository {
       updateObj.finalPaymentAmount = amount;
     }
     return Event.findOneAndUpdate(
-      { _id: id },
+      { _id: id, finalPaymentStatus: { $ne: 'PAID' } },
       { $set: updateObj },
       { new: true, runValidators: true }
     ).lean();

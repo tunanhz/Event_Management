@@ -84,16 +84,19 @@ export default function MyEventsPage() {
     }
   }
 
+  // Both handlers below only fetch a VNPAY redirect URL and leave the SPA — the
+  // reviewStatus/depositStatus/finalPaymentStatus flip happens server-side once VNPAY
+  // confirms, and the organizer lands back on /organizer/vnpay-return afterwards. Don't
+  // clear the paying-id on success: the navigation away makes that moot, and keeping the
+  // button disabled avoids a double-click firing a second payment URL before redirect.
   const handlePayDeposit = async (id: string) => {
     setPayingDepositId(id)
     setError(null)
     try {
-      await payDeposit(id)
-      await reload()
-      setTab("upcoming") // once deposit is paid, reviewStatus becomes PUBLISHED and status becomes upcoming
+      const paymentUrl = await payDeposit(id)
+      window.location.href = paymentUrl
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Thanh toán cọc thất bại")
-    } finally {
+      setError(err instanceof Error ? err.message : "Không thể tạo liên kết thanh toán cọc")
       setPayingDepositId(null)
     }
   }
@@ -102,11 +105,10 @@ export default function MyEventsPage() {
     setPayingRemainingId(id)
     setError(null)
     try {
-      await payRemaining(id)
-      await reload()
+      const paymentUrl = await payRemaining(id)
+      window.location.href = paymentUrl
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Thanh toán nốt thất bại")
-    } finally {
+      setError(err instanceof Error ? err.message : "Không thể tạo liên kết thanh toán")
       setPayingRemainingId(null)
     }
   }
