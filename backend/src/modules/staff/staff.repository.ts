@@ -175,12 +175,130 @@ export class StaffRepository {
       .lean();
   }
 
-  /** Mark registration as checked-in atomically; returns null if already checked. */
-  async markCheckedIn(registrationId: string): Promise<IRegistration | null> {
-    return Registration.findOneAndUpdate(
-      { _id: registrationId, checkedIn: { $ne: true } },
-      { checkedIn: true, checkedInAt: new Date() },
+  /** Read a registration only inside the event currently operated by Staff. */
+  async findRegistrationByIdForEvent(
+    registrationId: string,
+    eventId: string
+  ): Promise<IRegistration | null> {
+    return Registration.findOne({
+      _id: new mongoose.Types.ObjectId(registrationId),
+      eventId: new mongoose.Types.ObjectId(eventId),
+    }).lean();
+  }
+
+  /**
+   * Atomically update the paid registration and append its canonical SUCCESS
+   * audit row. The event/status/duplicate guards are part of the update query,
+   * so a caller cannot check in a registration from another event.
+   */
+  async completeCheckIn(data: {
+    registrationId: string;
+    eventId: string;
+    staffId: string;
+    ticketCode: string;
+    gate?: string;
+  }): Promise<IRegistration | null> {
+    const session = await mongoose.startSession();
+    let updated: IRegistration | null = null;
+
+    try {
+      await session.withTransaction(async () => {
+        const checkedInAt = new Date();
+        updated = await Registration.findOneAndUpdate(
+          {
+            _id: new mongoose.Types.ObjectId(data.registrationId),
+            eventId: new mongoose.Types.ObjectId(data.eventId),
+            status: 'PAID',
+            checkedIn: { $ne: true },
+          },
+          { $set: { checkedIn: true, checkedInAt } },
+          { new: true, session }
+        );
+
+        if (!updated) return;
+
+        await this.createCheckInLog(
+          {
+            eventId: data.eventId,
+            staffId: data.staffId,
+            ticketCode: data.ticketCode,
+            registrationId: data.registrationId,
+            result: 'success',
+            gate: data.gate,
+          },
+          session
+        );
+      });
+
+      return updated;
+    } catch (error) {
+      // Local development in this repository defaults to a standalone mongod,
+      // which does not support transactions. Keep the same guarded update and
+      // compensate it if the audit write fails; Atlas/replica-set deployments
+      // continue to use the transaction path above.
+      if (this.isTransactionUnsupported(error)) {
+        return this.completeCheckInWithCompensation(data);
+      }
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  private async completeCheckInWithCompensation(data: {
+    registrationId: string;
+    eventId: string;
+    staffId: string;
+    ticketCode: string;
+    gate?: string;
+  }): Promise<IRegistration | null> {
+    const checkedInAt = new Date();
+    const guardedFilter = {
+      _id: new mongoose.Types.ObjectId(data.registrationId),
+      eventId: new mongoose.Types.ObjectId(data.eventId),
+      status: 'PAID' as const,
+      checkedIn: { $ne: true },
+    };
+    const updated = await Registration.findOneAndUpdate(
+      guardedFilter,
+      { $set: { checkedIn: true, checkedInAt } },
       { new: true }
+    );
+    if (!updated) return null;
+
+    try {
+      await this.createCheckInLog({
+        eventId: data.eventId,
+        staffId: data.staffId,
+        ticketCode: data.ticketCode,
+        registrationId: data.registrationId,
+        result: 'success',
+        gate: data.gate,
+      });
+      return updated;
+    } catch (error) {
+      // Roll back only the exact update performed above; never undo a newer
+      // successful check-in written by another request.
+      await Registration.updateOne(
+        {
+          _id: guardedFilter._id,
+          eventId: guardedFilter.eventId,
+          checkedIn: true,
+          checkedInAt,
+        },
+        { $set: { checkedIn: false }, $unset: { checkedInAt: 1 } }
+      );
+      throw error;
+    }
+  }
+
+  private isTransactionUnsupported(error: unknown): boolean {
+    const mongoError = error as { code?: number; message?: string };
+    return (
+      mongoError?.code === 20 ||
+      /transaction numbers are only allowed|replica set member|mongos/i.test(
+        mongoError?.message ?? ''
+      )
     );
   }
 
@@ -191,7 +309,7 @@ export class StaffRepository {
     registrationId?: string;
     result: ICheckInLog['result'];
     gate?: string;
-  }): Promise<ICheckInLog> {
+  }, session?: mongoose.ClientSession): Promise<ICheckInLog> {
     const log = new CheckInLog({
       eventId: new mongoose.Types.ObjectId(data.eventId),
       staffId: new mongoose.Types.ObjectId(data.staffId),
@@ -203,21 +321,21 @@ export class StaffRepository {
       gate: data.gate?.trim(),
       checkedInAt: new Date(),
     });
-    return log.save();
+    return log.save({ session });
   }
 
   async getCheckInStats(eventId: string): Promise<CheckInStats> {
-    const [total, checkedIn] = await Promise.all([
-      Registration.countDocuments({
-        eventId: new mongoose.Types.ObjectId(eventId),
-        status: 'PAID',
-      }),
-      Registration.countDocuments({
-        eventId: new mongoose.Types.ObjectId(eventId),
-        status: 'PAID',
-        checkedIn: true,
-      }),
-    ]);
+    const eventObjectId = new mongoose.Types.ObjectId(eventId);
+    const paidRegistrationIds = await Registration.distinct('_id', {
+      eventId: eventObjectId,
+      status: 'PAID',
+    });
+    const total = paidRegistrationIds.length;
+    const checkedIn = await CheckInLog.countDocuments({
+      eventId: eventObjectId,
+      registrationId: { $in: paidRegistrationIds },
+      result: 'success',
+    });
     const remaining = total - checkedIn;
     const percent = total > 0 ? Math.round((checkedIn / total) * 100) : 0;
     return { total, checkedIn, remaining, percent };

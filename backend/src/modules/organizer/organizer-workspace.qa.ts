@@ -21,7 +21,7 @@ import { Event } from '../event/event.model';
 import { Ticket } from './ticket.model';
 import { Registration } from '../registration/registration.model';
 import { Payment } from '../registration/payment.model';
-import { CheckIn } from '../registration/checkin.model';
+import { CheckInLog } from '../staff/checkin-log.model';
 import { StaffAssignment } from '../staff/assignment.model';
 import { Withdrawal } from './withdrawal.model';
 import { RevenueReport } from './revenue-report.model';
@@ -118,6 +118,15 @@ async function main() {
 
   const organizerToken = await ensureOrganizerToken();
   const participantToken = await ensureParticipantToken();
+  let staff = await User.findOne({ email: STAFF_EMAIL });
+  if (!staff) {
+    staff = await User.create({
+      fullName: 'QA Staff Workspace',
+      email: STAFF_EMAIL,
+      role: 'STAFF',
+      accountStatus: 'ACTIVE',
+    });
+  }
 
   const categories = await api('GET', '/api/categories');
   const category = categories.json.data?.[0];
@@ -222,7 +231,18 @@ async function main() {
   check('Before: 2 paid tickets, 0 checked-in', s0.paidTickets === 2 && s0.checkedInTickets === 0, s0);
 
   // Staff check-in flow does not exist yet — seed the record it would write.
-  await CheckIn.create({ registrationId, status: 'SUCCESS', note: 'QA seeded' });
+  const seededRegistration = await Registration.findByIdAndUpdate(
+    registrationId,
+    { $set: { checkedIn: true, checkedInAt: new Date() } },
+    { new: true }
+  );
+  await CheckInLog.create({
+    registrationId,
+    eventId,
+    staffId: staff._id,
+    ticketCode: seededRegistration?.ticketCode ?? registrationId,
+    result: 'success',
+  });
 
   const checkins1 = await api(
     'GET',
@@ -330,15 +350,6 @@ async function main() {
   check('Members returns 200 + empty', members0.status === 200 && members0.json.data?.length === 0, members0.json);
 
   // Admin assignment flow does not exist yet — seed the doc it would write.
-  let staff = await User.findOne({ email: STAFF_EMAIL });
-  if (!staff) {
-    staff = await User.create({
-      fullName: 'QA Staff Workspace',
-      email: STAFF_EMAIL,
-      role: 'STAFF',
-      accountStatus: 'ACTIVE',
-    });
-  }
   await StaffAssignment.create({
     eventId,
     staffId: staff._id,
@@ -519,7 +530,7 @@ async function main() {
   console.log('\n12. Cleanup (event + child docs; QA users are kept for reruns)');
   const regIds = (await Registration.find({ eventId }).select('_id')).map((r) => r._id);
   await Promise.all([
-    CheckIn.deleteMany({ registrationId: { $in: regIds } }),
+    CheckInLog.deleteMany({ eventId }),
     Payment.deleteMany({ registrationId: { $in: regIds } }),
   ]);
   await Promise.all([

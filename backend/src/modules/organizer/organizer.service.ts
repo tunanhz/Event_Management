@@ -11,6 +11,13 @@ import { IRevenueReport } from './revenue-report.model';
 import { CategoryRepository } from '../category/category.repository';
 import { UserRepository } from '../user/user.repository';
 import { AppError } from '../../common/utils/AppError';
+import { config } from '../../config';
+import {
+  buildEventDepositOrderInfo,
+  buildEventRemainingOrderInfo,
+  buildPaymentUrl,
+  formatVnpayDate,
+} from '../payment/vnpay.util';
 import { PaginatedResult, PaginationQuery } from '../../common/types';
 import {
   ConfigureTicketInput,
@@ -1287,7 +1294,7 @@ export class OrganizerService {
     return this.getOwnedReport(reportId, actor);
   }
 
-  /** Map registrations to AttendeeRow with their SUCCESS check-in joined. */
+  /** Map registrations to AttendeeRow with their canonical SUCCESS audit row joined. */
   private async joinCheckIns(registrations: any[]): Promise<AttendeeRow[]> {
     const ids = registrations.map((r) => String(r._id));
     const checkins = await this.organizerRepository.findSuccessCheckInsByRegistrationIds(ids);
@@ -1310,8 +1317,7 @@ export class OrganizerService {
         registerDate: r.registerDate,
         status: r.status,
         checkedIn: !!checkin,
-        checkInTime: checkin?.checkInTime,
-        checkInNote: checkin?.note,
+        checkInTime: checkin?.checkedInAt,
       };
     });
   }
@@ -1427,43 +1433,155 @@ export class OrganizerService {
   }
 
   // ── Deposit & settlement ────────────────────────────────────────────────
+  // Remaining = 80% serviceCost + additionalCost, unless finalPaymentAmount was
+  // already pinned down by a previous quote/attempt.
+  private computeRemainingAmount(event: IEvent): number {
+    if (event.finalPaymentAmount && event.finalPaymentAmount > 0) {
+      return event.finalPaymentAmount;
+    }
+    const serviceCost = event.serviceCost || 0;
+    const depositAmount = event.depositAmount || 0;
+    const additionalCost = event.additionalCost || 0;
+    return Math.max(0, serviceCost - depositAmount + additionalCost);
+  }
+
+  private buildOrganizerVnpayUrl(
+    amount: number,
+    orderInfo: string,
+    txnRefPrefix: string,
+    ipAddr: string
+  ): string {
+    if (!config.vnpay.tmnCode || !config.vnpay.hashSecret) {
+      throw new AppError('VNPAY chưa được cấu hình (thiếu VNPAY_TMN_CODE/VNPAY_HASH_SECRET)', 500);
+    }
+    const params: Record<string, string> = {
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: config.vnpay.tmnCode,
+      vnp_Amount: String(Math.round(amount * 100)),
+      vnp_CurrCode: 'VND',
+      vnp_TxnRef: `${txnRefPrefix}${Date.now()}${Math.floor(Math.random() * 1000)}`,
+      vnp_OrderInfo: orderInfo,
+      vnp_OrderType: 'other',
+      vnp_Locale: 'vn',
+      vnp_ReturnUrl: config.vnpay.returnUrl,
+      vnp_IpAddr: ipAddr,
+      vnp_CreateDate: formatVnpayDate(new Date()),
+    };
+    return buildPaymentUrl(config.vnpay.url, params, config.vnpay.hashSecret);
+  }
+
   /**
-   * Organizer pays the 20% deposit → event becomes PUBLISHED.
-   * Preconditions: event in APPROVED_WAITING_DEPOSIT + depositStatus UNPAID.
+   * Organizer initiates the 20% deposit via VNPAY. Returns the redirect URL —
+   * the event only moves APPROVED_WAITING_DEPOSIT → PUBLISHED once VNPAY confirms
+   * through `finalizeDepositVnpayPayment` (return-redirect or IPN callback).
    */
-  async payDeposit(eventId: string, actor: { id: string; role: string }): Promise<IEvent> {
+  async createDepositPaymentUrl(
+    eventId: string,
+    actor: { id: string; role: string },
+    ipAddr: string
+  ): Promise<string> {
     const event = await this.getOwnedEvent(eventId, actor);
     if (event.reviewStatus !== 'APPROVED_WAITING_DEPOSIT') {
       throw new AppError('Sự kiện không ở trạng thái chờ cọc', 400);
     }
-    const updated = await this.organizerRepository.payDeposit(eventId);
-    if (!updated) {
-      throw new AppError('Thanh toán cọc thất bại — vui lòng thử lại', 409);
+    if (event.depositStatus === 'PAID') {
+      throw new AppError('Khoản cọc đã được thanh toán trước đó', 400);
     }
-    return updated;
+    const amount = event.depositAmount || 0;
+    if (amount <= 0) {
+      throw new AppError('Số tiền cọc không hợp lệ', 400);
+    }
+    return this.buildOrganizerVnpayUrl(
+      amount,
+      buildEventDepositOrderInfo(eventId),
+      'EVBDEP',
+      ipAddr
+    );
   }
 
   /**
-   * Organizer pays remaining balance anytime after deposit is paid.
-   * Remaining = 80% serviceCost + additionalCost (or serviceCost - depositAmount).
+   * Organizer initiates the remaining-balance payment via VNPAY anytime after the
+   * deposit is paid. Actual `finalPaymentStatus` flip happens in
+   * `finalizeRemainingVnpayPayment` once VNPAY confirms.
    */
-  async payRemaining(eventId: string, actor: { id: string; role: string }): Promise<IEvent> {
+  async createRemainingPaymentUrl(
+    eventId: string,
+    actor: { id: string; role: string },
+    ipAddr: string
+  ): Promise<string> {
     const event = await this.getOwnedEvent(eventId, actor);
     if (event.finalPaymentStatus === 'PAID') {
       throw new AppError('Khoản thanh toán đã được thanh toán trước đó', 400);
     }
-    
-    let remaining = event.finalPaymentAmount;
-    if (!remaining || remaining <= 0) {
-      const serviceCost = event.serviceCost || 0;
-      const depositAmount = event.depositAmount || 0;
-      const additionalCost = event.additionalCost || 0;
-      remaining = Math.max(0, serviceCost - depositAmount + additionalCost);
+    const remaining = this.computeRemainingAmount(event);
+    if (remaining <= 0) {
+      throw new AppError('Không có khoản phải thanh toán', 400);
+    }
+    return this.buildOrganizerVnpayUrl(
+      remaining,
+      buildEventRemainingOrderInfo(eventId),
+      'EVBREM',
+      ipAddr
+    );
+  }
+
+  /**
+   * Called only from the VNPAY return/IPN callback (payment.controller.ts) after signature
+   * verification — no `actor`/ownership check here since VNPAY calls back without a user
+   * session. `organizerRepository.payDeposit`'s DB filter only matches while still UNPAID,
+   * so a racing return-redirect + IPN pair for the same order can never double-process it.
+   */
+  async finalizeDepositVnpayPayment(
+    eventId: string,
+    params: { transactionNo: string; amountVnd100: number }
+  ): Promise<IEvent> {
+    const event = await this.organizerRepository.findEventById(eventId);
+    if (!event) {
+      throw new AppError(`Không tìm thấy sự kiện ${eventId}`, 404);
+    }
+    if (event.depositStatus === 'PAID') {
+      return event; // already finalized by a racing return/IPN call
+    }
+
+    const expectedAmount = Math.round((event.depositAmount || 0) * 100);
+    if (expectedAmount !== params.amountVnd100) {
+      throw new AppError('Số tiền thanh toán cọc không khớp', 400);
+    }
+
+    const updated = await this.organizerRepository.payDeposit(eventId);
+    if (!updated) {
+      const reloaded = await this.organizerRepository.findEventById(eventId);
+      if (reloaded?.depositStatus === 'PAID') return reloaded;
+      throw new AppError('Xác nhận thanh toán cọc thất bại — vui lòng liên hệ hỗ trợ', 409);
+    }
+    return updated;
+  }
+
+  /** Same idempotency guarantee as `finalizeDepositVnpayPayment`, for the remaining balance. */
+  async finalizeRemainingVnpayPayment(
+    eventId: string,
+    params: { transactionNo: string; amountVnd100: number }
+  ): Promise<IEvent> {
+    const event = await this.organizerRepository.findEventById(eventId);
+    if (!event) {
+      throw new AppError(`Không tìm thấy sự kiện ${eventId}`, 404);
+    }
+    if (event.finalPaymentStatus === 'PAID') {
+      return event;
+    }
+
+    const remaining = this.computeRemainingAmount(event);
+    const expectedAmount = Math.round(remaining * 100);
+    if (expectedAmount !== params.amountVnd100) {
+      throw new AppError('Số tiền thanh toán không khớp', 400);
     }
 
     const updated = await this.organizerRepository.payRemaining(eventId, remaining);
     if (!updated) {
-      throw new AppError('Thanh toán thất bại — vui lòng thử lại', 409);
+      const reloaded = await this.organizerRepository.findEventById(eventId);
+      if (reloaded?.finalPaymentStatus === 'PAID') return reloaded;
+      throw new AppError('Xác nhận thanh toán thất bại — vui lòng liên hệ hỗ trợ', 409);
     }
     return updated;
   }

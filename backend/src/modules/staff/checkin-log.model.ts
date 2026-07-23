@@ -37,5 +37,11 @@ const checkInLogSchema = new Schema<ICheckInLog>(
 checkInLogSchema.index({ eventId: 1, checkedInAt: -1 });
 checkInLogSchema.index({ staffId: 1, checkedInAt: -1 });
 checkInLogSchema.index({ ticketCode: 1, eventId: 1 });
+// CheckInLog is the canonical check-in attempt/audit store. A registration may
+// have many failed attempts, but exactly one successful check-in.
+checkInLogSchema.index(
+  { registrationId: 1 },
+  { unique: true, partialFilterExpression: { result: 'success' } }
+);
 
 export const CheckInLog = mongoose.model<ICheckInLog>('CheckInLog', checkInLogSchema);

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { Event, IEvent } from '../event/event.model';
 import { Ticket, ITicket } from './ticket.model';
 import { Registration, IRegistration } from '../registration/registration.model';
-import { CheckIn, ICheckIn } from '../registration/checkin.model';
+import { CheckInLog, ICheckInLog } from '../staff/checkin-log.model';
 // Unified with the staff module's assignment model (develop) — one 'StaffAssignment'
 // Mongoose model across the app; the organizer side only reads it here.
 import { StaffAssignment, IStaffAssignment } from '../staff/assignment.model';
@@ -217,6 +217,8 @@ export class OrganizerRepository {
 
   /**
    * Mark the final payment as paid and update finalPaymentAmount if needed.
+   * Guards against `finalPaymentStatus` already PAID so a racing VNPAY return-redirect
+   * and IPN callback (VNPAY fires both for the same order) can never double-process it.
    */
   async payRemaining(id: string, amount?: number): Promise<IEvent | null> {
     const updateObj: Record<string, any> = { finalPaymentStatus: 'PAID' };
@@ -224,7 +226,7 @@ export class OrganizerRepository {
       updateObj.finalPaymentAmount = amount;
     }
     return Event.findOneAndUpdate(
-      { _id: id },
+      { _id: id, finalPaymentStatus: { $ne: 'PAID' } },
       { $set: updateObj },
       { new: true, runValidators: true }
     ).lean();
@@ -299,10 +301,10 @@ export class OrganizerRepository {
       .lean();
   }
 
-  /** SUCCESS check-ins for the given registrations ("has one" = checked-in). */
-  async findSuccessCheckInsByRegistrationIds(ids: string[]): Promise<ICheckIn[]> {
+  /** Canonical SUCCESS audit rows for the given registrations. */
+  async findSuccessCheckInsByRegistrationIds(ids: string[]): Promise<ICheckInLog[]> {
     if (ids.length === 0) return [];
-    return CheckIn.find({ registrationId: { $in: ids }, status: 'SUCCESS' }).lean();
+    return CheckInLog.find({ registrationId: { $in: ids }, result: 'success' }).lean();
   }
 
   // ─── Analytics (derived from PAID registrations) ──────────────────────

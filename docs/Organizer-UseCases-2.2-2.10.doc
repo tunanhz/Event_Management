@@ -1,0 +1,416 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head>
+<meta charset="utf-8">
+<title>Organizer Use Cases 2.2-2.10</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>
+  body{font-family:"Times New Roman",serif;font-size:12pt;color:#000;}
+  h2{font-size:15pt;font-weight:bold;margin:18pt 0 4pt;}
+  h3{font-size:13pt;font-style:italic;font-weight:normal;margin:4pt 0 10pt;}
+  table{border-collapse:collapse;width:100%;margin-bottom:22pt;}
+  td,th{border:1px solid #000;padding:5pt 7pt;vertical-align:top;font-size:11pt;text-align:left;}
+  th.rowh{width:150px;font-weight:bold;background:#f2f2f2;}
+  th.rowh2{width:120px;font-weight:bold;background:#f2f2f2;}
+  td.hdr{font-weight:bold;background:#e8e8e8;}
+  .flowlabel{font-weight:bold;}
+  ol,ul{margin:0;padding-left:20px;}
+  .kw{font-family:"Courier New",monospace;font-size:10.5pt;}
+  p{margin:0 0 5pt;}
+</style>
+</head>
+<body>
+
+<h2>2. Organizer</h2>
+<p style="font-style:italic;margin-bottom:14pt;">Đặc tả 9 use case còn lại của actor Organizer (2.2 – 2.10), nối tiếp sau 2.1 Create Event (CE-01). Nội dung đối chiếu trực tiếp với mã nguồn hiện tại (backend/src/modules/organizer, backend/src/modules/payment).</p>
+
+<!-- ============ 2.2 ============ -->
+<h3>2.2 Submit Event for Review</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">SR-01_Submit Event for Review</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Điền tên]</td><th class="rowh2">Date Created:</th><td>[Điền ngày]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>Admin</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">Organizer đã hoàn tất thông tin sự kiện ở trạng thái nháp (DRAFT), hoặc đã sửa xong một sự kiện bị từ chối (REJECTED), và muốn gửi cho Admin kiểm duyệt.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Organizer bấm "Gửi duyệt" trên trang "Sự kiện của tôi" hoặc trong workspace sự kiện. Hệ thống kiểm tra các điều kiện tối thiểu (đã cấu hình vé, đã đính kèm giấy phép), sau đó chuyển reviewStatus sang PENDING_REVIEW và khoá mọi chỉnh sửa cho tới khi có quyết định.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: Organizer đã đăng nhập và là chủ sở hữu (creatorId) của sự kiện.</p>
+<p>PRE-02: Sự kiện đang ở trạng thái DRAFT hoặc REJECTED.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: reviewStatus chuyển sang PENDING_REVIEW.</p>
+<p>POST-02: Sự kiện xuất hiện trong hàng đợi kiểm duyệt của Admin (tab "Chờ duyệt").</p>
+<p>POST-03: Organizer không thể sửa thông tin sự kiện, vé, hay giấy phép cho tới khi Admin ra quyết định.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Submit for Vetting</p>
+<ol>
+<li>Organizer mở "Sự kiện của tôi", chọn một sự kiện ở trạng thái nháp hoặc bị từ chối.</li>
+<li>Organizer bấm "Gửi duyệt".</li>
+<li>Hệ thống kiểm tra sự kiện có ít nhất 1 loại vé đã cấu hình.</li>
+<li>Hệ thống kiểm tra sự kiện có ít nhất 1 giấy phép / hồ sơ pháp lý đính kèm.</li>
+<li>Hệ thống cập nhật reviewStatus = PENDING_REVIEW và trả về sự kiện đã cập nhật.</li>
+<li>Giao diện chuyển sự kiện sang danh sách "Chờ duyệt".</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Chưa cấu hình loại vé</b></p>
+<ol><li>Sự kiện chưa có loại vé nào.</li><li>Hệ thống chặn gửi duyệt, báo "Cần ít nhất 1 loại vé trước khi gửi duyệt".</li><li>Luồng quay lại bước cấu hình vé.</li></ol>
+<p><b>1.0.E2 Thiếu giấy phép / hồ sơ pháp lý</b></p>
+<ol><li>Sự kiện chưa đính kèm tài liệu giấy phép nào.</li><li>Hệ thống báo "Cần đính kèm ít nhất 1 giấy phép / hồ sơ pháp lý trước khi gửi duyệt".</li><li>Luồng quay lại bước Logistics & Giấy phép.</li></ol>
+<p><b>1.0.E3 Sai trạng thái để gửi duyệt</b></p>
+<ol><li>Sự kiện đã ở PENDING_REVIEW trở lên.</li><li>Hệ thống báo "Sự kiện đã được gửi duyệt hoặc đã được xử lý" và chặn thao tác.</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Medium — 1 lần cho mỗi sự kiện, có thể lặp lại nếu bị từ chối và sửa lại.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>16. Chỉ sự kiện DRAFT hoặc REJECTED mới được gửi duyệt; các trạng thái sau đó không cho gửi lại.</p>
+<p>17. Điều kiện tối thiểu (vé + giấy phép) được kiểm tra tập trung ở tầng service, áp dụng cho mọi lối vào (wizard, trang quản lý vé, nút "Gửi duyệt" độc lập).</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Sau khi Admin duyệt, sự kiện chuyển tiếp sang APPROVED_WAITING_DEPOSIT (chưa công bố ngay) — xem UC 2.5 Pay Deposit.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Organizer đã hoàn tất toàn bộ thông tin bắt buộc của 6 bước wizard hoặc các chỉnh sửa cần thiết trước khi gửi duyệt.</td></tr>
+</table>
+
+<!-- ============ 2.3 ============ -->
+<h3>2.3 Edit Draft / Rejected Event</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">EE-01_Edit Draft / Rejected Event</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Điền tên]</td><th class="rowh2">Date Created:</th><td>[Điền ngày]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>Admin</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">Organizer cần sửa thông tin một sự kiện đang ở trạng thái nháp, hoặc cần chỉnh sửa theo ghi chú từ chối của Admin trước khi gửi duyệt lại.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Organizer chỉnh sửa các trường thông tin sự kiện (tên, mô tả, ảnh banner/poster, địa điểm, lịch trình, hạng mục, đường dẫn tuỳ chỉnh, chế độ riêng tư, hợp đồng, thông tin thanh toán…) qua trang "Chỉnh sửa" hoặc trong wizard; hệ thống kiểm tra ràng buộc và ghi đè bản nháp.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: Organizer đã đăng nhập, là chủ sở hữu sự kiện.</p>
+<p>PRE-02: Sự kiện đang ở trạng thái DRAFT hoặc REJECTED.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: Thông tin sự kiện được cập nhật; các trường suy diễn cho trang chủ (time, sessions, priceFrom…) được tính lại.</p>
+<p>POST-02: Nếu Organizer đổi ngày trực tiếp trong khi sự kiện đang có danh sách suất diễn, toàn bộ suất diễn cũ bị xoá và các loại vé gắn suất diễn đó mất liên kết showId.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Revise Draft Event</p>
+<ol>
+<li>Organizer mở một sự kiện DRAFT/REJECTED, vào trang "Chỉnh sửa".</li>
+<li>Hệ thống hiển thị biểu mẫu ở trạng thái có thể sửa (không bị khoá vì không phải PENDING_REVIEW).</li>
+<li>Organizer thay đổi các trường cần thiết.</li>
+<li>Organizer bấm "Lưu".</li>
+<li>Hệ thống kiểm tra ràng buộc từng trường (ngày ở tương lai, slug không trùng, category tồn tại, capacity ≥ 1…).</li>
+<li>Hệ thống lưu thay đổi và trả về sự kiện đã cập nhật.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Sai trạng thái để sửa</b></p>
+<ol><li>Sự kiện không còn ở DRAFT/REJECTED.</li><li>Hệ thống báo "Chỉ có thể sửa sự kiện khi đang ở trạng thái nháp hoặc bị từ chối", chặn ghi.</li></ol>
+<p><b>1.0.E2 Lịch trình không hợp lệ</b></p>
+<ol><li>Ngày bắt đầu không ở tương lai, hoặc ngày kết thúc trước ngày bắt đầu.</li><li>Hệ thống báo lỗi tương ứng ("Ngày bắt đầu sự kiện phải ở tương lai" / "Ngày kết thúc phải sau ngày bắt đầu").</li></ol>
+<p><b>1.0.E3 Slug đã tồn tại</b></p>
+<ol><li>Organizer đổi đường dẫn tuỳ chỉnh trùng với sự kiện khác.</li><li>Hệ thống báo "Đường dẫn tuỳ chỉnh (slug) đã được sử dụng".</li></ol>
+<p><b>1.0.E4 Category không tồn tại</b></p>
+<ol><li>categoryId gửi lên không khớp danh mục nào.</li><li>Hệ thống báo "Category không tồn tại".</li></ol>
+<p><b>1.0.E5 Sức chứa không hợp lệ</b></p>
+<ol><li>capacity &lt; 1.</li><li>Hệ thống báo "capacity phải >= 1".</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">High — Organizer thường chỉnh sửa nhiều lần trước khi gửi duyệt.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>18. Chỉ DRAFT/REJECTED được sửa; PENDING_REVIEW, APPROVED_WAITING_DEPOSIT, PUBLISHED bị khoá hoàn toàn phía Organizer.</p>
+<p>19. Lưu lại một hợp đồng đã ký với cùng nội dung chấp thuận sẽ không ghi đè mốc thời gian ký ban đầu.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Giao diện còn khoá thêm bằng &lt;fieldset disabled&gt; kèm chặn con trỏ khi sự kiện ở PENDING_REVIEW, dù ràng buộc gốc đã nằm ở backend.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Organizer chỉ có quyền sửa sự kiện do chính mình tạo (kiểm tra quyền sở hữu ở tầng service).</td></tr>
+</table>
+
+<!-- ============ 2.4 ============ -->
+<h3>2.4 Configure Ticket Types</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">CT-01_Configure Ticket Types (Bulk)</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Điền tên]</td><th class="rowh2">Date Created:</th><td>[Điền ngày]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>None</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">Organizer cần thiết lập hoặc điều chỉnh toàn bộ danh sách hạng vé (tên, giá, số lượng, giới hạn mua) của một sự kiện trước khi gửi duyệt.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Trên bảng cấu hình vé, Organizer khai báo các hạng vé (VD: VIP, Standard) và lưu một lần; hệ thống thay thế toàn bộ tập vé hiện có bằng đúng tập vừa gửi — dòng có _id được cập nhật, dòng không có _id được tạo mới, dòng bị bỏ khỏi danh sách sẽ bị xoá.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: Organizer đã đăng nhập, sở hữu sự kiện.</p>
+<p>PRE-02: Sự kiện đang ở trạng thái DRAFT hoặc REJECTED.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: Danh sách loại vé của sự kiện khớp chính xác với bảng vừa gửi.</p>
+<p>POST-02: priceFrom/isFree của sự kiện được tính lại theo giá vé thấp nhất hiện có.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Configure Ticket Table</p>
+<ol>
+<li>Organizer mở bước "Thời gian & Loại vé" (wizard) hoặc trang quản lý vé của workspace.</li>
+<li>Organizer thêm/sửa/xoá dòng trong bảng hạng vé: tên, mô tả, giá, số lượng, số lượng mua tối thiểu/tối đa mỗi đơn, thời gian mở/đóng bán, gán suất diễn (nếu có nhiều suất).</li>
+<li>Organizer bấm "Lưu".</li>
+<li>Hệ thống kiểm tra từng hạng vé: giá > 0 nếu không miễn phí, maxPerOrder ≥ minPerOrder, maxPerOrder ≤ quantity, thời gian đóng bán không vượt quá thời điểm kết thúc suất diễn/sự kiện.</li>
+<li>Hệ thống xoá các hạng vé bị loại khỏi danh sách (nếu chưa có người mua), cập nhật hạng vé có sẵn, tạo mới hạng vé chưa từng có.</li>
+<li>Hệ thống tính lại giá thấp nhất hiển thị công khai và trả về danh sách vé mới.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Danh sách rỗng</b></p>
+<ol><li>Organizer gửi lưu với bảng không có hạng vé nào.</li><li>Hệ thống báo "Cần cấu hình ít nhất 1 loại vé", không lưu.</li></ol>
+<p><b>1.0.E2 Xoá hạng vé đã có người mua</b></p>
+<ol><li>Organizer bỏ khỏi bảng một hạng vé đã có soldQuantity > 0.</li><li>Hệ thống báo "Không thể xoá loại vé &lt;tên&gt; đã có người mua", chặn toàn bộ thao tác lưu.</li></ol>
+<p><b>1.0.E3 Tham chiếu vé/suất diễn không hợp lệ</b></p>
+<ol><li>Một dòng mang _id không thuộc sự kiện này, hoặc gán vào suất diễn không tồn tại.</li><li>Hệ thống báo lỗi tương ứng và không lưu bất kỳ dòng nào (all-or-nothing).</li></ol>
+<p><b>1.0.E4 Vi phạm ràng buộc giá/số lượng</b></p>
+<ol><li>Một hạng vé sai định dạng giá, số lượng hoặc giới hạn mua.</li><li>Hệ thống báo lỗi field-level cho đúng hạng vé đó, chặn lưu toàn bộ bảng.</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Medium — thường vài lần trong giai đoạn chuẩn bị sự kiện.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>20. Không được xoá hạng vé đã phát sinh đơn hàng, kể cả khi Organizer loại nó khỏi bảng cấu hình.</p>
+<p>21. Sau khi sự kiện PUBLISHED, phải dùng UC 2.7 "Restock Ticket Inventory" để điều chỉnh số lượng/trạng thái thay vì cấu hình lại toàn bộ vé.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Đây là cơ chế "bulk-replace" (mã nội bộ EM-128) — Organizer chỉ cần gửi đúng trạng thái bảng hiện tại thay vì gọi tạo/sửa/xoá riêng lẻ từng dòng.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Organizer đã xác định đúng cấu trúc suất diễn trước khi gán từng hạng vé vào suất diễn tương ứng.</td></tr>
+</table>
+
+<!-- ============ 2.5 ============ -->
+<h3>2.5 Pay Deposit via VNPAY</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">PD-01_Pay Deposit via VNPAY</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Điền tên]</td><th class="rowh2">Date Created:</th><td>[Điền ngày]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>VNPAY (cổng thanh toán)</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">Sự kiện đã được Admin duyệt và đang ở trạng thái "chờ cọc" (APPROVED_WAITING_DEPOSIT); Organizer cần thanh toán 20% chi phí dịch vụ để sự kiện được công bố công khai.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Organizer bấm "Thanh toán cọc" trên "Sự kiện của tôi"; hệ thống tạo một giao dịch VNPAY đúng số tiền cọc và trả về đường dẫn thanh toán. Organizer hoàn tất thanh toán trên cổng VNPAY; hệ thống xác thực chữ ký và số tiền ở luồng callback rồi tự động công bố sự kiện — không có bước xác nhận thủ công nào từ Organizer.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: Organizer đã đăng nhập, sở hữu sự kiện.</p>
+<p>PRE-02: reviewStatus = APPROVED_WAITING_DEPOSIT.</p>
+<p>PRE-03: depositStatus = UNPAID và depositAmount > 0 (do Admin ấn định khi duyệt).</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01 (thành công): depositStatus = PAID và reviewStatus = PUBLISHED — sự kiện xuất hiện công khai trên trang chủ/tìm kiếm.</p>
+<p>POST-02 (thất bại/huỷ): Không trạng thái nào thay đổi; Organizer có thể thử thanh toán lại.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Pay 20% Deposit</p>
+<ol>
+<li>Organizer mở "Sự kiện của tôi", thấy sự kiện ở trạng thái "Chờ thanh toán cọc" cùng số tiền cần cọc.</li>
+<li>Organizer bấm "Thanh toán cọc 20%".</li>
+<li>Hệ thống kiểm tra điều kiện, dựng đường dẫn thanh toán VNPAY (mã đơn dạng EVBEVTDEP_&lt;eventId&gt;, số tiền = depositAmount).</li>
+<li>Trình duyệt được điều hướng sang cổng thanh toán VNPAY.</li>
+<li>Organizer nhập thông tin thẻ/tài khoản và xác nhận trên VNPAY.</li>
+<li>VNPAY đưa trình duyệt quay lại hệ thống; hệ thống xác thực chữ ký, nhận diện đây là đơn "cọc sự kiện".</li>
+<li>Hệ thống đối chiếu số tiền nhận được với depositAmount, cập nhật depositStatus = PAID và reviewStatus = PUBLISHED.</li>
+<li>Organizer được đưa tới trang kết quả thanh toán, quay lại "Sự kiện của tôi" thấy sự kiện đã công bố.</li>
+<li>Song song, VNPAY còn gọi một webhook xác nhận lại phía máy chủ (không qua trình duyệt) dùng chung logic ở bước 7 — có cơ chế chống xử lý trùng nên không ảnh hưởng nếu cả hai cùng đến.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Sai trạng thái để cọc</b></p>
+<ol><li>Sự kiện không ở APPROVED_WAITING_DEPOSIT.</li><li>Hệ thống báo "Sự kiện không ở trạng thái chờ cọc", không tạo đường dẫn thanh toán.</li></ol>
+<p><b>1.0.E2 Đã thanh toán cọc trước đó</b></p>
+<ol><li>Organizer bấm thanh toán khi depositStatus đã PAID.</li><li>Hệ thống báo "Khoản cọc đã được thanh toán trước đó".</li></ol>
+<p><b>1.0.E3 Số tiền cọc không hợp lệ</b></p>
+<ol><li>depositAmount ≤ 0.</li><li>Hệ thống báo "Số tiền cọc không hợp lệ".</li></ol>
+<p><b>1.0.E4 Chữ ký callback không hợp lệ / giao dịch bị huỷ</b></p>
+<ol><li>VNPAY trả về chữ ký sai, hoặc Organizer huỷ giao dịch.</li><li>Hệ thống chuyển về trang kết quả với trạng thái thất bại; không đổi trạng thái sự kiện.</li></ol>
+<p><b>1.0.E5 Số tiền callback không khớp</b></p>
+<ol><li>Số tiền VNPAY xác nhận khác depositAmount đã ấn định.</li><li>Hệ thống báo "Số tiền thanh toán cọc không khớp" và không cập nhật trạng thái (đề phòng giả mạo callback).</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Low — một lần cho mỗi sự kiện được duyệt.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>22. Chỉ được cọc sau khi Admin đã duyệt và ấn định depositAmount (= 20% chi phí dịch vụ).</p>
+<p>23. Trạng thái chỉ được xác nhận PAID từ callback VNPAY đã xác thực chữ ký — không có thao tác nào cho phép Organizer tự đánh dấu đã trả.</p>
+<p>24. Hệ thống đảm bảo không xử lý trùng khi cả luồng quay-về-trình-duyệt và webhook máy chủ cùng xác nhận một giao dịch.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Trang kết quả thanh toán chỉ hiển thị theo tham số trạng thái được truyền tới — mọi xác nhận đã hoàn tất phía máy chủ trước khi chuyển hướng.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Organizer thanh toán qua đúng cổng VNPAY (sandbox hoặc thật) đã được cấu hình cho hệ thống.</td></tr>
+</table>
+
+<!-- ============ 2.6 ============ -->
+<h3>2.6 Pay Remaining Balance (Settlement)</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">PR-01_Pay Remaining Balance via VNPAY</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Điền tên]</td><th class="rowh2">Date Created:</th><td>[Điền ngày]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>VNPAY (cổng thanh toán)</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">Sự kiện đã công bố (và có thể phát sinh thêm chi phí dịch vụ); Organizer cần thanh toán nốt phần chi phí dịch vụ còn lại.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Cùng cơ chế với UC 2.5 nhưng cho khoản còn lại — mặc định bằng 80% chi phí dịch vụ cộng chi phí phát sinh (hoặc đúng số tiền đã được chốt sẵn từ trước nếu có), thanh toán qua VNPAY và được xác nhận qua callback đã xác thực chữ ký.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: Organizer đã đăng nhập, sở hữu sự kiện.</p>
+<p>PRE-02: finalPaymentStatus = UNPAID.</p>
+<p>PRE-03: Số tiền còn phải trả > 0.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01 (thành công): finalPaymentStatus = PAID, số tiền đã thanh toán được ghi nhận lại trên sự kiện.</p>
+<p>POST-02 (thất bại/huỷ): Không trạng thái nào thay đổi.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Settle Remaining Balance</p>
+<ol>
+<li>Organizer mở "Sự kiện của tôi", với một sự kiện đã công bố còn khoản phải trả.</li>
+<li>Organizer bấm "Thanh toán còn lại".</li>
+<li>Hệ thống tính số tiền còn lại, dựng đường dẫn thanh toán VNPAY (mã đơn EVBEVTREM_&lt;eventId&gt;).</li>
+<li>Trình duyệt được điều hướng sang VNPAY; Organizer hoàn tất thanh toán.</li>
+<li>VNPAY đưa trình duyệt quay lại hệ thống; hệ thống xác thực chữ ký, nhận diện đây là đơn "thanh toán còn lại".</li>
+<li>Hệ thống đối chiếu số tiền, cập nhật finalPaymentStatus = PAID.</li>
+<li>Organizer được đưa tới trang kết quả thanh toán.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Đã thanh toán trước đó</b></p>
+<ol><li>finalPaymentStatus đã PAID.</li><li>Hệ thống báo "Khoản thanh toán đã được thanh toán trước đó".</li></ol>
+<p><b>1.0.E2 Không có khoản phải trả</b></p>
+<ol><li>Số tiền còn lại tính được ≤ 0.</li><li>Hệ thống báo "Không có khoản phải thanh toán".</li></ol>
+<p><b>1.0.E3 Chữ ký callback sai / giao dịch thất bại</b></p>
+<ol><li>VNPAY trả về chữ ký không hợp lệ, hoặc giao dịch bị huỷ/thất bại.</li><li>Hệ thống chuyển về trang kết quả trạng thái thất bại, không đổi finalPaymentStatus.</li></ol>
+<p><b>1.0.E4 Số tiền callback không khớp</b></p>
+<ol><li>Số tiền VNPAY xác nhận khác số tiền còn lại đã tính.</li><li>Hệ thống báo "Số tiền thanh toán không khớp", không cập nhật trạng thái.</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Should Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Low — 0 hoặc 1 lần cho mỗi sự kiện, tuỳ có phát sinh chi phí hay chưa.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>25. Số tiền còn lại ưu tiên lấy theo mức đã chốt sẵn trên sự kiện nếu có; nếu chưa có thì tính theo công thức chi phí dịch vụ trừ tiền cọc cộng chi phí phát sinh.</p>
+<p>26. Áp dụng cùng cơ chế xác thực chữ ký, đối chiếu số tiền và chống xử lý trùng như UC 2.5.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Dùng chung trang kết quả thanh toán và luồng callback với UC 2.5 — hệ thống phân biệt hai loại đơn (cọc / còn lại) qua tiền tố mã đơn hàng.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Mọi chi phí phát sinh (nếu có) đã được ghi nhận trên sự kiện trước khi Organizer thanh toán nốt.</td></tr>
+</table>
+
+<!-- ============ 2.7 ============ -->
+<h3>2.7 Restock Ticket Inventory</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">TI-01_Restock / Manage Ticket Inventory</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Điền tên]</td><th class="rowh2">Date Created:</th><td>[Điền ngày]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>None</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">Sự kiện đã công bố và đang mở bán; Organizer muốn tăng số lượng vé của một hạng vé, hoặc tạm ẩn/mở lại bán một hạng vé, mà không cần sửa các thông tin khác.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Trang "Tồn kho" trong workspace sự kiện hiển thị bảng theo từng hạng vé: số lượng đã cấu hình, đang giữ chỗ (chưa thanh toán), đã bán, còn lại. Organizer chỉnh số lượng (nạp thêm) hoặc trạng thái (đang bán/ẩn) trực tiếp trên từng dòng, không cần đi qua toàn bộ biểu mẫu cấu hình vé.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: Organizer đã đăng nhập, sở hữu sự kiện.</p>
+<p>PRE-02: Sự kiện chưa bắt đầu (không giới hạn theo trạng thái duyệt).</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: Số lượng và/hoặc trạng thái của hạng vé được cập nhật; giá thấp nhất hiển thị công khai được tính lại.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Adjust Live Ticket Stock</p>
+<ol>
+<li>Organizer mở tab "Tồn kho" của một sự kiện.</li>
+<li>Hệ thống hiển thị bảng: mỗi hạng vé kèm số lượng cấu hình, số đã bán, số đang giữ chỗ, số còn lại, tỉ lệ % đã bán.</li>
+<li>Organizer nhập số lượng mới cho một hạng vé (nạp thêm tồn kho) và/hoặc chuyển trạng thái đang bán ↔ tạm ẩn.</li>
+<li>Organizer lưu thay đổi cho dòng đó.</li>
+<li>Hệ thống kiểm tra và cập nhật; dòng bảng hiển thị số liệu mới ngay lập tức.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Sự kiện đã bắt đầu</b></p>
+<ol><li>Sự kiện đang diễn ra hoặc đã kết thúc.</li><li>Hệ thống báo "Sự kiện đã bắt đầu — không thể điều chỉnh kho vé", chặn thao tác.</li></ol>
+<p><b>1.0.E2 Số lượng mới thấp hơn số đã bán/giữ chỗ</b></p>
+<ol><li>Organizer nhập số lượng nhỏ hơn số vé đã bán/đang giữ chỗ của hạng vé đó.</li><li>Hệ thống báo "Không thể đặt quantity (x) thấp hơn số vé đã bán/đang giữ (y)".</li></ol>
+<p><b>1.0.E3 Số lượng sai định dạng</b></p>
+<ol><li>Số lượng không phải số nguyên ≥ 1.</li><li>Hệ thống báo lỗi định dạng, không lưu.</li></ol>
+<p><b>1.0.E4 Trạng thái không hợp lệ</b></p>
+<ol><li>Trạng thái gửi lên không phải "đang bán" hoặc "tạm ẩn".</li><li>Hệ thống báo "status chỉ có thể là ACTIVE hoặc HIDDEN".</li></ol>
+<p><b>1.0.E5 Không có gì để cập nhật</b></p>
+<ol><li>Organizer lưu mà không đổi cả số lượng lẫn trạng thái.</li><li>Hệ thống báo "Cần cung cấp quantity hoặc status để cập nhật tồn kho".</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Should Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Medium — theo nhu cầu bán vé thực tế, có thể lặp lại nhiều lần trong giai đoạn mở bán.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>27. Sàn của số lượng khi restock luôn là số vé đã bán/đang giữ chỗ — không bao giờ được đặt tồn kho thấp hơn mức đó.</p>
+<p>28. Khác với UC 2.4 (cấu hình vé), thao tác này hoạt động được cả khi sự kiện đã công bố, chỉ bị khoá khi sự kiện đã khai mạc.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Chỉ số lượng và trạng thái được sửa ở đây; đổi tên, giá hoặc lịch bán vẫn phải quay lại UC 2.4 (chỉ khả dụng khi sự kiện còn ở trạng thái nháp/bị từ chối).</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Organizer theo dõi tồn kho định kỳ để chủ động nạp thêm vé trước khi cháy vé.</td></tr>
+</table>
+
+<!-- ============ 2.8 ============ -->
+<h3>2.8 View Event Analytics & Sales Performance</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">EA-01_View Event Analytics & Sales Performance</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Điền tên]</td><th class="rowh2">Date Created:</th><td>[Điền ngày]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>None</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">Organizer muốn theo dõi hiệu quả bán vé và doanh thu của một sự kiện đang hoặc đã mở bán.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Trang "Phân tích" trong workspace sự kiện hiển thị tổng doanh thu, số vé đã bán, số đơn đang chờ/đã huỷ, biểu đồ doanh thu theo thời gian (24 giờ hoặc 30 ngày gần nhất) và bảng doanh thu theo từng hạng vé; có thể lọc theo suất diễn cụ thể.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: Organizer đã đăng nhập, sở hữu sự kiện.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: Không thay đổi dữ liệu — đây là thao tác chỉ đọc.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 View Sales Dashboard</p>
+<ol>
+<li>Organizer mở tab "Tổng quan / Phân tích" của sự kiện.</li>
+<li>(Tuỳ chọn) Organizer chọn lọc theo một suất diễn cụ thể.</li>
+<li>Hệ thống tổng hợp: tổng doanh thu, số vé đã bán, số đơn đã thanh toán, số đơn đang chờ, số đơn đã huỷ/hết hạn/hoàn tiền.</li>
+<li>Hệ thống dựng chuỗi doanh thu theo thời gian, các mốc không có giao dịch được lấp bằng 0 để trục thời gian liên tục.</li>
+<li>Hệ thống trả về bảng doanh thu và số vé bán theo từng hạng vé.</li>
+<li>Giao diện hiển thị biểu đồ và bảng số liệu.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Không có quyền truy cập</b></p>
+<ol><li>Organizer không phải chủ sở hữu sự kiện (và không phải Admin).</li><li>Hệ thống từ chối với "Bạn không có quyền quản lý sự kiện này".</li></ol>
+<p><b>1.0.E2 Suất diễn lọc không tồn tại</b></p>
+<ol><li>Organizer chọn lọc theo một suất diễn không thuộc sự kiện.</li><li>Hệ thống báo "Suất diễn &lt;id&gt; không tồn tại trong sự kiện này".</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Should Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">High — Organizer thường xem lại nhiều lần trong suốt giai đoạn mở bán.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>29. Chỉ đăng ký ở trạng thái đã thanh toán được tính vào doanh thu và số vé bán; các trạng thái khác được đếm riêng, không cộng vào doanh thu.</p>
+<p>30. Chuỗi 24 giờ gộp theo giờ, chuỗi 30 ngày gộp theo ngày — cả hai đều quy về múi giờ Việt Nam (GMT+7) để nhãn thời gian không lệch dù máy chủ chạy múi giờ khác.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Panel "lượt truy cập" trên giao diện hiện là placeholder cố định — hệ thống chưa có theo dõi lượt xem trang thật.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Số liệu phản ánh đúng thời điểm gọi, không có cơ chế cache dài hạn làm trễ dữ liệu.</td></tr>
+</table>
+
+<!-- ============ 2.9 ============ -->
+<h3>2.9 Manage Orders & Attendees</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">OM-01_Manage Orders & Attendees (Registrations)</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Điền tên]</td><th class="rowh2">Date Created:</th><td>[Điền ngày]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>Staff (đối chiếu dữ liệu check-in)</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">Organizer cần xem danh sách người mua vé / đơn hàng của sự kiện để đối soát, hỗ trợ khách hàng, hoặc chuẩn bị cho khâu check-in.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Trang "Đơn hàng" trong workspace sự kiện liệt kê từng đăng ký đã xác nhận (không bao gồm đơn đang giữ chỗ chưa thanh toán) kèm thông tin người mua, hạng vé, số lượng, trạng thái đã check-in hay chưa; có thể lọc theo suất diễn, phân trang, và xuất ra file CSV.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: Organizer đã đăng nhập, sở hữu sự kiện.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: Không thay đổi dữ liệu — chỉ đọc và xuất file.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Review Orders</p>
+<ol>
+<li>Organizer mở tab "Đơn hàng" của sự kiện.</li>
+<li>(Tuỳ chọn) Organizer lọc theo suất diễn hoặc chuyển trang.</li>
+<li>Hệ thống trả về danh sách đăng ký đã xác nhận, mỗi dòng ghép thêm trạng thái check-in tương ứng (nếu đã quét vé thành công).</li>
+<li>Giao diện hiển thị bảng: mã đơn, người mua, hạng vé, số lượng, tổng tiền, ngày đăng ký, trạng thái, đã check-in hay chưa.</li>
+<li>Organizer bấm "Xuất CSV"; hệ thống gom dữ liệu đang hiển thị thành file CSV để tải về.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Suất diễn lọc không tồn tại</b></p>
+<ol><li>Organizer chọn lọc theo một suất diễn không thuộc sự kiện.</li><li>Hệ thống báo lỗi suất diễn không hợp lệ, không trả danh sách.</li></ol>
+<p><b>1.0.E2 Không có quyền truy cập</b></p>
+<ol><li>Organizer không phải chủ sở hữu sự kiện.</li><li>Hệ thống từ chối truy cập (403).</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">High — được xem thường xuyên trong suốt vòng đời bán vé và vận hành sự kiện.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>31. Chỉ đơn đã qua bước giữ chỗ (không còn ở trạng thái chờ thanh toán) mới xuất hiện trong danh sách — đơn đang giữ chỗ chưa được tính là đơn hàng chính thức.</p>
+<p>32. Số liệu đếm/lọc trên bảng chỉ áp dụng cho trang hiện tại, không phải tổng toàn bộ danh sách khi có phân trang.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Đây chính là "Attendee Tracker" theo đặc tả SRS; cùng nguồn dữ liệu còn được luồng check-in của Staff tham chiếu để đối chiếu trạng thái vào cổng.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Thông tin người mua (họ tên/email/số điện thoại) hiển thị đúng theo hồ sơ tài khoản Participant tại thời điểm mua vé.</td></tr>
+</table>
+
+<!-- ============ 2.10 ============ -->
+<h3>2.10 Request Fund Withdrawal</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">WD-01_Request Fund Withdrawal</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Điền tên]</td><th class="rowh2">Date Created:</th><td>[Điền ngày]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>Admin (người duyệt chi trả)</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">Sự kiện đã công bố và đã kết thúc; Organizer muốn rút doanh thu bán vé về tài khoản ngân hàng của mình.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Trang "Rút tiền" trong workspace sự kiện hiển thị tổng doanh thu, số dư khả dụng (đã trừ các yêu cầu đang chờ/đã duyệt), và lịch sử yêu cầu; Organizer nhập số tiền cùng thông tin ngân hàng để tạo một yêu cầu rút tiền ở trạng thái chờ duyệt, do Admin xét duyệt và chi trả.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: Organizer đã đăng nhập, sở hữu sự kiện.</p>
+<p>PRE-02: reviewStatus = PUBLISHED.</p>
+<p>PRE-03: Sự kiện đã kết thúc (thời điểm hiện tại đã qua ngày kết thúc sự kiện).</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: Một yêu cầu rút tiền mới được tạo ở trạng thái PENDING.</p>
+<p>POST-02: Số dư khả dụng của sự kiện giảm tương ứng số tiền vừa yêu cầu (được xem là đang giữ chờ duyệt).</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Request Payout</p>
+<ol>
+<li>Organizer mở tab "Rút tiền" của một sự kiện đã kết thúc.</li>
+<li>Hệ thống hiển thị tổng doanh thu đã thanh toán, số tiền đã giữ/đã chi trả, số dư khả dụng, số tiền rút tối thiểu, và lịch sử các yêu cầu trước đó.</li>
+<li>Organizer nhập số tiền muốn rút, tên ngân hàng, số tài khoản, chủ tài khoản, và ghi chú (tuỳ chọn).</li>
+<li>Organizer bấm "Gửi yêu cầu".</li>
+<li>Hệ thống kiểm tra số tiền, thông tin ngân hàng, và đối chiếu với số dư khả dụng hiện tại.</li>
+<li>Hệ thống tạo yêu cầu ở trạng thái chờ duyệt, cập nhật lại lịch sử trên giao diện.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Sự kiện chưa công bố</b></p>
+<ol><li>Sự kiện không ở trạng thái PUBLISHED.</li><li>Hệ thống báo "Chỉ có thể yêu cầu rút tiền cho sự kiện đã được công bố".</li></ol>
+<p><b>1.0.E2 Sự kiện chưa kết thúc</b></p>
+<ol><li>Organizer gửi yêu cầu khi sự kiện đang diễn ra hoặc chưa tới ngày tổ chức.</li><li>Hệ thống báo "Chỉ có thể gửi yêu cầu rút tiền sau khi sự kiện đã kết thúc".</li></ol>
+<p><b>1.0.E3 Số tiền dưới mức tối thiểu</b></p>
+<ol><li>Số tiền nhập không phải số nguyên hoặc thấp hơn mức rút tối thiểu của hệ thống.</li><li>Hệ thống báo "Số tiền rút tối thiểu là &lt;mức tối thiểu&gt;đ".</li></ol>
+<p><b>1.0.E4 Thiếu thông tin ngân hàng</b></p>
+<ol><li>Organizer bỏ trống tên ngân hàng, số tài khoản, hoặc chủ tài khoản.</li><li>Hệ thống báo "Vui lòng nhập đủ ngân hàng, số tài khoản và chủ tài khoản".</li></ol>
+<p><b>1.0.E5 Số tài khoản sai định dạng</b></p>
+<ol><li>Số tài khoản không phải chuỗi 6–20 chữ số.</li><li>Hệ thống báo "Số tài khoản chỉ gồm chữ số (6–20 ký tự)".</li></ol>
+<p><b>1.0.E6 Vượt số dư khả dụng</b></p>
+<ol><li>Số tiền yêu cầu lớn hơn số dư khả dụng hiện tại của sự kiện.</li><li>Hệ thống báo "Số tiền vượt quá số dư khả dụng (&lt;số dư&gt;đ)".</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Should Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Low — thường 1 lần sau khi sự kiện kết thúc, có thể nhiều lần nếu Organizer rút từng phần.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>33. Số dư khả dụng = tổng doanh thu đã thanh toán trừ tổng các yêu cầu đang chờ hoặc đã duyệt (được giữ chỗ) tính tới thời điểm hiện tại.</p>
+<p>34. Quyết định duyệt/từ chối và thực hiện chi trả cuối cùng thuộc về Admin — yêu cầu ở trạng thái chờ không tự động được thanh toán.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Mức rút tối thiểu là một hằng số cấu hình chung cho toàn hệ thống, áp dụng như nhau cho mọi sự kiện/Organizer.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Thông tin ngân hàng nhập ở bước này độc lập với thông tin thanh toán khai báo lúc tạo sự kiện.</td></tr>
+</table>
+
+</body>
+</html>

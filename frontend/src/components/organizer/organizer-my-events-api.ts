@@ -92,12 +92,24 @@ export async function submitForReview(id: string): Promise<void> {
   await clientApi.post(`/organizer/events/${id}/submit`, {})
 }
 
-/** APPROVED_WAITING_DEPOSIT → PUBLISHED: organizer pays the 20% deposit. */
-export async function payDeposit(id: string): Promise<void> {
-  await clientApi.post(`/organizer/events/${id}/pay-deposit`, {})
+/**
+ * APPROVED_WAITING_DEPOSIT → PUBLISHED, via a real VNPAY payment: returns the
+ * gateway redirect URL. The event only flips to PUBLISHED once VNPAY confirms
+ * server-side (see /organizer/vnpay-return) — this call itself changes nothing.
+ */
+export async function payDeposit(id: string): Promise<string> {
+  const res = await clientApi.post<{ data: { paymentUrl: string } }>(
+    `/organizer/events/${id}/pay-deposit`,
+    {}
+  )
+  return res.data.paymentUrl
 }
 
-/** Post-event / settlement: organizer pays remaining balance. */
-export async function payRemaining(id: string): Promise<void> {
-  await clientApi.post(`/organizer/events/${id}/pay-remaining`, {})
+/** Post-event / settlement via VNPAY: returns the gateway redirect URL. */
+export async function payRemaining(id: string): Promise<string> {
+  const res = await clientApi.post<{ data: { paymentUrl: string } }>(
+    `/organizer/events/${id}/pay-remaining`,
+    {}
+  )
+  return res.data.paymentUrl
 }

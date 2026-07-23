@@ -1,0 +1,415 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head>
+<meta charset="utf-8">
+<title>Organizer Use Cases 2.2-2.10 (EN)</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>
+  body{font-family:"Times New Roman",serif;font-size:12pt;color:#000;}
+  h2{font-size:15pt;font-weight:bold;margin:18pt 0 4pt;}
+  h3{font-size:13pt;font-style:italic;font-weight:normal;margin:4pt 0 10pt;}
+  table{border-collapse:collapse;width:100%;margin-bottom:22pt;}
+  td,th{border:1px solid #000;padding:5pt 7pt;vertical-align:top;font-size:11pt;text-align:left;}
+  th.rowh{width:150px;font-weight:bold;background:#f2f2f2;}
+  th.rowh2{width:120px;font-weight:bold;background:#f2f2f2;}
+  td.hdr{font-weight:bold;background:#e8e8e8;}
+  .flowlabel{font-weight:bold;}
+  ol,ul{margin:0;padding-left:20px;}
+  p{margin:0 0 5pt;}
+</style>
+</head>
+<body>
+
+<h2>2. Organizer</h2>
+<p style="font-style:italic;margin-bottom:14pt;">Specifications for the remaining 9 Organizer use cases (2.2 – 2.10), following 2.1 Create Event (CE-01). Cross-checked directly against the current source code (backend/src/modules/organizer, backend/src/modules/payment).</p>
+
+<!-- ============ 2.2 ============ -->
+<h3>2.2 Submit Event for Review</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">SR-01_Submit Event for Review</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Fill in]</td><th class="rowh2">Date Created:</th><td>[Fill in]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>Admin</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">The Organizer has completed an event in DRAFT state, or has finished revising a REJECTED event, and wants to send it to the Admin for moderation.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">The Organizer clicks "Submit for Review" on the "My Events" page or inside the event workspace. The system checks the minimum requirements for review (at least one ticket type configured, at least one permit document attached), then transitions reviewStatus to PENDING_REVIEW and locks all editing until a decision is made.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: The Organizer is logged in and owns the event (creatorId).</p>
+<p>PRE-02: The event is in DRAFT or REJECTED state.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: reviewStatus transitions to PENDING_REVIEW.</p>
+<p>POST-02: The event appears in the Admin's moderation queue ("Pending" tab).</p>
+<p>POST-03: The Organizer cannot edit the event details, tickets, or permits until the Admin makes a decision.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Submit for Vetting</p>
+<ol>
+<li>The Organizer opens "My Events" and selects an event in DRAFT or REJECTED state.</li>
+<li>The Organizer clicks "Submit for Review".</li>
+<li>The system verifies the event has at least one configured ticket type.</li>
+<li>The system verifies the event has at least one attached permit / legal document.</li>
+<li>The system sets reviewStatus = PENDING_REVIEW and returns the updated event.</li>
+<li>The UI moves the event into the "Pending" list.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 No ticket type configured</b></p>
+<ol><li>The event has no ticket types.</li><li>The system blocks submission with "At least 1 ticket type is required before submitting for review".</li><li>The flow returns to the ticket configuration step.</li></ol>
+<p><b>1.0.E2 Missing permit / legal document</b></p>
+<ol><li>The event has no attached permit documents.</li><li>The system shows "At least 1 permit / legal document must be attached before submitting for review".</li><li>The flow returns to the Logistics & Permits step.</li></ol>
+<p><b>1.0.E3 Invalid state for submission</b></p>
+<ol><li>The event is already PENDING_REVIEW or beyond.</li><li>The system shows "The event has already been submitted or processed" and blocks the action.</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Medium — once per event, may repeat if rejected and revised.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>16. Only DRAFT or REJECTED events can be submitted; later states cannot be resubmitted.</p>
+<p>17. The minimum requirements (tickets + permits) are enforced centrally in the service layer, applying to every entry point (wizard, ticket management page, standalone "Submit for Review" button).</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">After the Admin approves, the event transitions to APPROVED_WAITING_DEPOSIT (not published immediately) — see UC 2.5 Pay Deposit.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">The Organizer has completed all mandatory fields of the 6-step wizard or the necessary edits before submitting.</td></tr>
+</table>
+
+<!-- ============ 2.3 ============ -->
+<h3>2.3 Edit Draft / Rejected Event</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">EE-01_Edit Draft / Rejected Event</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Fill in]</td><th class="rowh2">Date Created:</th><td>[Fill in]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>Admin</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">The Organizer needs to edit an event still in draft, or to revise it per the Admin's rejection notes before resubmitting for review.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">The Organizer edits event fields (name, description, banner/poster image, location, schedule, category, custom URL slug, privacy, contract, payment info, etc.) via the "Edit" page or the create wizard; the system validates constraints and overwrites the draft.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: The Organizer is logged in and owns the event.</p>
+<p>PRE-02: The event is in DRAFT or REJECTED state.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: The event details are updated; denormalized homepage fields (time, sessions, priceFrom…) are recomputed.</p>
+<p>POST-02: If the Organizer edits the date directly while the event still carries a show list, all old shows are removed and ticket types bound to those shows lose their showId link.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Revise Draft Event</p>
+<ol>
+<li>The Organizer opens a DRAFT/REJECTED event and navigates to the "Edit" page.</li>
+<li>The system renders the form in an editable state (not locked, since it is not PENDING_REVIEW).</li>
+<li>The Organizer changes the necessary fields.</li>
+<li>The Organizer clicks "Save".</li>
+<li>The system validates each field (start date in the future, slug not duplicated, category exists, capacity ≥ 1, etc.).</li>
+<li>The system persists the changes and returns the updated event.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Invalid state for editing</b></p>
+<ol><li>The event is no longer DRAFT/REJECTED.</li><li>The system shows "An event can only be edited while in draft or rejected state" and blocks the write.</li></ol>
+<p><b>1.0.E2 Invalid schedule</b></p>
+<ol><li>The start date is not in the future, or the end date precedes the start date.</li><li>The system shows the matching error ("Event start date must be in the future" / "End date must be after start date").</li></ol>
+<p><b>1.0.E3 Slug already taken</b></p>
+<ol><li>The Organizer changes the custom URL to one already used by another event.</li><li>The system shows "This custom URL (slug) is already in use".</li></ol>
+<p><b>1.0.E4 Category does not exist</b></p>
+<ol><li>The submitted categoryId matches no category.</li><li>The system shows "Category does not exist".</li></ol>
+<p><b>1.0.E5 Invalid capacity</b></p>
+<ol><li>capacity &lt; 1.</li><li>The system shows "capacity must be >= 1".</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">High — the Organizer typically edits many times before submitting.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>18. Only DRAFT/REJECTED can be edited; PENDING_REVIEW, APPROVED_WAITING_DEPOSIT, and PUBLISHED are fully locked on the Organizer side.</p>
+<p>19. Re-saving an already-signed contract with the same acceptance content does not overwrite the original signing timestamp.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">The UI additionally locks the form with &lt;fieldset disabled&gt; plus a pointer guard when the event is PENDING_REVIEW, even though the underlying constraint lives in the backend.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">The Organizer may only edit events they created (ownership is enforced in the service layer).</td></tr>
+</table>
+
+<!-- ============ 2.4 ============ -->
+<h3>2.4 Configure Ticket Types</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">CT-01_Configure Ticket Types (Bulk)</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Fill in]</td><th class="rowh2">Date Created:</th><td>[Fill in]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>None</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">The Organizer needs to set up or adjust the entire list of ticket tiers (name, price, quantity, purchase limits) of an event before submitting for review.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">On the ticket configuration table, the Organizer declares the ticket tiers (e.g. VIP, Standard) and saves once; the system replaces the whole existing ticket set with exactly the submitted set — rows carrying an _id are updated, rows without an _id are created, and any existing tier left out of the list is removed.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: The Organizer is logged in and owns the event.</p>
+<p>PRE-02: The event is in DRAFT or REJECTED state.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: The event's ticket type list matches the submitted table exactly.</p>
+<p>POST-02: The event's priceFrom/isFree are recomputed from the current lowest ticket price.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Configure Ticket Table</p>
+<ol>
+<li>The Organizer opens the "Times & Tickets" step (wizard) or the ticket management page in the workspace.</li>
+<li>The Organizer adds/edits/removes rows in the ticket-tier table: name, description, price, quantity, min/max per order, sale start/end time, show assignment (if the event has multiple shows).</li>
+<li>The Organizer clicks "Save".</li>
+<li>The system validates each tier: price > 0 if not free, maxPerOrder ≥ minPerOrder, maxPerOrder ≤ quantity, sale end time not later than the show's/event's end time.</li>
+<li>The system removes tiers dropped from the list (if they have no buyers), updates existing tiers, and creates brand-new tiers.</li>
+<li>The system recomputes the public lowest price and returns the new ticket list.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Empty list</b></p>
+<ol><li>The Organizer saves with no ticket tiers in the table.</li><li>The system shows "At least 1 ticket type must be configured" and does not save.</li></ol>
+<p><b>1.0.E2 Removing a tier that has buyers</b></p>
+<ol><li>The Organizer drops a tier with soldQuantity > 0 from the table.</li><li>The system shows "Cannot remove ticket type &lt;name&gt; that already has buyers" and blocks the entire save.</li></ol>
+<p><b>1.0.E3 Invalid ticket/show reference</b></p>
+<ol><li>A row carries an _id not belonging to this event, or is assigned to a nonexistent show.</li><li>The system shows the matching error and saves no rows (all-or-nothing).</li></ol>
+<p><b>1.0.E4 Price/quantity constraint violation</b></p>
+<ol><li>A tier has an invalid price, quantity, or purchase-limit format.</li><li>The system shows a field-level error for that tier and blocks saving the whole table.</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Medium — usually a few times during event preparation.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>20. A ticket tier that already has orders cannot be removed, even when the Organizer drops it from the configuration table.</p>
+<p>21. After the event is PUBLISHED, quantity/status must be adjusted via UC 2.7 "Restock Ticket Inventory" rather than reconfiguring the whole ticket set.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">This is a "bulk-replace" mechanism (internal code EM-128) — the Organizer just submits the current table state instead of calling create/update/delete per row.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">The Organizer has determined the correct show structure of the event before assigning each tier to its show.</td></tr>
+</table>
+
+<!-- ============ 2.5 ============ -->
+<h3>2.5 Pay Deposit via VNPAY</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">PD-01_Pay Deposit via VNPAY</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Fill in]</td><th class="rowh2">Date Created:</th><td>[Fill in]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>VNPAY (payment gateway)</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">The event has been approved by the Admin and is in the "waiting for deposit" state (APPROVED_WAITING_DEPOSIT); the Organizer needs to pay the 20% service-fee deposit for the event to be published publicly.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">The Organizer clicks "Pay Deposit" on "My Events"; the system creates a VNPAY transaction for the exact deposit amount and returns the payment URL. The Organizer completes payment on the VNPAY gateway; the system verifies the signature and amount in the callback flow, then automatically publishes the event — with no manual confirmation step from the Organizer.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: The Organizer is logged in and owns the event.</p>
+<p>PRE-02: reviewStatus = APPROVED_WAITING_DEPOSIT.</p>
+<p>PRE-03: depositStatus = UNPAID and depositAmount > 0 (set by the Admin at approval).</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01 (success): depositStatus = PAID and reviewStatus = PUBLISHED — the event appears publicly on the homepage/search.</p>
+<p>POST-02 (failure/cancel): No state changes; the Organizer can retry the payment.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Pay 20% Deposit</p>
+<ol>
+<li>The Organizer opens "My Events" and sees the event in "Waiting for deposit" state with the required deposit amount.</li>
+<li>The Organizer clicks "Pay 20% Deposit".</li>
+<li>The system checks the preconditions and builds the VNPAY payment URL (order code EVBEVTDEP_&lt;eventId&gt;, amount = depositAmount).</li>
+<li>The browser is redirected to the VNPAY payment gateway.</li>
+<li>The Organizer enters card/account details and confirms on VNPAY.</li>
+<li>VNPAY redirects the browser back to the system; the system verifies the signature and recognizes this as an "event deposit" order.</li>
+<li>The system reconciles the received amount against depositAmount, sets depositStatus = PAID and reviewStatus = PUBLISHED.</li>
+<li>The Organizer lands on the payment result page and, back on "My Events", sees the event published.</li>
+<li>In parallel, VNPAY also calls a server-side webhook (no browser involved) that reuses the same logic from step 7 — an idempotency guard ensures no double-processing if both arrive.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Invalid state for deposit</b></p>
+<ol><li>The event is not in APPROVED_WAITING_DEPOSIT.</li><li>The system shows "The event is not in the waiting-for-deposit state" and does not create a payment URL.</li></ol>
+<p><b>1.0.E2 Deposit already paid</b></p>
+<ol><li>The Organizer clicks pay when depositStatus is already PAID.</li><li>The system shows "The deposit has already been paid".</li></ol>
+<p><b>1.0.E3 Invalid deposit amount</b></p>
+<ol><li>depositAmount ≤ 0.</li><li>The system shows "Invalid deposit amount".</li></ol>
+<p><b>1.0.E4 Invalid callback signature / cancelled transaction</b></p>
+<ol><li>VNPAY returns an invalid signature, or the Organizer cancels the transaction.</li><li>The system redirects to the result page with a failed status; the event state is unchanged.</li></ol>
+<p><b>1.0.E5 Callback amount mismatch</b></p>
+<ol><li>The amount VNPAY confirms differs from the configured depositAmount.</li><li>The system shows "Deposit amount does not match" and does not update the state (guarding against spoofed callbacks).</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Low — once per approved event.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>22. The deposit can only be paid after the Admin has approved and set depositAmount (= 20% of the service fee).</p>
+<p>23. The state can only be confirmed PAID from a signature-verified VNPAY callback — no action lets the Organizer self-mark as paid.</p>
+<p>24. The system guarantees no double-processing when both the browser return-redirect and the server webhook confirm the same transaction.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">The payment result page only renders per the status parameter passed to it — all confirmation completes server-side before the redirect.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">The Organizer pays through the correct VNPAY gateway (sandbox or production) configured for the system.</td></tr>
+</table>
+
+<!-- ============ 2.6 ============ -->
+<h3>2.6 Pay Remaining Balance (Settlement)</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">PR-01_Pay Remaining Balance via VNPAY</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Fill in]</td><th class="rowh2">Date Created:</th><td>[Fill in]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>VNPAY (payment gateway)</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">The event has been published (and additional service costs may have accrued); the Organizer needs to settle the remaining service-fee balance.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">Same mechanism as UC 2.5 but for the remaining balance — defaulting to 80% of the service fee plus any additional cost (or the exact amount pre-fixed on the event, if any), paid via VNPAY and confirmed through a signature-verified callback.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: The Organizer is logged in and owns the event.</p>
+<p>PRE-02: finalPaymentStatus = UNPAID.</p>
+<p>PRE-03: The remaining amount due > 0.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01 (success): finalPaymentStatus = PAID, and the paid amount is recorded on the event.</p>
+<p>POST-02 (failure/cancel): No state changes.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Settle Remaining Balance</p>
+<ol>
+<li>The Organizer opens "My Events" for a published event with an outstanding balance.</li>
+<li>The Organizer clicks "Pay Remaining".</li>
+<li>The system computes the remaining amount and builds the VNPAY payment URL (order code EVBEVTREM_&lt;eventId&gt;).</li>
+<li>The browser is redirected to VNPAY; the Organizer completes payment.</li>
+<li>VNPAY redirects the browser back; the system verifies the signature and recognizes this as a "remaining balance" order.</li>
+<li>The system reconciles the amount and sets finalPaymentStatus = PAID.</li>
+<li>The Organizer lands on the payment result page.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Already paid</b></p>
+<ol><li>finalPaymentStatus is already PAID.</li><li>The system shows "The payment has already been paid".</li></ol>
+<p><b>1.0.E2 Nothing due</b></p>
+<ol><li>The computed remaining amount is ≤ 0.</li><li>The system shows "There is no amount to pay".</li></ol>
+<p><b>1.0.E3 Invalid callback signature / failed transaction</b></p>
+<ol><li>VNPAY returns an invalid signature, or the transaction is cancelled/failed.</li><li>The system redirects to the result page with a failed status; finalPaymentStatus is unchanged.</li></ol>
+<p><b>1.0.E4 Callback amount mismatch</b></p>
+<ol><li>The amount VNPAY confirms differs from the computed remaining amount.</li><li>The system shows "Payment amount does not match" and does not update the state.</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Should Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Low — 0 or 1 time per event, depending on whether additional costs accrue.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>25. The remaining amount is taken from the pre-fixed value on the event if present; otherwise it is computed as service fee minus deposit plus additional cost.</p>
+<p>26. Applies the same signature verification, amount reconciliation, and idempotency guard as UC 2.5.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Shares the payment result page and callback flow with UC 2.5 — the system distinguishes the two order kinds (deposit / remaining) by the order-code prefix.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">Any additional costs (if any) have been recorded on the event before the Organizer settles the balance.</td></tr>
+</table>
+
+<!-- ============ 2.7 ============ -->
+<h3>2.7 Restock Ticket Inventory</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">TI-01_Restock / Manage Ticket Inventory</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Fill in]</td><th class="rowh2">Date Created:</th><td>[Fill in]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>None</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">The event is published and on sale; the Organizer wants to increase a tier's quantity, or temporarily hide/resume selling a tier, without editing other fields.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">The "Inventory" page in the event workspace shows a per-tier table: configured quantity, currently held (pending checkout), confirmed sold, and remaining. The Organizer adjusts the quantity (restock) or status (on-sale/hidden) directly per row, without going through the full ticket configuration form.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: The Organizer is logged in and owns the event.</p>
+<p>PRE-02: The event has not started (independent of review status).</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: The tier's quantity and/or status is updated; the public lowest price is recomputed.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Adjust Live Ticket Stock</p>
+<ol>
+<li>The Organizer opens the "Inventory" tab of an event.</li>
+<li>The system shows the table: each tier with configured quantity, sold count, held count, remaining count, and % sold.</li>
+<li>The Organizer enters a new quantity for a tier (restock) and/or toggles the status on-sale ↔ hidden.</li>
+<li>The Organizer saves the change for that row.</li>
+<li>The system validates and updates; the table row shows the new figures immediately.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Event already started</b></p>
+<ol><li>The event is ongoing or over.</li><li>The system shows "The event has started — inventory cannot be adjusted" and blocks the action.</li></ol>
+<p><b>1.0.E2 New quantity below sold/held count</b></p>
+<ol><li>The Organizer enters a quantity lower than the tier's sold/held count.</li><li>The system shows "Cannot set quantity (x) below the sold/held count (y)".</li></ol>
+<p><b>1.0.E3 Invalid quantity format</b></p>
+<ol><li>The quantity is not an integer ≥ 1.</li><li>The system shows a format error and does not save.</li></ol>
+<p><b>1.0.E4 Invalid status</b></p>
+<ol><li>The submitted status is neither "on-sale" nor "hidden".</li><li>The system shows "status can only be ACTIVE or HIDDEN".</li></ol>
+<p><b>1.0.E5 Nothing to update</b></p>
+<ol><li>The Organizer saves without changing either quantity or status.</li><li>The system shows "A quantity or status must be provided to update inventory".</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Should Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Medium — per actual sales demand, may repeat many times during the sales period.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>27. The floor of the quantity on restock is always the sold/held count — inventory can never be set below it.</p>
+<p>28. Unlike UC 2.4 (ticket configuration), this action works even after the event is published; it is only locked once the event has begun.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">Only quantity and status are editable here; changing name, price, or sale schedule must go back to UC 2.4 (available only while the event is in draft/rejected state).</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">The Organizer monitors inventory regularly to proactively restock before sell-out.</td></tr>
+</table>
+
+<!-- ============ 2.8 ============ -->
+<h3>2.8 View Event Analytics & Sales Performance</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">EA-01_View Event Analytics & Sales Performance</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Fill in]</td><th class="rowh2">Date Created:</th><td>[Fill in]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>None</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">The Organizer wants to track the sales performance and revenue of an event on or after sale.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">The "Analytics" page in the event workspace shows total revenue, tickets sold, pending/cancelled orders, a revenue-over-time chart (last 24 hours or 30 days), and a per-tier revenue table; it can be filtered by a specific show.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: The Organizer is logged in and owns the event.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: No data changes — this is a read-only operation.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 View Sales Dashboard</p>
+<ol>
+<li>The Organizer opens the "Summary / Analytics" tab of the event.</li>
+<li>(Optional) The Organizer filters by a specific show.</li>
+<li>The system aggregates: total revenue, tickets sold, paid orders, pending orders, cancelled/expired/refunded orders.</li>
+<li>The system builds the revenue time series, zero-filling buckets with no transactions so the time axis stays continuous.</li>
+<li>The system returns the per-tier revenue and tickets-sold table.</li>
+<li>The UI renders the chart and the data table.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 No access</b></p>
+<ol><li>The Organizer is not the event owner (and not an Admin).</li><li>The system denies with "You do not have permission to manage this event".</li></ol>
+<p><b>1.0.E2 Filter show does not exist</b></p>
+<ol><li>The Organizer filters by a show not belonging to the event.</li><li>The system shows "Show &lt;id&gt; does not exist in this event".</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Should Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">High — the Organizer reviews it many times throughout the sales period.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>29. Only PAID registrations count toward revenue and tickets sold; other statuses are counted separately and not added to revenue.</p>
+<p>30. The 24-hour series is grouped by hour, the 30-day series by day — both normalized to Vietnam time (GMT+7) so time labels do not drift even if the server runs a different timezone.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">The "traffic" panel in the UI is currently a fixed placeholder — the system has no real pageview tracking yet.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">The figures reflect the moment of the call; there is no long-lived cache delaying the data.</td></tr>
+</table>
+
+<!-- ============ 2.9 ============ -->
+<h3>2.9 Manage Orders & Attendees</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">OM-01_Manage Orders & Attendees (Registrations)</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Fill in]</td><th class="rowh2">Date Created:</th><td>[Fill in]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>Staff (check-in data reference)</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">The Organizer needs to view the ticket buyers / orders of an event to reconcile, support customers, or prepare for check-in.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">The "Orders" page in the event workspace lists each confirmed registration (excluding pending, unpaid holds) with the buyer's info, ticket tier, quantity, and checked-in status; it can be filtered by show, paginated, and exported to a CSV file.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: The Organizer is logged in and owns the event.</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: No data changes — read and export only.</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Review Orders</p>
+<ol>
+<li>The Organizer opens the "Orders" tab of the event.</li>
+<li>(Optional) The Organizer filters by show or changes page.</li>
+<li>The system returns the confirmed registrations, each row joined with its matching check-in status (if the ticket was scanned successfully).</li>
+<li>The UI shows the table: order code, buyer, ticket tier, quantity, total amount, registration date, status, checked-in or not.</li>
+<li>The Organizer clicks "Export CSV"; the system compiles the displayed data into a downloadable CSV file.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Filter show does not exist</b></p>
+<ol><li>The Organizer filters by a show not belonging to the event.</li><li>The system shows an invalid-show error and returns no list.</li></ol>
+<p><b>1.0.E2 No access</b></p>
+<ol><li>The Organizer is not the event owner.</li><li>The system denies access (403).</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Must Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">High — viewed frequently throughout the sales and operations lifecycle.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>31. Only orders past the hold step (no longer pending payment) appear in the list — a pending hold is not yet a real order.</p>
+<p>32. The count/filter figures on the table apply only to the current page, not the whole list when paginated.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">This is the "Attendee Tracker" per the SRS; the same data source is also referenced by the Staff check-in flow to reconcile gate-entry status.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">The buyer info (name/email/phone) is shown per the Participant's account profile at the time of purchase.</td></tr>
+</table>
+
+<!-- ============ 2.10 ============ -->
+<h3>2.10 Request Fund Withdrawal</h3>
+<table>
+<tr><th class="rowh">UC ID and Name:</th><td class="hdr" colspan="3">WD-01_Request Fund Withdrawal</td></tr>
+<tr><th class="rowh2">Created By:</th><td>[Fill in]</td><th class="rowh2">Date Created:</th><td>[Fill in]</td></tr>
+<tr><th class="rowh2">Primary Actor:</th><td>Organizer</td><th class="rowh2">Secondary Actors:</th><td>Admin (payout approver)</td></tr>
+<tr><th class="rowh">Trigger:</th><td colspan="3">The event is published and has ended; the Organizer wants to withdraw ticket-sales revenue to their bank account.</td></tr>
+<tr><th class="rowh">Description:</th><td colspan="3">The "Withdrawal" page in the event workspace shows total revenue, available balance (less pending/approved requests), and request history; the Organizer enters an amount plus bank details to create a pending withdrawal request, which the Admin reviews and pays out.</td></tr>
+<tr><th class="rowh">Preconditions:</th><td colspan="3">
+<p>PRE-01: The Organizer is logged in and owns the event.</p>
+<p>PRE-02: reviewStatus = PUBLISHED.</p>
+<p>PRE-03: The event has ended (current time is past the event end date).</p></td></tr>
+<tr><th class="rowh">Postconditions:</th><td colspan="3">
+<p>POST-01: A new withdrawal request is created in PENDING state.</p>
+<p>POST-02: The event's available balance decreases by the requested amount (treated as held pending review).</p></td></tr>
+<tr><th class="rowh">Normal Flow</th><td colspan="3">
+<p class="flowlabel">1.0 Request Payout</p>
+<ol>
+<li>The Organizer opens the "Withdrawal" tab of an ended event.</li>
+<li>The system shows total paid revenue, held/paid-out amount, available balance, the minimum withdrawal amount, and the history of prior requests.</li>
+<li>The Organizer enters the amount to withdraw, bank name, account number, account holder, and an optional note.</li>
+<li>The Organizer clicks "Submit Request".</li>
+<li>The system validates the amount and bank details and reconciles against the current available balance.</li>
+<li>The system creates the request in pending state and refreshes the history in the UI.</li>
+</ol></td></tr>
+<tr><th class="rowh">Alternative Flows:</th><td colspan="3">None</td></tr>
+<tr><th class="rowh">Exceptions:</th><td colspan="3">
+<p><b>1.0.E1 Event not published</b></p>
+<ol><li>The event is not in PUBLISHED state.</li><li>The system shows "Withdrawal can only be requested for a published event".</li></ol>
+<p><b>1.0.E2 Event not ended</b></p>
+<ol><li>The Organizer submits while the event is ongoing or not yet held.</li><li>The system shows "Withdrawal can only be requested after the event has ended".</li></ol>
+<p><b>1.0.E3 Amount below minimum</b></p>
+<ol><li>The amount is not an integer or is below the system's minimum withdrawal.</li><li>The system shows "The minimum withdrawal amount is &lt;minimum&gt;đ".</li></ol>
+<p><b>1.0.E4 Missing bank details</b></p>
+<ol><li>The Organizer leaves bank name, account number, or account holder empty.</li><li>The system shows "Please enter the bank, account number, and account holder".</li></ol>
+<p><b>1.0.E5 Invalid account number format</b></p>
+<ol><li>The account number is not a 6–20 digit string.</li><li>The system shows "The account number must be digits only (6–20 characters)".</li></ol>
+<p><b>1.0.E6 Exceeds available balance</b></p>
+<ol><li>The requested amount is greater than the current available balance.</li><li>The system shows "The amount exceeds the available balance (&lt;balance&gt;đ)".</li></ol></td></tr>
+<tr><th class="rowh">Priority:</th><td colspan="3">Should Have</td></tr>
+<tr><th class="rowh">Frequency of Use:</th><td colspan="3">Low — usually once after the event ends, possibly more if the Organizer withdraws in parts.</td></tr>
+<tr><th class="rowh">Business Rules:</th><td colspan="3">
+<p>33. Available balance = total paid revenue minus the sum of pending or approved (held) requests as of the current moment.</p>
+<p>34. The final approve/reject decision and payout belong to the Admin — a pending request is not automatically paid.</p></td></tr>
+<tr><th class="rowh">Other Information:</th><td colspan="3">The minimum withdrawal is a single system-wide constant applied identically to every event/Organizer.</td></tr>
+<tr><th class="rowh">Assumptions:</th><td colspan="3">The bank details entered here are independent of the payment info declared at event creation.</td></tr>
+</table>
+
+</body>
+</html>

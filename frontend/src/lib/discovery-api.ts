@@ -104,6 +104,23 @@ function formatPrice(priceFrom?: number, isFree?: boolean): string {
 
 const eventImage = (e: ApiEvent) => e.imageUrl || e.banner || DEFAULT_EVENT_IMAGE
 
+/** Preserve the existing UI rule: an event becomes past after its local day ends. */
+function isPastEventDay(value?: string): boolean {
+  if (!value) return false
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return false
+  const endOfDay = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    23,
+    59,
+    59,
+    999
+  )
+  return endOfDay.getTime() < Date.now()
+}
+
 /** Event.shows[] → presentational options, oldest first, auto-labelled when the
  *  organizer didn't name the showing ("Suất chiều" etc). */
 function toShowOptions(shows: ApiEvent["shows"]): ShowOption[] {
@@ -128,6 +145,7 @@ function toEventItem(e: ApiEvent): EventItem {
     price: formatPrice(e.priceFrom, e.isFree),
     image: eventImage(e),
     category: e.category || "Sự kiện",
+    isPast: isPastEventDay(e.date ?? e.startDate),
   }
 }
 

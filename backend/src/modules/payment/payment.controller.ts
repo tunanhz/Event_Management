@@ -1,19 +1,21 @@
 import { Request, Response } from 'express';
 import { RegistrationService } from '../registration/registration.service';
+import { OrganizerService } from '../organizer/organizer.service';
 import { asyncHandler } from '../../common/utils/asyncHandler';
 import { ApiResponse } from '../../common/utils/ApiResponse';
 import { AppError } from '../../common/utils/AppError';
 import { AuthRequest } from '../../common/types';
 import { config } from '../../config';
-import { verifySecureHash, parseOrderInfo } from './vnpay.util';
+import {
+  verifySecureHash,
+  parseOrderInfo,
+  parseEventDepositOrderInfo,
+  parseEventRemainingOrderInfo,
+  getClientIp,
+} from './vnpay.util';
 
 const registrationService = new RegistrationService();
-
-function getClientIp(req: Request): string {
-  const xff = req.headers['x-forwarded-for'];
-  if (typeof xff === 'string' && xff.length > 0) return xff.split(',')[0].trim();
-  return req.socket.remoteAddress?.replace('::ffff:', '') || '127.0.0.1';
-}
+const organizerService = new OrganizerService();
 
 // VNPAY sends every param as a plain string — normalize the loosely-typed Express query
 // object into Record<string,string> before signature verification.
@@ -36,20 +38,38 @@ export class PaymentController {
     res.json(ApiResponse.ok({ paymentUrl }, 'Tạo liên kết thanh toán VNPAY thành công'));
   });
 
-  // Browser-facing redirect target — VNPAY sends the buyer back here after the sandbox
-  // payment page. Never throws to the generic JSON error handler: this is a 302 to the
-  // frontend either way, with the outcome expressed as query params instead of a status code.
+  // Figures out which of the three VNPAY flows (participant registration purchase,
+  // organizer deposit, organizer remaining balance) an order's vnp_OrderInfo belongs to.
+  // The prefixes are mutually exclusive (see vnpay.util.ts) so at most one branch matches.
+  private classifyOrder(orderInfo: string) {
+    const registrationIds = parseOrderInfo(orderInfo);
+    if (registrationIds.length) return { kind: 'registration' as const, registrationIds };
+    const depositEventId = parseEventDepositOrderInfo(orderInfo);
+    if (depositEventId) return { kind: 'deposit' as const, eventId: depositEventId };
+    const remainingEventId = parseEventRemainingOrderInfo(orderInfo);
+    if (remainingEventId) return { kind: 'remaining' as const, eventId: remainingEventId };
+    return { kind: 'unknown' as const };
+  }
+
+  // Browser-facing redirect target — VNPAY sends the buyer/organizer back here after the
+  // sandbox payment page. Never throws to the generic JSON error handler: this is a 302 to
+  // the frontend either way, with the outcome expressed as query params instead of a status
+  // code. Organizer deposit/remaining orders land on a separate result page since they were
+  // paid from the Organizer Center, not the ticket-purchase flow.
   vnpayReturn = asyncHandler(async (req: Request, res: Response) => {
     const query = toStringRecord(req.query);
-    const resultPage = `${config.frontendUrl}/thanh-toan/vnpay-return`;
+    const order = this.classifyOrder(query.vnp_OrderInfo || '');
+    const resultPage =
+      order.kind === 'deposit' || order.kind === 'remaining'
+        ? `${config.frontendUrl}/organizer/vnpay-return`
+        : `${config.frontendUrl}/thanh-toan/vnpay-return`;
 
     try {
       if (!verifySecureHash(query, config.vnpay.hashSecret)) {
         return res.redirect(`${resultPage}?status=failed&message=${encodeURIComponent('Chữ ký không hợp lệ')}`);
       }
 
-      const registrationIds = parseOrderInfo(query.vnp_OrderInfo || '');
-      if (!registrationIds.length) {
+      if (order.kind === 'unknown') {
         return res.redirect(`${resultPage}?status=failed&message=${encodeURIComponent('Không xác định được đơn hàng')}`);
       }
 
@@ -59,11 +79,19 @@ export class PaymentController {
         return res.redirect(`${resultPage}?status=failed&message=${encodeURIComponent('Giao dịch không thành công hoặc đã bị hủy')}`);
       }
 
-      await registrationService.finalizeVnpayPayment(registrationIds, {
+      const paymentMeta = {
         transactionNo: query.vnp_TransactionNo || query.vnp_TxnRef,
         amountVnd100: Number(query.vnp_Amount),
         payDate: parseVnpayDate(query.vnp_PayDate),
-      });
+      };
+
+      if (order.kind === 'registration') {
+        await registrationService.finalizeVnpayPayment(order.registrationIds, paymentMeta);
+      } else if (order.kind === 'deposit') {
+        await organizerService.finalizeDepositVnpayPayment(order.eventId, paymentMeta);
+      } else {
+        await organizerService.finalizeRemainingVnpayPayment(order.eventId, paymentMeta);
+      }
 
       return res.redirect(`${resultPage}?status=success`);
     } catch (err) {
@@ -75,7 +103,7 @@ export class PaymentController {
   // Server-to-server webhook — VNPAY calls this directly (no browser involved) and expects
   // a specific `{RspCode, Message}` JSON shape back, retrying on anything other than "00".
   // This is the authoritative confirmation path; vnpayReturn above is only for UX since a
-  // buyer can close their browser before the redirect completes.
+  // buyer/organizer can close their browser before the redirect completes.
   vnpayIpn = async (req: Request, res: Response): Promise<void> => {
     const query = toStringRecord(req.query);
     try {
@@ -84,24 +112,32 @@ export class PaymentController {
         return;
       }
 
-      const registrationIds = parseOrderInfo(query.vnp_OrderInfo || '');
-      if (!registrationIds.length) {
+      const order = this.classifyOrder(query.vnp_OrderInfo || '');
+      if (order.kind === 'unknown') {
         res.json({ RspCode: '01', Message: 'Order not found' });
         return;
       }
 
       if (query.vnp_ResponseCode !== '00' || query.vnp_TransactionStatus !== '00') {
-        // Payment failed on VNPAY's side — acknowledge receipt, leave the registration
-        // PENDING so the buyer can retry from the payment page within their hold window.
+        // Payment failed on VNPAY's side — acknowledge receipt, leave the underlying
+        // registration/event state untouched so it can be retried within its window.
         res.json({ RspCode: '00', Message: 'Confirm Success' });
         return;
       }
 
-      await registrationService.finalizeVnpayPayment(registrationIds, {
+      const paymentMeta = {
         transactionNo: query.vnp_TransactionNo || query.vnp_TxnRef,
         amountVnd100: Number(query.vnp_Amount),
         payDate: parseVnpayDate(query.vnp_PayDate),
-      });
+      };
+
+      if (order.kind === 'registration') {
+        await registrationService.finalizeVnpayPayment(order.registrationIds, paymentMeta);
+      } else if (order.kind === 'deposit') {
+        await organizerService.finalizeDepositVnpayPayment(order.eventId, paymentMeta);
+      } else {
+        await organizerService.finalizeRemainingVnpayPayment(order.eventId, paymentMeta);
+      }
 
       res.json({ RspCode: '00', Message: 'Confirm Success' });
     } catch (err) {
