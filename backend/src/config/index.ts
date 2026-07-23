@@ -33,5 +33,9 @@ export const config = {
   groq: {
     apiKey: process.env.GROQ_API_KEY || '',
   },
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY || '',
+    model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite-preview',
+  },
 };
 
