@@ -5,6 +5,7 @@ import { ApiResponse } from '../../common/utils/ApiResponse';
 import { AuthRequest } from '../../common/types';
 import { asOptionalString, parsePagination } from '../../common/utils/query-params';
 import { buildContentDisposition, buildReportPdf, buildReportWorkbook } from './report-export.util';
+import { getClientIp } from '../payment/vnpay.util';
 
 export class OrganizerController {
   private organizerService: OrganizerService;
@@ -289,20 +290,25 @@ export class OrganizerController {
     res.send(buffer);
   });
 
+  // Both endpoints below only ever return a VNPAY redirect URL — the event's
+  // depositStatus/finalPaymentStatus/reviewStatus flip happens later, when VNPAY
+  // confirms via the return-redirect or IPN callback (see modules/payment).
   payDeposit = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const event = await this.organizerService.payDeposit(req.params.id as string, {
-      id: req.user!.id,
-      role: req.user!.role,
-    });
-    res.json(ApiResponse.ok(event, 'Đã thanh toán cọc 20% — sự kiện đã được công bố'));
+    const paymentUrl = await this.organizerService.createDepositPaymentUrl(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      getClientIp(req)
+    );
+    res.json(ApiResponse.ok({ paymentUrl }, 'Tạo liên kết thanh toán cọc VNPAY thành công'));
   });
 
   payRemaining = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const event = await this.organizerService.payRemaining(req.params.id as string, {
-      id: req.user!.id,
-      role: req.user!.role,
-    });
-    res.json(ApiResponse.ok(event, 'Đã thanh toán khoản còn lại'));
+    const paymentUrl = await this.organizerService.createRemainingPaymentUrl(
+      req.params.id as string,
+      { id: req.user!.id, role: req.user!.role },
+      getClientIp(req)
+    );
+    res.json(ApiResponse.ok({ paymentUrl }, 'Tạo liên kết thanh toán VNPAY thành công'));
   });
 
   cancelEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
