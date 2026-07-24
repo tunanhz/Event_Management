@@ -10,6 +10,7 @@ import { Registration } from '../registration/registration.model';
 import { CategoryRepository } from '../category/category.repository';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
+import { emailService } from '../../common/utils/email.service';
 
 const REVIEW_STATUSES = ['DRAFT', 'PENDING_REVIEW', 'APPROVED_WAITING_DEPOSIT', 'PUBLISHED', 'REJECTED'] as const;
 const LIFECYCLE_STATUSES = ['draft', 'published', 'cancelled', 'completed'] as const;
@@ -106,31 +107,38 @@ export class AdminEventService {
   async approveEvent(eventId: string, adminId: string, serviceCost: number): Promise<IEvent> {
     await this.getEventOrThrow(eventId);
 
+    let updated: IEvent | null = null;
     if (serviceCost > 0) {
       const depositAmount = Math.round(serviceCost * 0.2);
-      const updated = await this.adminEventRepository.approveEventWithDeposit(
+      updated = await this.adminEventRepository.approveEventWithDeposit(
         eventId,
         adminId,
         serviceCost,
         depositAmount
       );
-      if (!updated) {
-        throw new AppError(
-          'Sự kiện không còn ở trạng thái chờ duyệt (có thể đã được xử lý bởi admin khác). Vui lòng tải lại hàng đợi.',
-          409
-        );
-      }
-      return updated;
+    } else {
+      updated = await this.adminEventRepository.approveEventDirect(eventId, adminId);
     }
 
-    // No services → publish directly
-    const updated = await this.adminEventRepository.approveEventDirect(eventId, adminId);
     if (!updated) {
       throw new AppError(
-        'Su kien khong con o trang thai cho duyet. Vui long tai lai hang doi.',
+        'Sự kiện không còn ở trạng thái chờ duyệt (có thể đã được xử lý bởi admin khác). Vui lòng tải lại hàng đợi.',
         409
       );
     }
+
+    // Trigger email notification to Organizer
+    try {
+      const eventWithCreator = await Event.findById(updated._id).populate('creatorId', 'email fullName').lean();
+      const creator = (eventWithCreator as any)?.creatorId;
+      const organizerEmail = creator && typeof creator === 'object' ? creator.email : null;
+      if (organizerEmail) {
+        await emailService.sendEventApprovalNotification(organizerEmail, updated.title, serviceCost);
+      }
+    } catch (err) {
+      console.error('⚠️ Failed to send approval email notification:', err);
+    }
+
     return updated;
   }
 
@@ -153,6 +161,19 @@ export class AdminEventService {
         409
       );
     }
+
+    // Trigger email notification to Organizer
+    try {
+      const eventWithCreator = await Event.findById(updated._id).populate('creatorId', 'email fullName').lean();
+      const creator = (eventWithCreator as any)?.creatorId;
+      const organizerEmail = creator && typeof creator === 'object' ? creator.email : null;
+      if (organizerEmail) {
+        await emailService.sendEventRejectionNotification(organizerEmail, updated.title, trimmedReason);
+      }
+    } catch (err) {
+      console.error('⚠️ Failed to send rejection email notification:', err);
+    }
+
     return updated;
   }
 
