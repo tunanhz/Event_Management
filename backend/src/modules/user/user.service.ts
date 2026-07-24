@@ -30,10 +30,16 @@ export class UserService {
       throw new AppError('Email is required', 400);
     }
 
+    const lowerEmail = email.toLowerCase().trim();
+
+    // Check if email is already registered
+    const existingUser = await this.userRepository.findByEmail(lowerEmail);
+    if (existingUser) {
+      throw new AppError('Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.', 409);
+    }
+
     // Generate 6 digit numeric OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    const lowerEmail = email.toLowerCase().trim();
 
     // Clear previous OTPs for this email
     if (isDbConnected) {

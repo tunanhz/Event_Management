@@ -27,7 +27,7 @@ export function EventShowHeader() {
   const dateText = selected?.startTime ? formatDateTime(selected.startTime) : event.dateTime
 
   return (
-    <div className={styles.headerRow}>
+    <div className={styles.headerRow} suppressHydrationWarning>
       <span className={styles.dateChip}>
         <CalendarDays size={18} aria-hidden="true" />
         {dateText}

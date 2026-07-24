@@ -16,6 +16,8 @@ export default function StickyPurchaseBar({ event }: StickyPurchaseBarProps) {
 
   const [venue] = event.location.split(',');
 
+  const isPast = event.isPast ?? false;
+
   return (
     <div className={`${styles.bar} ${visible ? styles.visible : ''}`} aria-hidden={!visible}>
       <div className={styles.inner}>
@@ -29,9 +31,15 @@ export default function StickyPurchaseBar({ event }: StickyPurchaseBarProps) {
           <span>{venue}</span>
         </div>
 
-        <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.buyBtn} tabIndex={visible ? 0 : -1}>
-          Mua vé ngay
-        </Link>
+        {!isPast ? (
+          <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.buyBtn} tabIndex={visible ? 0 : -1}>
+            Mua vé ngay
+          </Link>
+        ) : (
+          <button disabled className={`${styles.buyBtn} opacity-50 cursor-not-allowed pointer-events-none bg-slate-700`}>
+            Sự kiện đã kết thúc
+          </button>
+        )}
       </div>
     </div>
   );

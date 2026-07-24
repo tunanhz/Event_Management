@@ -39,6 +39,8 @@ export default async function EventDetailPage({
 
   const { event, related } = detail;
 
+  const isPast = event.isPast ?? false;
+
   return (
     <>
       <Header />
@@ -56,13 +58,21 @@ export default async function EventDetailPage({
           <aside className={styles.sidebar}>
             <div className={styles.promo}>
               <span className={styles.promoBrand}>EventBox</span>
-              <p className={styles.promoTitle}>Đặt vé nhanh chóng & an toàn</p>
+              <p className={styles.promoTitle}>
+                {!isPast ? "Đặt vé nhanh chóng & an toàn" : "Sự kiện đã diễn ra"}
+              </p>
               <ul className={styles.promoList}>
                 <li>Vé điện tử — vào cổng nhanh bằng mã QR</li>
                 <li>Thanh toán bảo mật, hoàn tiền theo chính sách</li>
                 <li>Hỗ trợ đặt nhóm & quà tặng</li>
               </ul>
-              <a href={`/su-kien/${id}/dat-ve`} className={styles.promoCta}>Chọn suất & mua vé</a>
+              {!isPast ? (
+                <a href={`/su-kien/${id}/dat-ve`} className={styles.promoCta}>Chọn suất & mua vé</a>
+              ) : (
+                <button disabled className={`${styles.promoCta} opacity-50 cursor-not-allowed pointer-events-none bg-slate-700`}>
+                  Sự kiện đã kết thúc
+                </button>
+              )}
             </div>
           </aside>
         </div>

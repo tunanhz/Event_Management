@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
+import ChatbotGate from "@/components/chatbot/ChatbotGate";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -35,6 +36,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <AuthProvider>
           {children}
+          <ChatbotGate />
         </AuthProvider>
       </body>
     </html>

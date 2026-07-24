@@ -58,7 +58,7 @@ export default function AdminOverview() {
     {
       label: "Tổng người dùng",
       value: formatNumber(stats.totalUsers),
-      sub: `+${stats.attendeeGrowth}% so với tháng trước`,
+      sub: `${stats.attendeeGrowth >= 0 ? "+" : ""}${stats.attendeeGrowth}% so với tháng trước`,
       icon: Users,
       colorClass: "gradient-primary",
       textColor: "text-cyan-700",
@@ -74,7 +74,7 @@ export default function AdminOverview() {
     {
       label: "Doanh thu toàn hệ thống",
       value: formatCurrency(stats.totalRevenue),
-      sub: `+${stats.revenueGrowth}% so với tháng trước`,
+      sub: `${stats.revenueGrowth >= 0 ? "+" : ""}${stats.revenueGrowth}% so với tháng trước`,
       icon: Banknote,
       colorClass: "gradient-amber",
       textColor: "text-amber-700",
@@ -82,7 +82,7 @@ export default function AdminOverview() {
     {
       label: "Sự kiện chờ duyệt",
       value: String(stats.pendingApprovals),
-      sub: "Cần xử lý gấp",
+      sub: stats.pendingApprovals > 0 ? "Cần xử lý gấp" : "Tất cả đã duyệt",
       icon: ClipboardCheck,
       colorClass: "gradient-rose",
       textColor: "text-rose-700",

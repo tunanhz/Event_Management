@@ -14,6 +14,10 @@ export interface AdminEventQuery extends PaginationQuery {
   creatorId?: string;
   /** Case-insensitive title search. */
   search?: string;
+  privacy?: string;
+  timeStatus?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 /** Escape user input before embedding it in a RegExp (title search). */
@@ -23,13 +27,34 @@ function escapeRegExp(input: string): string {
 
 export class AdminEventRepository {
   async findEvents(query: AdminEventQuery): Promise<PaginatedResult<IEvent>> {
-    const { page = 1, limit = 10, reviewStatus, status, categoryId, creatorId, search } = query;
+    const { page = 1, limit = 10, reviewStatus, status, categoryId, creatorId, search, privacy, timeStatus, fromDate, toDate } = query;
     const filter: Record<string, any> = {};
     if (reviewStatus) filter.reviewStatus = reviewStatus;
     if (status) filter.status = status;
+    if (privacy) filter.privacy = privacy;
     if (categoryId) filter.categoryId = categoryId;
     if (creatorId) filter.creatorId = creatorId;
     if (search) filter.title = { $regex: escapeRegExp(search), $options: 'i' };
+
+    const now = new Date();
+    if (timeStatus === 'upcoming') {
+      filter.startDate = { $gt: now };
+      filter.status = { $ne: 'cancelled' };
+    } else if (timeStatus === 'ongoing') {
+      filter.startDate = { $lte: now };
+      filter.endDate = { $gte: now };
+      filter.status = { $ne: 'cancelled' };
+    } else if (timeStatus === 'completed') {
+      filter.$or = [{ endDate: { $lt: now } }, { status: 'completed' }];
+    } else if (timeStatus === 'cancelled') {
+      filter.status = 'cancelled';
+    }
+
+    if (fromDate || toDate) {
+      filter.startDate = filter.startDate || {};
+      if (fromDate) filter.startDate.$gte = new Date(fromDate);
+      if (toDate) filter.startDate.$lte = new Date(toDate);
+    }
 
     const skip = (page - 1) * limit;
     const [data, totalItems] = await Promise.all([

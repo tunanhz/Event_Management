@@ -15,12 +15,36 @@ export interface PayoutRequest {
   id: string;
   kind: 'payout' | 'refund';
   eventTitle: string;
+  eventId?: string;
+  organizer?: string;
   beneficiary: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
   bankInfo: string;
   amount: number;
   requestedAt: string;
   status: 'pending' | 'executed' | 'rejected';
   rejectionReason?: string;
+  // Audit & Contract Inspection fields
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  ticketsSold?: number;
+  capacity?: number;
+  totalRevenue?: number;
+  logisticsServices?: string[];
+  serviceCost?: number;
+  depositAmount?: number;
+  depositStatus?: "PAID" | "UNPAID";
+  additionalCost?: number;
+  finalPaymentAmount?: number;
+  finalPaymentStatus?: "PAID" | "UNPAID";
+  contract?: {
+    repName?: string;
+    signatureUrl?: string;
+  } | null;
+  permitDocuments?: { name: string; url?: string; sizeKb?: number }[];
 }
 
 export interface DashboardStats {

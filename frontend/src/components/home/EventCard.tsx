@@ -14,6 +14,8 @@ export interface EventItem {
   price: string;
   image: string;
   category: string;
+  /** Computed by the data layer so render functions stay deterministic. */
+  isPast?: boolean;
 }
 
 interface EventCardProps {

@@ -14,11 +14,18 @@ export default function EventDetailHero({ event, extraDates }: EventDetailHeroPr
   const [venue, ...rest] = event.location.split(',');
   const address = rest.join(',').trim();
 
+  const isPast = event.isPast ?? false;
+
   return (
     <section className={styles.hero}>
       <div className={styles.card}>
         {/* Left — event summary */}
         <div className={styles.info}>
+          {isPast && (
+            <span className="inline-block rounded-full bg-rose-500/15 border border-rose-500/30 px-3 py-1 text-xs font-bold text-rose-400 mb-2 w-fit">
+              🔴 Sự kiện đã kết thúc
+            </span>
+          )}
           <h1 className={styles.title}>{event.title}</h1>
 
           <div className={styles.metaRow}>
@@ -44,19 +51,32 @@ export default function EventDetailHero({ event, extraDates }: EventDetailHeroPr
 
           <div className={styles.divider} />
 
-          <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.priceRow}>
-            {isFree ? (
-              <span className={styles.priceFree}>Miễn phí</span>
-            ) : (
-              <>
-                <span className={styles.priceLabel}>Giá từ</span>
-                <span className={styles.priceValue}>{priceValue(event.price)}</span>
-              </>
-            )}
-            <ChevronRight className={styles.priceChevron} size={20} />
-          </Link>
+          {!isPast ? (
+            <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.priceRow}>
+              {isFree ? (
+                <span className={styles.priceFree}>Miễn phí</span>
+              ) : (
+                <>
+                  <span className={styles.priceLabel}>Giá từ</span>
+                  <span className={styles.priceValue}>{priceValue(event.price)}</span>
+                </>
+              )}
+              <ChevronRight className={styles.priceChevron} size={20} />
+            </Link>
+          ) : (
+            <div className={styles.priceRow}>
+              <span className={styles.priceLabel}>Trạng thái</span>
+              <span className="text-rose-400 font-bold">Đã kết thúc</span>
+            </div>
+          )}
 
-          <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.buyBtn}>Mua vé ngay</Link>
+          {!isPast ? (
+            <Link href={`/su-kien/${event.id}/dat-ve`} className={styles.buyBtn}>Mua vé ngay</Link>
+          ) : (
+            <button disabled className={`${styles.buyBtn} opacity-50 cursor-not-allowed pointer-events-none bg-slate-700`}>
+              Sự kiện đã kết thúc
+            </button>
+          )}
         </div>
 
         {/* Ticket-stub perforation */}

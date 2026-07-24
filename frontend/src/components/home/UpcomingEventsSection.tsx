@@ -41,21 +41,30 @@ export default function UpcomingEventsSection({
     now.setHours(0, 0, 0, 0);
 
     return events.filter((event) => {
+      let eventDate = parseDateString(event.date);
+      if (!eventDate && event.date) {
+        const d = new Date(event.date);
+        if (!Number.isNaN(d.getTime())) eventDate = d;
+      }
+      if (eventDate) {
+        const copy = new Date(eventDate);
+        copy.setHours(23, 59, 59, 999);
+        if (copy < now) return false; // Filter out past events
+      }
+
       if (filter === "all") return true;
 
-      const eventDate = parseDateString(event.date);
       if (!eventDate) return false;
-      eventDate.setHours(0, 0, 0, 0);
+      const dateCopy = new Date(eventDate);
+      dateCopy.setHours(0, 0, 0, 0);
 
-      const diffTime = eventDate.getTime() - now.getTime();
+      const diffTime = dateCopy.getTime() - now.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       if (filter === "week") {
-        // Within 7 days
         return diffDays >= 0 && diffDays <= 7;
       }
       if (filter === "month") {
-        // Within 30 days
         return diffDays >= 0 && diffDays <= 30;
       }
       return true;
