@@ -20,13 +20,16 @@ export interface SavedEventResult {
   assetPatch: Partial<CreateEventForm>
 }
 
-/** Upload a local preview (blob:/data: URL) and return the stored /uploads URL. */
+/** Upload a local preview (blob:/data: URL) and return the stored file URL. */
 async function uploadLocalFile(
   kind: "images" | "signatures",
   src: string,
   baseName: string
 ): Promise<string> {
-  if (src.startsWith("/uploads/")) return src // already stored on the server
+  // Only unsaved previews carry a blob:/data: URL. Anything else already lives
+  // on the server — an absolute Blob URL, or a /uploads/... path in local dev —
+  // so re-uploading it would just duplicate the stored file.
+  if (!src.startsWith("blob:") && !src.startsWith("data:")) return src
   const blob = await fetch(src).then((r) => r.blob())
   const ext = blob.type === "image/jpeg" ? "jpg" : blob.type === "image/webp" ? "webp" : "png"
   const formData = new FormData()

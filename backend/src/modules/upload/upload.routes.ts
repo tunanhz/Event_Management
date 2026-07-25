@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { Router, Request, RequestHandler, Response, NextFunction } from 'express';
 import multer from 'multer';
+import { put } from '@vercel/blob';
 import { isAuthenticated, authorize } from '../../common/middleware/auth.middleware';
 import { AppError } from '../../common/utils/AppError';
 import { asyncHandler } from '../../common/utils/asyncHandler';
@@ -15,7 +16,16 @@ import { ApiResponse } from '../../common/utils/ApiResponse';
  *  - /signatures — hand-drawn contract signature (step 5): PNG ≤ 1MB
  * All return ApiResponse{name, url, sizeKb}. Files get random server-side
  * names (validated extension only) — the client filename is display metadata.
+ *
+ * Storage: serverless hosts mount the app bundle read-only (writes fail with
+ * EROFS) and give each invocation its own container, so a file written to local
+ * disk would neither save nor still be there on the next request. Uploads
+ * therefore go to Vercel Blob whenever BLOB_READ_WRITE_TOKEN is configured;
+ * the local-disk path is kept only for dev machines that have no token, where
+ * `express.static('/uploads')` serves the files back.
  */
+
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 
 interface UploaderConfig {
   subdir: string;
@@ -25,18 +35,39 @@ interface UploaderConfig {
   typeErrorMessage: string;
 }
 
-function createDiskUploader(config: UploaderConfig): RequestHandler {
-  const dir = path.join(process.cwd(), 'uploads', config.subdir);
-  fs.mkdirSync(dir, { recursive: true });
+/**
+ * Persist the buffered upload and return the URL to hand back to the client:
+ * an absolute Blob URL in production, a `/uploads/...` path in local dev.
+ * The stored name is always server-generated — only the extension is taken
+ * from the client, and it has already passed the extension/mime allow-list.
+ */
+async function storeFile(subdir: string, file: Express.Multer.File): Promise<string> {
+  const ext = path.extname(file.originalname).toLowerCase();
+  const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
 
+  if (BLOB_TOKEN) {
+    const { url } = await put(`${subdir}/${filename}`, file.buffer, {
+      access: 'public',
+      contentType: file.mimetype,
+      token: BLOB_TOKEN,
+      // Name is already collision-proof (timestamp + 6 random bytes); keeping
+      // it verbatim means the stored URL still ends in the validated extension.
+      addRandomSuffix: false,
+    });
+    return url;
+  }
+
+  const dir = path.join(process.cwd(), 'uploads', subdir);
+  await fs.promises.mkdir(dir, { recursive: true });
+  await fs.promises.writeFile(path.join(dir, filename), file.buffer);
+  return `/uploads/${subdir}/${filename}`;
+}
+
+function createUploader(config: UploaderConfig): RequestHandler {
   const upload = multer({
-    storage: multer.diskStorage({
-      destination: dir,
-      filename: (_req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
-      },
-    }),
+    // Buffered in memory so the same handler can push to Blob or to disk;
+    // the per-route size limit below caps how much is ever held.
+    storage: multer.memoryStorage(),
     limits: { fileSize: config.maxSizeMb * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
       const ext = path.extname(file.originalname).toLowerCase();
@@ -70,11 +101,12 @@ function respondUploaded(subdir: string) {
     if (!file) {
       throw new AppError('Vui lòng đính kèm file trong field "file"', 400);
     }
+    const url = await storeFile(subdir, file);
     res.status(201).json(
       ApiResponse.created(
         {
           name: file.originalname,
-          url: `/uploads/${subdir}/${file.filename}`,
+          url,
           sizeKb: Math.round(file.size / 1024),
         },
         'Tải file lên thành công'
@@ -83,7 +115,7 @@ function respondUploaded(subdir: string) {
   });
 }
 
-const uploadPermit = createDiskUploader({
+const uploadPermit = createUploader({
   subdir: 'permits',
   maxSizeMb: 15,
   allowedMimeByExt: {
@@ -94,7 +126,7 @@ const uploadPermit = createDiskUploader({
   typeErrorMessage: 'Tài liệu giấy phép chỉ chấp nhận PDF/DOCX/PNG',
 });
 
-const uploadImage = createDiskUploader({
+const uploadImage = createUploader({
   subdir: 'images',
   maxSizeMb: 5,
   allowedMimeByExt: {
@@ -106,7 +138,7 @@ const uploadImage = createDiskUploader({
   typeErrorMessage: 'Ảnh chỉ chấp nhận PNG/JPG/WEBP',
 });
 
-const uploadSignature = createDiskUploader({
+const uploadSignature = createUploader({
   subdir: 'signatures',
   maxSizeMb: 1,
   allowedMimeByExt: { '.png': ['image/png'] },
