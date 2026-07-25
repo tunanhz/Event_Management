@@ -3,8 +3,9 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { CheckCircle2, XCircle } from "lucide-react"
+import { CheckCircle2, XCircle, Loader2 } from "lucide-react"
 import { useOrganizerTitle } from "@/components/organizer/OrganizerShellContext"
+import { useVnpayReturnProxy } from "@/lib/use-vnpay-return-proxy"
 
 /**
  * Landing page after a VNPAY redirect for an organizer deposit / remaining-balance
@@ -24,8 +25,22 @@ export default function OrganizerVnpayReturnPage() {
 
 function OrganizerVnpayReturnResult() {
   const params = useSearchParams()
+  const proxying = useVnpayReturnProxy()
   const success = params.get("status") === "success"
   const message = params.get("message")
+
+  // Still carrying VNPAY's callback params — the proxy hook is redirecting to the
+  // backend verify endpoint; show a neutral state instead of a false "failed".
+  if (proxying) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+          <Loader2 className="mx-auto h-9 w-9 animate-spin text-cyan-600" />
+          <p className="text-sm text-muted-foreground">Đang xác nhận thanh toán VNPAY…</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
