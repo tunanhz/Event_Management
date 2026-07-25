@@ -14,6 +14,7 @@
     "seed:admin-demo": "tsx src/scripts/seed-admin-demo.ts",
     "seed:registrations": "tsx src/scripts/seed-registrations.ts",
     "seed:staff-checkin": "tsx src/scripts/seed-staff-checkin-demo.ts",
+    "migrate:ticket-codes": "tsx src/scripts/backfill-ticket-codes.ts",
     "cleanup:qa": "tsx src/scripts/cleanup-qa-events.ts",
     "qa:admin-tickets": "tsx src/modules/admin-ticket/admin-ticket.qa.ts",
     "test": "jest",

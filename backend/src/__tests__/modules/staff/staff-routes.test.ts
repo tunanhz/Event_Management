@@ -280,13 +280,14 @@ describe('Staff Routes', () => {
         .post('/api/staff/check-in')
         .set('Cookie', staff.cookie)
         .send({
-          ticketCode: 'ABC123DEF456',
+          ticketCode: '  #abc123 def456  ',
           eventId: eventId.toString(),
           gate: 'Cổng A',
         });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
+      expect(res.body.data.result).toBe('success');
       expect(res.body.data).toHaveProperty('message');
     });
 
@@ -431,6 +432,32 @@ describe('Staff Routes', () => {
       expect(
         await CheckInLog.countDocuments({ registrationId: registration._id, result: 'success' })
       ).toBe(1);
+    });
+
+    it('should accept the legacy code shown for a paid registration missing ticketCode', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const eventId = await createCheckInEvent();
+      const registration = await createPaidRegistration(
+        eventId,
+        participant.id,
+        'REMOVE-AFTER-CREATE'
+      );
+      await Registration.updateOne(
+        { _id: registration._id },
+        { $unset: { ticketCode: 1 } }
+      );
+      await assignConfirmedStaff(eventId, staff.id);
+
+      const legacyCode = `EVB-${String(registration._id).slice(-6).toUpperCase()}`;
+      const res = await request(app)
+        .post('/api/staff/check-in')
+        .set('Cookie', staff.cookie)
+        .send({ ticketCode: legacyCode, eventId: eventId.toString() });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.result).toBe('success');
+      expect((await Registration.findById(registration._id).lean())?.checkedIn).toBe(true);
     });
 
     it('should roll back the registration update when writing the audit log fails', async () => {

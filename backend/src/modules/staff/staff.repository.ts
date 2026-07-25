@@ -167,8 +167,38 @@ export class StaffRepository {
   async findRegistrationByCodeAnyEvent(
     ticketCode: string
   ): Promise<IRegistration | null> {
+    const normalizedCode = ticketCode.trim().toUpperCase();
+    const registration = await Registration.findOne({
+      ticketCode: normalizedCode,
+    })
+      .populate('participantId', 'fullName email')
+      .populate('ticketId', 'ticketName price')
+      .lean();
+    if (registration) return registration;
+
+    // Before ticketCode was persisted, "Vé của tôi" rendered EVB-{last 6
+    // ObjectId chars}. Keep those already-issued QR screenshots/prints usable
+    // until the production backfill has been explicitly approved and run.
+    const legacyMatch = /^EVB-([A-F0-9]{6})$/.exec(normalizedCode);
+    if (!legacyMatch) return null;
+
     return Registration.findOne({
-      ticketCode: ticketCode.trim().toUpperCase(),
+      status: 'PAID',
+      $or: [
+        { ticketCode: { $exists: false } },
+        { ticketCode: null },
+        { ticketCode: '' },
+      ],
+      $expr: {
+        $eq: [
+          {
+            $toUpper: {
+              $substrBytes: [{ $toString: '$_id' }, 18, 6],
+            },
+          },
+          legacyMatch[1],
+        ],
+      },
     })
       .populate('participantId', 'fullName email')
       .populate('ticketId', 'ticketName price')

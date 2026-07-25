@@ -190,7 +190,10 @@ export class StaffService {
    */
   async checkIn(input: CheckInInput): Promise<CheckInResponse> {
     const { ticketCode, eventId, staffId, gate } = input;
-    const code = ticketCode.trim().toUpperCase();
+    // Staff often paste the value as displayed on the ticket ("#EVB-...") or
+    // with spaces inserted by a handheld scanner. Store and compare one
+    // canonical representation for both manual entry and QR scans.
+    const code = ticketCode.trim().replace(/\s+/g, '').replace(/^#/, '').toUpperCase();
 
     // Tìm theo ticketCode trong tất cả sự kiện trước
     const regAny = await this.staffRepository.findRegistrationByCodeAnyEvent(code);

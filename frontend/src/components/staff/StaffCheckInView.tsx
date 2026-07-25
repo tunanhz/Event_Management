@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { CheckInScanner } from "./CheckInScanner"
 import { CheckInProgressRing } from "./CheckInProgressRing"
-import type { CheckInResult } from "./staff-checkin-data"
+import { normalizeCode, type CheckInResult } from "./staff-checkin-data"
 import {
   checkInTicket,
   fetchCheckInStats,
@@ -36,7 +36,7 @@ function mapToScannerResult(response: CheckInResponse, code: string): CheckInRes
     cancelled: "invalid",
   }
   const status = statusMap[response.result] ?? "invalid"
-  if (status === "invalid") return { status }
+  if (status === "invalid") return { status, message: response.message }
 
   return {
     status,
@@ -96,14 +96,15 @@ export function StaffCheckInView({ eventId }: { eventId: string }) {
     if (checkingRef.current) return
     checkingRef.current = true
     setChecking(true)
+    const code = normalizeCode(raw)
 
     try {
-      const response = await checkInTicket({ ticketCode: raw.trim(), eventId })
-      setResult(mapToScannerResult(response, raw))
+      const response = await checkInTicket({ ticketCode: code, eventId })
+      setResult(mapToScannerResult(response, code))
 
       // Push to recent feed
       setRecentScans((prev) => [
-        { code: raw.trim().toUpperCase(), ...response },
+        { code, ...response },
         ...prev.slice(0, 7),
       ])
 
@@ -120,8 +121,11 @@ export function StaffCheckInView({ eventId }: { eventId: string }) {
             : prev
         )
       }
-    } catch {
-      setResult({ status: "invalid" })
+    } catch (error) {
+      setResult({
+        status: "invalid",
+        message: error instanceof Error ? error.message : "Không thể kiểm tra mã vé.",
+      })
     } finally {
       checkingRef.current = false
       setChecking(false)

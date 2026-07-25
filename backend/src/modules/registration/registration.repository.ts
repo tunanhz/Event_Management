@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { Registration, IRegistration, RegistrationStatus } from './registration.model';
 import { Payment, IPayment } from './payment.model';
 import { Ticket, ITicket } from '../organizer/ticket.model';
@@ -106,7 +107,7 @@ export class RegistrationRepository {
   // fires both for the same order) can never both "win" and double-process a payment.
   // Assigns a unique ticketCode on first successful transition (used for staff QR check-in).
   async markPaid(id: string): Promise<IRegistration | null> {
-    const ticketCode = `EVB-${id.slice(-6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const ticketCode = `EVB-${id.slice(-6).toUpperCase()}-${randomBytes(2).toString('hex').toUpperCase()}`;
     return Registration.findOneAndUpdate(
       { _id: id, status: 'PENDING' },
       { status: 'PAID', ticketCode },
