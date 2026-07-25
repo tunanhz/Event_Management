@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { StepTabs } from "./StepTabs"
 import { saveEventDraft } from "./organizer-event-api"
 import { ImageUploader } from "./ImageUploader"
@@ -40,6 +41,7 @@ export function EventWizard({
   eventId: initialEventId,
   readOnly = false,
   onSaved,
+  finishHref,
 }: {
   initialForm: CreateEventForm
   /** Existing event id (edit flow) — seeds saves to PUT (update) this event
@@ -52,7 +54,12 @@ export function EventWizard({
    *  shared workspace context to refresh). Lets sibling tabs (Lịch trình,
    *  Tổng kết, …) pick up the change instead of serving stale first-load data. */
   onSaved?: () => void
+  /** Create flow only: where "Tiếp tục" on the last step navigates after saving
+   *  the draft (e.g. "/organizer?tab=draft"). When unset (edit flow) the last
+   *  step just saves in place without leaving the workspace. */
+  finishHref?: string
 }) {
+  const router = useRouter()
   const [step, setStep] = useState<WizardStep>(1)
   const [form, setForm] = useState<CreateEventForm>(initialForm)
   // Seeded from an existing event in the edit flow; otherwise set after the
@@ -139,7 +146,13 @@ export function EventWizard({
     setForm((prev) => ({ ...prev, ...(typeof patch === "function" ? patch(prev) : patch) }))
 
   // Advance only when the current step is complete; otherwise surface its errors.
+  // On the final step "Tiếp tục" finishes the wizard instead of advancing: it
+  // saves the draft and (create flow) leaves for the "Sự kiện của tôi" list.
   const goNext = () => {
+    if (step === WIZARD_STEPS.length) {
+      void finishWizard()
+      return
+    }
     const errs = validateStep(step, form)
     setStepErrors(errs)
     if (errs.length === 0) {
@@ -149,6 +162,14 @@ export function EventWizard({
       // Reveal every invalid field on the current step, not just blurred ones.
       setRevealFieldErrors(true)
     }
+  }
+
+  // Last-step "Tiếp tục": persist the draft, then (create flow) navigate to the
+  // organizer's event list so the freshly-saved draft is right there. A failed
+  // save keeps the organizer on the wizard with the error surfaced.
+  const finishWizard = async () => {
+    const ok = await save()
+    if (ok && finishHref) router.push(finishHref)
   }
 
   // Tab clicks: free to go back; forward only up to the first incomplete step.
@@ -171,16 +192,18 @@ export function EventWizard({
     }
   }
 
-  /** Validate every step, then upload assets, map to the payload and save. */
-  const save = async () => {
-    if (saving || readOnly) return
+  /** Validate every step, then upload assets, map to the payload and save.
+   *  Returns true only when the draft was persisted, so callers (e.g. the
+   *  last-step "Tiếp tục") can decide whether to navigate away. */
+  const save = async (): Promise<boolean> => {
+    if (saving || readOnly) return false
     const blocker = firstInvalidStep(form)
     if (blocker) {
       setStep(blocker)
       setStepErrors(validateStep(blocker, form))
       setRevealFieldErrors(true)
       setSaveMsg({ type: "err", text: "Vui lòng hoàn tất tất cả các bước trước khi lưu." })
-      return
+      return false
     }
     setStepErrors([])
     setSaving(true)
@@ -205,11 +228,13 @@ export function EventWizard({
         text: "Đã lưu nháp sự kiện thành công. Bạn có thể tiếp tục chỉnh sửa hoặc gửi duyệt từ trang quản lý.",
       })
       onSaved?.()
+      return true
     } catch (err) {
       setSaveMsg({
         type: "err",
         text: err instanceof Error ? err.message : "Lưu sự kiện thất bại — vui lòng thử lại.",
       })
+      return false
     } finally {
       setSaving(false)
     }
