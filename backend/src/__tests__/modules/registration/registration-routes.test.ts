@@ -749,6 +749,7 @@ describe('Registration Routes', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.registration.status).toBe('PAID');
+      expect(res.body.data.registration.ticketCode).toMatch(/^EVB-[A-F0-9]{6}-[A-Z0-9]{4}$/);
       expect(res.body.data.payment).toBeDefined();
     });
 

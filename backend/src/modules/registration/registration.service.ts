@@ -110,25 +110,29 @@ export class RegistrationService {
       throw new AppError('Đăng ký này không ở trạng thái chờ thanh toán', 400);
     }
 
-    registration.status = 'PAID';
-    await registration.save();
+    // Use the same atomic transition as the VNPAY flow so every paid
+    // registration receives the ticket code consumed by Staff check-in.
+    const paidRegistration = await this.registrationRepository.markPaid(id);
+    if (!paidRegistration) {
+      throw new AppError('Trạng thái đăng ký vừa thay đổi, vui lòng tải lại', 409);
+    }
 
     const payment = await this.registrationRepository.createPayment({
-      registrationId: registration._id as mongoose.Types.ObjectId,
-      amount: registration.totalAmount,
+      registrationId: paidRegistration._id as mongoose.Types.ObjectId,
+      amount: paidRegistration.totalAmount,
       paymentMethod: 'MOCK',
-      transactionCode: `MOCK-${registration._id}-${Date.now()}`,
+      transactionCode: `MOCK-${paidRegistration._id}-${Date.now()}`,
       status: 'PAID',
       paymentDate: new Date(),
     });
 
     try {
-      await this.notifyRegistrationConfirmed(registration);
+      await this.notifyRegistrationConfirmed(paidRegistration);
     } catch (err) {
       console.error('Failed to record purchase confirmation notification:', err);
     }
 
-    return { registration, payment };
+    return { registration: paidRegistration, payment };
   }
 
   /**

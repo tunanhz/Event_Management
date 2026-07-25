@@ -4,11 +4,20 @@ import { IStaffAssignment } from './assignment.model';
 import { ICheckInLog } from './checkin-log.model';
 import { IIncidentReport, IncidentStatus } from './incident.model';
 import { IRegistration } from '../registration/registration.model';
+import { IEvent } from '../event/event.model';
+import { ITicket } from '../organizer/ticket.model';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
 import { CheckInStats } from './staff.repository';
 
 const ASSIGNMENT_CONFIRMATION_LEAD_MS = 60 * 60 * 1000;
+const CHECK_IN_OPEN_BEFORE_MS = 2 * 60 * 60 * 1000;
+const CHECK_IN_CLOSE_AFTER_MS = 30 * 60 * 1000;
+
+type CheckInWindowFailure = {
+  result: 'too_early' | 'event_ended' | 'invalid';
+  message: string;
+};
 
 // ─── Input types ─────────────────────────────────────────────────────────────
 
@@ -190,7 +199,10 @@ export class StaffService {
    */
   async checkIn(input: CheckInInput): Promise<CheckInResponse> {
     const { ticketCode, eventId, staffId, gate } = input;
-    const code = ticketCode.trim().toUpperCase();
+    // Staff often paste the value as displayed on the ticket ("#EVB-...") or
+    // with spaces inserted by a handheld scanner. Store and compare one
+    // canonical representation for both manual entry and QR scans.
+    const code = ticketCode.trim().replace(/\s+/g, '').replace(/^#/, '').toUpperCase();
 
     // Tìm theo ticketCode trong tất cả sự kiện trước
     const regAny = await this.staffRepository.findRegistrationByCodeAnyEvent(code);
@@ -249,6 +261,19 @@ export class StaffService {
         ticketName,
         previousCheckedInAt: regAny.checkedInAt,
       };
+    }
+
+    const timingFailure = await this.getCheckInWindowFailure(regAny, eventId);
+    if (timingFailure) {
+      await this.staffRepository.createCheckInLog({
+        eventId,
+        staffId,
+        ticketCode: code,
+        registrationId: (regAny._id as mongoose.Types.ObjectId).toString(),
+        result: timingFailure.result,
+        gate,
+      });
+      return timingFailure;
     }
 
     // Atomic check-in
@@ -323,6 +348,11 @@ export class StaffService {
     }
     if (registration.checkedIn) {
       throw new AppError('Vé đã được check-in trước đó', 409);
+    }
+
+    const timingFailure = await this.getCheckInWindowFailure(registration, eventId);
+    if (timingFailure) {
+      throw new AppError(timingFailure.message, 400);
     }
 
     const updated = await this.staffRepository.completeCheckIn({
@@ -439,6 +469,79 @@ export class StaffService {
       throw new AppError('Ghi chú nhiệm vụ không được vượt quá 500 ký tự', 400);
     }
     return note;
+  }
+
+  private async getCheckInWindowFailure(
+    registration: IRegistration,
+    eventId: string,
+    now = new Date()
+  ): Promise<CheckInWindowFailure | null> {
+    const event = await this.staffRepository.findEventById(eventId);
+    if (!event) {
+      return { result: 'invalid', message: 'Không tìm thấy sự kiện của vé' };
+    }
+
+    const ticket = registration.ticketId as unknown as Pick<ITicket, 'showId'>;
+    const window = this.resolveCheckInWindow(event, ticket);
+    if (!window) {
+      return {
+        result: 'invalid',
+        message: 'Không xác định được thời gian check-in của vé',
+      };
+    }
+
+    const opensAt = new Date(window.start.getTime() - CHECK_IN_OPEN_BEFORE_MS);
+    const closesAt = new Date(window.end.getTime() + CHECK_IN_CLOSE_AFTER_MS);
+
+    if (now < opensAt) {
+      return {
+        result: 'too_early',
+        message: `Chưa đến giờ check-in. Cổng mở lúc ${opensAt.toLocaleString('vi-VN', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+        })}`,
+      };
+    }
+    if (now > closesAt) {
+      return {
+        result: 'event_ended',
+        message: 'Đã hết thời gian check-in cho vé này',
+      };
+    }
+    return null;
+  }
+
+  private resolveCheckInWindow(
+    event: IEvent,
+    ticket: Pick<ITicket, 'showId'>
+  ): { start: Date; end: Date } | null {
+    if (ticket.showId) {
+      const show = event.shows?.find(
+        (candidate) => candidate._id?.toString() === ticket.showId?.toString()
+      );
+      if (!show) return null;
+      return this.toValidWindow(show.startTime, show.endTime);
+    }
+
+    const start = event.startDate ?? event.date;
+    const end = event.endDate ?? event.startDate ?? event.date;
+    return this.toValidWindow(start, end);
+  }
+
+  private toValidWindow(
+    startValue: Date | string | undefined,
+    endValue: Date | string | undefined
+  ): { start: Date; end: Date } | null {
+    if (!startValue || !endValue) return null;
+    const start = new Date(startValue);
+    const end = new Date(endValue);
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      end < start
+    ) {
+      return null;
+    }
+    return { start, end };
   }
 
   private async expireOverdueAssignments(

@@ -94,7 +94,7 @@ export function CheckInScanner({ onScan, result, disabled }: CheckInScannerProps
                 inputMode="text"
                 autoComplete="off"
                 autoCapitalize="characters"
-                placeholder="Quét mã QR hoặc nhập mã vé…"
+                placeholder="Nhập mã vé…"
                 aria-label="Mã vé"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -176,7 +176,7 @@ function ResultCard({ result }: { result: CheckInResult }) {
       <div className="min-w-0">
         <p className="font-bold text-foreground">Mã vé không hợp lệ</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Không tìm thấy vé cho sự kiện này. Vui lòng kiểm tra lại mã.
+          {result.message ?? "Không tìm thấy vé cho sự kiện này. Vui lòng kiểm tra lại mã."}
         </p>
       </div>
     </div>
