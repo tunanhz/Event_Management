@@ -33,6 +33,8 @@ export class OrganizerController {
       page,
       limit,
       reviewStatus: asOptionalString(req.query.reviewStatus),
+      bucket: asOptionalString(req.query.bucket),
+      search: asOptionalString(req.query.search),
     });
     res.json(ApiResponse.ok(result.data, 'Lấy danh sách sự kiện thành công', result.pagination));
   });

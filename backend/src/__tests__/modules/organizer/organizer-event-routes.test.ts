@@ -27,6 +27,26 @@ async function createTestCategory(name = 'Test Category') {
   return response.body.data._id;
 }
 
+/** Insert an event directly with a chosen reviewStatus/time window, bypassing the
+ *  wizard — lets the bucket-filter tests set up states the create endpoint won't. */
+async function seedEvent(creatorId: string, overrides: Record<string, any> = {}) {
+  return Event.create({
+    title: 'Seed Event',
+    description: 'Seed description',
+    date: new Date(),
+    location: 'Test location',
+    maxAttendees: 100,
+    organizer: 'Test Org',
+    category: 'Music',
+    categorySlug: 'music',
+    creatorId,
+    reviewStatus: 'PUBLISHED',
+    startDate: new Date(Date.now() + 86400000),
+    endDate: new Date(Date.now() + 2 * 86400000),
+    ...overrides,
+  });
+}
+
 describe('Organizer Event Routes - /api/organizer/events', () => {
   let categoryId: string;
 
@@ -356,6 +376,66 @@ describe('Organizer Event Routes - /api/organizer/events', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.meta).toBeDefined();
+    });
+
+    it('bucket=draft returns DRAFT and REJECTED events only', async () => {
+      const organizer = await createAuthedUser('ORGANIZER');
+      await seedEvent(organizer.id, { reviewStatus: 'DRAFT', title: 'D1' });
+      await seedEvent(organizer.id, { reviewStatus: 'REJECTED', title: 'R1' });
+      await seedEvent(organizer.id, { reviewStatus: 'PUBLISHED', title: 'P1' });
+
+      const res = await request(app)
+        .get('/api/organizer/events?bucket=draft')
+        .set('Cookie', organizer.cookie);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(2);
+      expect(
+        res.body.data.every((e: any) => ['DRAFT', 'REJECTED'].includes(e.reviewStatus))
+      ).toBe(true);
+    });
+
+    it('bucket=upcoming and bucket=past partition PUBLISHED events by time', async () => {
+      const organizer = await createAuthedUser('ORGANIZER');
+      await seedEvent(organizer.id, {
+        reviewStatus: 'PUBLISHED',
+        title: 'Future',
+        startDate: new Date(Date.now() + 86400000),
+        endDate: new Date(Date.now() + 2 * 86400000),
+      });
+      await seedEvent(organizer.id, {
+        reviewStatus: 'PUBLISHED',
+        title: 'Past',
+        startDate: new Date(Date.now() - 2 * 86400000),
+        endDate: new Date(Date.now() - 86400000),
+      });
+
+      const upcoming = await request(app)
+        .get('/api/organizer/events?bucket=upcoming')
+        .set('Cookie', organizer.cookie);
+      expect(upcoming.status).toBe(200);
+      expect(upcoming.body.data.length).toBe(1);
+      expect(upcoming.body.data[0].title).toBe('Future');
+
+      const past = await request(app)
+        .get('/api/organizer/events?bucket=past')
+        .set('Cookie', organizer.cookie);
+      expect(past.body.data.length).toBe(1);
+      expect(past.body.data[0].title).toBe('Past');
+    });
+
+    it('search filters the tab by title', async () => {
+      const organizer = await createAuthedUser('ORGANIZER');
+      await seedEvent(organizer.id, { reviewStatus: 'DRAFT', title: 'Alpha Gala' });
+      await seedEvent(organizer.id, { reviewStatus: 'DRAFT', title: 'Beta Workshop' });
+
+      const res = await request(app)
+        .get('/api/organizer/events?bucket=draft&search=alpha')
+        .set('Cookie', organizer.cookie);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].title).toBe('Alpha Gala');
     });
   });
 

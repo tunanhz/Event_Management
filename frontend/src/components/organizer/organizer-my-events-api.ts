@@ -79,12 +79,57 @@ function toDisplay(e: ServerOrganizerEvent): OrganizerEvent {
   }
 }
 
-/** All of the organizer's events, mapped to the page display shape. */
+/** All of the organizer's events (first 100), mapped to the page display shape.
+ *  Used where the full list is needed at once (e.g. the reports page). The
+ *  "Sự kiện của tôi" list itself paginates per-tab via {@link fetchMyEventsPage}. */
 export async function fetchMyEvents(): Promise<OrganizerEvent[]> {
   const res = await clientApi.get<{ data: ServerOrganizerEvent[] }>(
     "/organizer/events?limit=100"
   )
   return (res.data ?? []).map(toDisplay)
+}
+
+export interface PaginationMeta {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  itemsPerPage: number
+}
+
+export interface MyEventsPageResult {
+  events: OrganizerEvent[]
+  pagination: PaginationMeta
+}
+
+/**
+ * One page of the organizer's events for a given status tab, paginated
+ * server-side. `bucket` is the tab id (upcoming/ongoing/past/pending/
+ * waiting_deposit/draft) — the backend maps it to the matching reviewStatus
+ * (and time window for PUBLISHED tabs). Optional `search` filters by title.
+ */
+export async function fetchMyEventsPage(
+  bucket: OrgEventStatus,
+  page: number,
+  limit: number,
+  search?: string
+): Promise<MyEventsPageResult> {
+  const params = new URLSearchParams({
+    bucket,
+    page: String(page),
+    limit: String(limit),
+  })
+  const q = search?.trim()
+  if (q) params.set("search", q)
+
+  const res = await clientApi.get<{ data: ServerOrganizerEvent[]; meta?: PaginationMeta }>(
+    `/organizer/events?${params.toString()}`
+  )
+  const events = (res.data ?? []).map(toDisplay)
+  return {
+    events,
+    pagination:
+      res.meta ?? { currentPage: page, totalPages: 1, totalItems: events.length, itemsPerPage: limit },
+  }
 }
 
 /** DRAFT/REJECTED → PENDING_REVIEW. Throws with the backend message on failure. */

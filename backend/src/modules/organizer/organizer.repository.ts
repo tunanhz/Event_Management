@@ -12,6 +12,44 @@ import { PaginationQuery, PaginatedResult } from '../../common/types';
 
 export interface OrganizerEventQuery extends PaginationQuery {
   reviewStatus?: string;
+  /**
+   * Status tab from the "Sự kiện của tôi" UI. Encodes the reviewStatus (and, for
+   * PUBLISHED events, a time window) each tab represents so every tab paginates
+   * independently on the DB instead of the client slicing one big fetch.
+   */
+  bucket?: string;
+  /** Case-insensitive title search. */
+  search?: string;
+}
+
+/** Escape user input before using it as a `$regex` value (blocks ReDoS / injection). */
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Translate a "Sự kiện của tôi" tab id into the Mongo filter it represents.
+ * PUBLISHED events always carry startDate/endDate (derived as min/max of their
+ * shows at creation), so the three time buckets partition them cleanly. Unknown
+ * buckets fall through to no extra filter (all of the organizer's events).
+ */
+function bucketFilter(bucket: string, now: Date): Record<string, any> {
+  switch (bucket) {
+    case 'pending':
+      return { reviewStatus: 'PENDING_REVIEW' };
+    case 'waiting_deposit':
+      return { reviewStatus: 'APPROVED_WAITING_DEPOSIT' };
+    case 'draft':
+      return { reviewStatus: { $in: ['DRAFT', 'REJECTED'] } };
+    case 'upcoming':
+      return { reviewStatus: 'PUBLISHED', startDate: { $gt: now } };
+    case 'ongoing':
+      return { reviewStatus: 'PUBLISHED', startDate: { $lte: now }, endDate: { $gte: now } };
+    case 'past':
+      return { reviewStatus: 'PUBLISHED', endDate: { $lt: now } };
+    default:
+      return {};
+  }
 }
 
 export interface EventRegistrationQuery extends PaginationQuery {
@@ -60,9 +98,18 @@ export class OrganizerRepository {
     creatorId: string,
     query: OrganizerEventQuery
   ): Promise<PaginatedResult<IEvent>> {
-    const { page = 1, limit = 10, reviewStatus } = query;
+    const { page = 1, limit = 10, reviewStatus, bucket, search } = query;
     const filter: Record<string, any> = { creatorId };
-    if (reviewStatus) filter.reviewStatus = reviewStatus;
+    // A tab (bucket) fully describes its own reviewStatus/time window; the plain
+    // reviewStatus param stays as a fallback for callers that don't use tabs.
+    if (bucket) {
+      Object.assign(filter, bucketFilter(bucket, new Date()));
+    } else if (reviewStatus) {
+      filter.reviewStatus = reviewStatus;
+    }
+    if (search) {
+      filter.title = { $regex: escapeRegex(search), $options: 'i' };
+    }
 
     const skip = (page - 1) * limit;
     const [data, totalItems] = await Promise.all([
