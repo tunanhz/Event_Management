@@ -83,7 +83,8 @@ export class AdminEventRepository {
   async findEventById(id: string): Promise<IEvent | null> {
     return Event.findById(id)
       .populate('categoryId', 'name slug icon')
-      .populate('creatorId', 'fullName email avatar')
+      .populate('creatorId', 'fullName email avatar phone')
+      .populate('organizerId', 'fullName email avatar phone')
       .lean();
   }
 

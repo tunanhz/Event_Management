@@ -8,6 +8,7 @@ import { IEvent } from '../event/event.model';
 import { ITicket } from './ticket.model';
 import { IWithdrawal } from './withdrawal.model';
 import { IRevenueReport } from './revenue-report.model';
+import { IncidentReport } from '../staff/incident.model';
 import { CategoryRepository } from '../category/category.repository';
 import { UserRepository } from '../user/user.repository';
 import { AppError } from '../../common/utils/AppError';
@@ -1006,6 +1007,20 @@ export class OrganizerService {
     });
   }
 
+  async getEventIncidents(eventId: string, actor: OrganizerActor): Promise<any[]> {
+    await this.getOwnedEvent(eventId, actor);
+    const filter: Record<string, any> = {};
+    if (mongoose.isValidObjectId(eventId)) {
+      filter.$or = [{ eventId: new mongoose.Types.ObjectId(eventId) }, { eventId: eventId }];
+    } else {
+      filter.eventId = eventId;
+    }
+    return IncidentReport.find(filter)
+      .populate('staffId', 'fullName email phone')
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+
   // ─── Analytics ("Phân tích") — real sales stats, no web tracking ──────
 
   async getEventAnalytics(
@@ -1382,7 +1397,17 @@ export class OrganizerService {
   ): Promise<{ event: IEvent; tickets: ITicket[] }> {
     const event = await this.getOwnedEvent(eventId, actor);
     const tickets = await this.organizerRepository.findTicketsByEvent(eventId);
-    return { event, tickets };
+    const paidStats = await this.organizerRepository.paidStatsByTicket(eventId);
+
+    const updatedTickets = tickets.map((t) => {
+      const stats = paidStats.get(String(t._id));
+      return {
+        ...t,
+        soldQuantity: stats ? stats.tickets : 0,
+      };
+    });
+
+    return { event, tickets: updatedTickets };
   }
 
   // Loads an event and enforces that only its creator (or an admin) may act on it.

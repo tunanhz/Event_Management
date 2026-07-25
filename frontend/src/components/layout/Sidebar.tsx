@@ -17,6 +17,7 @@ import {
   Tag,
   Star,
   Image as ImageIcon,
+  AlertTriangle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
@@ -29,6 +30,7 @@ const navigation = [
   { name: "Quản lý người dùng", href: "/dashboard/accounts", icon: Users },
   { name: "Phân công staff", href: "/dashboard/staff-assignment", icon: UserCog },
   { name: "Theo dõi bán vé", href: "/dashboard/ticket-sales", icon: Ticket },
+  { name: "Báo cáo sự cố", href: "/dashboard/incidents", icon: AlertTriangle },
   { name: "Danh mục sự kiện", href: "/dashboard/categories", icon: Tag },
   { name: "Nghệ sĩ nổi bật", href: "/dashboard/stars", icon: Star },
   { name: "Hero banner", href: "/dashboard/banners", icon: ImageIcon },

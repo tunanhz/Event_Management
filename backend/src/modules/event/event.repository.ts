@@ -54,7 +54,9 @@ export class EventRepository {
       dateTo,
       includePast,
     } = query;
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+      privacy: { $ne: 'private' },
+    };
 
     if (status) filter.status = status;
     if (category) filter.category = category;
@@ -130,7 +132,9 @@ export class EventRepository {
       dateTo,
       includePast,
     } = query;
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+      privacy: { $ne: 'private' },
+    };
 
     if (status) filter.status = status;
     if (category) filter.category = category;
@@ -209,6 +213,7 @@ export class EventRepository {
     return Event.find({
       _id: { $ne: event._id },
       status: 'published',
+      privacy: { $ne: 'private' },
       categorySlug: event.categorySlug,
       $or: [
         { startDate: { $gte: startOfToday } },

@@ -13,6 +13,7 @@ import {
   Wallet,
   CalendarClock,
   FileText,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -34,6 +35,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { key: "orders", name: "Danh sách đơn hàng", icon: ClipboardList },
       { key: "check-in", name: "Check-in", icon: CircleCheck },
       { key: "withdrawal", name: "Rút tiền", icon: Wallet },
+      { key: "incidents", name: "Báo cáo sự cố", icon: AlertTriangle },
     ],
   },
   {

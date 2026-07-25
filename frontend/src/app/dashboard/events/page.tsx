@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { cn } from "@/lib/utils"
 import {
-  cancelAdminEvent,
   deleteAdminEvent,
   fetchAdminEvents,
   forceAdminEventStatus,
@@ -45,7 +44,6 @@ const TIME_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "upcoming", label: "Sắp tới" },
   { value: "ongoing", label: "Đang diễn ra" },
   { value: "completed", label: "Đã qua" },
-  { value: "cancelled", label: "Đã hủy" },
 ]
 
 const PRIVACY_OPTIONS: { value: string; label: string }[] = [
@@ -65,7 +63,7 @@ const REVIEW_LABEL: Record<ReviewStatus, string> = {
 const STATUS_LABEL: Record<LifecycleStatus, string> = {
   draft: "Nháp",
   published: "Công khai",
-  cancelled: "Đã hủy",
+  cancelled: "Hủy",
   completed: "Hoàn tất",
 }
 

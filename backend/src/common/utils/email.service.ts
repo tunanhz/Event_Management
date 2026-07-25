@@ -21,6 +21,9 @@ class EmailService {
           user: smtp.user,
           pass: smtp.pass,
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
       });
     } else {
       // Fallback: Using Ethereal Email for testing/academic fallback
