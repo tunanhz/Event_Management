@@ -13,6 +13,7 @@ import { Star } from '../modules/star/star.model';
 import { Banner } from '../modules/banner/banner.model';
 import { Event, EventCity } from '../modules/event/event.model';
 import { Ticket } from '../modules/organizer/ticket.model';
+import { TICKET_SALE_END_LEAD_MS } from '../modules/organizer/event-wizard-validation';
 
 const categories = [
   { name: 'Nhạc sống', slug: 'nhac-song', icon: '🎵', order: 1 },
@@ -176,7 +177,8 @@ async function run(): Promise<void> {
           minPerOrder: 1,
           maxPerOrder: 10,
           saleStart: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          saleEnd: e.date,
+          // Sales close 30 minutes before the doors — see TICKET_SALE_END_LEAD_MS.
+          saleEnd: new Date(e.date.getTime() - TICKET_SALE_END_LEAD_MS),
           status: 'ACTIVE',
         },
         { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }

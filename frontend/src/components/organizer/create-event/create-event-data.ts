@@ -118,6 +118,31 @@ export const TICKET_LIMITS = {
   description: 1000,
 } as const
 
+/** Ticket sales must close this far before the show starts, so check-in opens
+ *  against a settled attendee list. Mirrors TICKET_SALE_END_LEAD_MS in the
+ *  backend's event-wizard-validation.ts — keep both in step. */
+export const TICKET_SALE_END_LEAD_MS = 30 * 60 * 1000
+
+/** Format a Date as a local `datetime-local` value (YYYY-MM-DDTHH:mm).
+ *  Local — not UTC — so a pre-filled value matches the organizer's clock. */
+export function toLocalDateTime(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+/**
+ * Latest `saleEnd` allowed for a tier selling into a show that starts at
+ * `showStart` — 30 minutes earlier. Both sides are `datetime-local` strings, so
+ * callers can compare them lexicographically like the wizard's other dates.
+ * Returns "" when the show has no usable start time yet (nothing to cap against).
+ */
+export function saleEndCapFor(showStart: string): string {
+  if (!showStart) return ""
+  const t = new Date(showStart).getTime()
+  if (Number.isNaN(t)) return ""
+  return toLocalDateTime(new Date(t - TICKET_SALE_END_LEAD_MS))
+}
+
 /** Character limits for the settings step. */
 export const SETTINGS_LIMITS = {
   slug: 80,
