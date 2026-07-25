@@ -1,4 +1,11 @@
+import { clientApi } from "@/lib/client-api"
+
+jest.mock("@/lib/client-api", () => ({
+  clientApi: { get: jest.fn() },
+}))
+
 import {
+  fetchMyTickets,
   toUserTicket,
   type ApiRegistration,
 } from "@/lib/booking-api"
@@ -88,5 +95,38 @@ describe("Vé của tôi status mapping", () => {
     expect(
       toUserTicket(registration({ status: "REFUNDED" }), NOW).status
     ).toBe("cancelled")
+  })
+})
+
+describe("fetchMyTickets", () => {
+  // Regression test: Array.prototype.map invokes its callback with
+  // (element, index, array) — passing `toUserTicket` straight to `.map`
+  // let the array index leak into `toUserTicket`'s `now` parameter, which
+  // made every ended event after index 0 register as "upcoming" instead
+  // of "expired" (closesAt < now is false once now collapses to a tiny
+  // array index instead of the real clock).
+  it("does not let the array index leak into toUserTicket's now parameter", async () => {
+    jest.spyOn(Date, "now").mockReturnValue(NOW)
+
+    const endedRegistration = registration({
+      _id: "64b000000000000000000002",
+      eventId: {
+        _id: "64b000000000000000000011",
+        title: "Ended Event",
+        startDate: "2026-07-25T06:00:00.000Z",
+        endDate: "2026-07-25T09:00:00.000Z",
+      },
+    })
+
+    // Put the ended registration at a non-zero index so a leaked index
+    // (e.g. now=4) would make it look like "upcoming".
+    const registrations = [registration(), registration(), registration(), registration(), endedRegistration]
+    ;(clientApi.get as jest.Mock).mockResolvedValue({ data: registrations })
+
+    const tickets = await fetchMyTickets()
+
+    expect(tickets[4].status).toBe("expired")
+
+    jest.restoreAllMocks()
   })
 })
