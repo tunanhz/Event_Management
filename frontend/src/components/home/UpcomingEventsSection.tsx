@@ -58,14 +58,18 @@ export default function UpcomingEventsSection({
       const dateCopy = new Date(eventDate);
       dateCopy.setHours(0, 0, 0, 0);
 
-      const diffTime = dateCopy.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
       if (filter === "week") {
-        return diffDays >= 0 && diffDays <= 7;
+        // Week runs Monday–Sunday; getDay(): 0=Sun..6=Sat
+        const dayOfWeek = now.getDay();
+        const daysUntilEndOfWeek = (7 - dayOfWeek) % 7;
+        const endOfWeek = new Date(now);
+        endOfWeek.setDate(now.getDate() + daysUntilEndOfWeek);
+        return dateCopy >= now && dateCopy <= endOfWeek;
       }
       if (filter === "month") {
-        return diffDays >= 0 && diffDays <= 30;
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endOfMonth.setHours(0, 0, 0, 0);
+        return dateCopy >= now && dateCopy <= endOfMonth;
       }
       return true;
     });

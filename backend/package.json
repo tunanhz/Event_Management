@@ -14,6 +14,7 @@
     "seed:admin-demo": "tsx src/scripts/seed-admin-demo.ts",
     "seed:registrations": "tsx src/scripts/seed-registrations.ts",
     "seed:staff-checkin": "tsx src/scripts/seed-staff-checkin-demo.ts",
+    "migrate:ticket-codes": "tsx src/scripts/backfill-ticket-codes.ts",
     "cleanup:qa": "tsx src/scripts/cleanup-qa-events.ts",
     "qa:admin-tickets": "tsx src/modules/admin-ticket/admin-ticket.qa.ts",
     "test": "jest",
@@ -30,6 +31,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@vercel/blob": "^2.6.1",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

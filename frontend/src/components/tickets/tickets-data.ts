@@ -6,7 +6,7 @@
  * server and client render.
  */
 
-export type TicketStatus = "upcoming" | "used" | "cancelled"
+export type TicketStatus = "upcoming" | "used" | "expired" | "cancelled"
 
 export interface UserTicket {
   id: string
@@ -128,6 +128,7 @@ export const myTickets: UserTicket[] = [
 export const ticketTabs: { key: TicketStatus; label: string }[] = [
   { key: "upcoming", label: "Sắp diễn ra" },
   { key: "used", label: "Đã sử dụng" },
+  { key: "expired", label: "Đã hết hạn" },
   { key: "cancelled", label: "Đã hủy" },
 ]
 
@@ -141,6 +142,7 @@ export const ticketStatusMeta: Record<
 > = {
   upcoming: { label: "Sắp diễn ra", tone: "success" },
   used: { label: "Đã sử dụng", tone: "muted" },
+  expired: { label: "Đã hết hạn", tone: "muted" },
   cancelled: { label: "Đã hủy", tone: "danger" },
 }
 

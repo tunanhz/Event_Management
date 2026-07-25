@@ -40,7 +40,7 @@ const registrationSchema = new Schema<IRegistration>(
       default: 'PENDING',
     },
     holdExpiresAt: { type: Date },
-    ticketCode: { type: String, sparse: true, uppercase: true, trim: true },
+    ticketCode: { type: String, uppercase: true, trim: true },
     checkedIn: { type: Boolean, default: false },
     checkedInAt: { type: Date },
   },
@@ -52,5 +52,6 @@ registrationSchema.index({ eventId: 1 });
 registrationSchema.index({ ticketId: 1 });
 registrationSchema.index({ status: 1, holdExpiresAt: 1 });
 registrationSchema.index({ eventId: 1, checkedIn: 1 });
+registrationSchema.index({ ticketCode: 1 }, { unique: true, sparse: true });
 
 export const Registration = mongoose.model<IRegistration>('Registration', registrationSchema);

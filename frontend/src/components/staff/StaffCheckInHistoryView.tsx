@@ -15,6 +15,8 @@ const STATUS_STYLES: Record<CheckInResult, { icon: LucideIcon; chip: string; ico
   invalid: { icon: XCircle, chip: "bg-destructive/12", icon_: "text-destructive" },
   wrong_event: { icon: XCircle, chip: "bg-destructive/12", icon_: "text-destructive" },
   cancelled: { icon: XCircle, chip: "bg-destructive/12", icon_: "text-destructive" },
+  too_early: { icon: AlertTriangle, chip: "bg-amber-500/12", icon_: "text-amber-600 dark:text-amber-400" },
+  event_ended: { icon: XCircle, chip: "bg-destructive/12", icon_: "text-destructive" },
 }
 
 const LOG_STATUS_LABELS: Record<CheckInResult, string> = {
@@ -23,6 +25,8 @@ const LOG_STATUS_LABELS: Record<CheckInResult, string> = {
   invalid: "Không hợp lệ",
   wrong_event: "Sai sự kiện",
   cancelled: "Đã hủy",
+  too_early: "Chưa đến giờ",
+  event_ended: "Đã hết giờ",
 }
 
 export function StaffCheckInHistoryView({ eventId }: { eventId: string }) {

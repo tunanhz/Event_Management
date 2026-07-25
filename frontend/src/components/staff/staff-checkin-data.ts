@@ -87,11 +87,13 @@ export interface CheckInResult {
   ticket?: StaffTicket
   /** For a duplicate, the time it was originally admitted. */
   previousTime?: string
+  /** Backend validation or authorization detail for an unsuccessful scan. */
+  message?: string
 }
 
 /** Normalize scanner input: trim, collapse spaces, uppercase. */
 export function normalizeCode(input: string): string {
-  return input.trim().replace(/\s+/g, "").toUpperCase()
+  return input.trim().replace(/\s+/g, "").replace(/^#/, "").toUpperCase()
 }
 
 /**
