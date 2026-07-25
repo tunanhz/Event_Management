@@ -15,8 +15,21 @@ const PERMIT_EXTENSIONS = ['pdf', 'docx', 'png'];
 const PERMIT_MAX_KB = 15 * 1024; // 15MB per SRS
 // Documents must come from our own upload endpoint — blocks javascript:/external
 // URLs that would otherwise be rendered as links in the admin moderation UI.
-const PERMIT_URL_REGEX = /^\/uploads\/permits\/[A-Za-z0-9._-]+\.(pdf|docx|png)$/i;
-const SIGNATURE_URL_REGEX = /^\/uploads\/signatures\/[A-Za-z0-9._-]+\.png$/i;
+// Two shapes are accepted because the upload endpoint has two backing stores:
+// an absolute Vercel Blob URL (production) and a local `/uploads/...` path (dev
+// machines with no Blob token). The Blob host is pinned rather than allowing
+// any https origin, so an attacker-supplied link is still rejected.
+function uploadedUrlRegex(subdir: string, extensions: string): RegExp {
+  return new RegExp(
+    `^(?:\\/uploads\\/${subdir}\\/` +
+      `|https:\\/\\/[a-z0-9-]+\\.public\\.blob\\.vercel-storage\\.com\\/${subdir}\\/)` +
+      `[A-Za-z0-9._-]+\\.(?:${extensions})$`,
+    'i'
+  );
+}
+
+const PERMIT_URL_REGEX = uploadedUrlRegex('permits', 'pdf|docx|png');
+const SIGNATURE_URL_REGEX = uploadedUrlRegex('signatures', 'png');
 const LIMITS = { orgName: 80, orgInfo: 500, confirmationMessage: 500, contractRepName: 80 };
 
 /**
