@@ -25,6 +25,7 @@ export interface ModerationEventDetail extends ModerationEvent {
   startDate: string
   endDate: string
   capacity: number
+  privacy?: "public" | "private"
   organizerEmail: string
   organizerPhone: string
   tickets: ModerationTicketType[]

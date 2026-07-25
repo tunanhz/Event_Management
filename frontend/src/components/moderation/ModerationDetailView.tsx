@@ -5,6 +5,7 @@ import Link from "next/link"
 import {
   ArrowLeft, Building2, CalendarDays, Check, FileText, Loader2,
   Mail, MapPin, Phone, Ticket, Users, X, Wrench, CreditCard,
+  Copy, ExternalLink, Lock,
 } from "lucide-react"
 import { cn, formatDateTime, formatVnd, formatNumber } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -250,10 +251,61 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
               <p className="text-sm text-muted-foreground">Chưa có mô tả.</p>
             )}
             <dl className="grid gap-3 sm:grid-cols-2">
+              {/* Row 1 */}
               <InfoRow icon={CalendarDays} label="Bắt đầu" value={detail.startDate ? formatDateTime(detail.startDate) : "—"} />
               <InfoRow icon={CalendarDays} label="Kết thúc" value={detail.endDate ? formatDateTime(detail.endDate) : "—"} />
+
+              {/* Row 2 */}
               <InfoRow icon={Users} label="Sức chứa" value={`${formatNumber(detail.capacity)} người`} />
               <InfoRow icon={Ticket} label="Số loại vé" value={`${detail.tickets.length}`} />
+
+              {/* Row 3 */}
+              <InfoRow
+                icon={Lock}
+                label="Loại sự kiện"
+                value={
+                  <Badge
+                    variant={detail.privacy === "private" ? "secondary" : "outline"}
+                    className={
+                      detail.privacy === "private"
+                        ? "bg-amber-500/10 text-amber-600 border-amber-300 font-bold"
+                        : "bg-cyan-500/10 text-cyan-600 border-cyan-300 font-bold"
+                    }
+                  >
+                    {detail.privacy === "private" ? "Riêng tư 🔒" : "Công khai 🌐"}
+                  </Badge>
+                }
+              />
+              <InfoRow
+                icon={ExternalLink}
+                label="Đường dẫn sự kiện (Link)"
+                value={
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <a
+                      href={`/su-kien/${detail.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-600 hover:underline font-mono text-xs truncate max-w-[200px]"
+                    >
+                      {typeof window !== "undefined" ? `${window.location.origin}/su-kien/${detail.id}` : `/su-kien/${detail.id}`}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = typeof window !== "undefined" ? `${window.location.origin}/su-kien/${detail.id}` : `/su-kien/${detail.id}`
+                        navigator.clipboard.writeText(url)
+                        alert("Đã sao chép đường dẫn sự kiện!")
+                      }}
+                      className="flex items-center gap-1 rounded-lg border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-semibold text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
+                    >
+                      <Copy className="h-3 w-3 text-muted-foreground" />
+                      Sao chép
+                    </button>
+                  </div>
+                }
+              />
+
+              {/* Row 4 (Dòng cuối) */}
               <InfoRow icon={Mail} label="Email BTC" value={detail.organizerEmail} />
               <InfoRow icon={Phone} label="Điện thoại BTC" value={detail.organizerPhone} />
             </dl>
@@ -311,19 +363,83 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
               )}
             </div>
 
-            {/* Contract info */}
+            {/* Full Contract Document View */}
             <div>
-              <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                <FileText className="h-4 w-4 text-cyan-500" /> Hợp đồng dịch vụ
+              <h4 className="flex items-center gap-2 text-sm font-bold text-foreground mb-3">
+                <FileText className="h-4 w-4 text-cyan-500" /> Hợp đồng dịch vụ nền tảng đã ký
               </h4>
               {detail.contract ? (
-                <div className="mt-2 space-y-2 rounded-xl border border-border bg-background p-4 text-sm">
-                  <p><span className="text-muted-foreground">Người đại diện:</span> <span className="font-semibold">{detail.contract.repName || "—"}</span></p>
-                  <p><span className="text-muted-foreground">Đồng ý điều khoản:</span> {detail.contract.agreedToTerms ? <Badge variant="success">Đã đồng ý</Badge> : <Badge variant="destructive">Chưa</Badge>}</p>
-                  <p><span className="text-muted-foreground">Đồng ý cọc 20% dịch vụ:</span> {detail.contract.serviceDepositAgreed ? <Badge variant="success">Đã đồng ý</Badge> : <Badge variant="destructive">Chưa</Badge>}</p>
-                  {detail.contract.signatureUrl && (
-                    <p><span className="text-muted-foreground">Chữ ký:</span> <span className="font-semibold text-cyan-500">Đã ký</span></p>
-                  )}
+                <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6">
+                  {/* Contract Header */}
+                  <div className="text-center space-y-1.5 border-b border-border pb-4">
+                    <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                      CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                      <br />
+                      <span className="text-foreground">Độc lập – Tự do – Hạnh phúc</span>
+                    </p>
+                    <h3 className="text-lg font-extrabold text-foreground mt-3">HỢP ĐỒNG DỊCH VỤ NỀN TẢNG SỰ KIỆN</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Xác nhận điện tử ngày {formatDateTime(detail.submittedAt)}
+                    </p>
+                  </div>
+
+                  {/* Contract Parties */}
+                  <div className="rounded-xl bg-muted/30 p-4 text-xs space-y-1.5 border border-border">
+                    <p><strong className="text-foreground">Bên A (Nền tảng):</strong> EventBox — Nền tảng quản lý &amp; phân phối vé sự kiện.</p>
+                    <p><strong className="text-foreground">Bên B (Ban tổ chức):</strong> {detail.organizer} — Đại diện: <span className="font-bold text-cyan-600">{detail.contract.repName || detail.organizer}</span></p>
+                    <p><strong className="text-foreground">Sự kiện đăng ký:</strong> {detail.title}</p>
+                  </div>
+
+                  {/* Contract Clauses */}
+                  <div className="space-y-4 text-xs text-muted-foreground">
+                    <div>
+                      <h5 className="font-bold text-foreground mb-1">Điều 1. Các bên</h5>
+                      <p>Hợp đồng dịch vụ được ký kết giữa EventBox (bên cung cấp nền tảng — Bên A) và Ban tổ chức (bên đăng tải và vận hành sự kiện — Bên B).</p>
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-foreground mb-1">Điều 2. Phạm vi dịch vụ &amp; Đặt cọc</h5>
+                      <p>EventBox cung cấp nền tảng đăng tải sự kiện, bán vé trực tuyến, thu hộ và đối soát doanh thu theo các điều khoản hiện hành. Các hạng mục thuê dịch vụ từ nền tảng cần cọc trước 20% chi phí dịch vụ (chi phí cụ thể do Admin báo giá khi phê duyệt).</p>
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-foreground mb-1">Điều 3. Trách nhiệm Ban tổ chức</h5>
+                      <p>Ban tổ chức cam kết cung cấp thông tin sự kiện chính xác, tổ chức đúng như công bố và tuân thủ quy định pháp luật cũng như chính sách nội dung của EventBox.</p>
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-foreground mb-1">Điều 4. Thanh toán &amp; Đối soát</h5>
+                      <p>Doanh thu bán vé được đối soát và chuyển cho Ban tổ chức sau khi trừ phí dịch vụ theo tài khoản khai báo.</p>
+                    </div>
+                  </div>
+
+                  {/* Signature block */}
+                  <div className="grid grid-cols-2 gap-4 border-t border-border pt-6 text-center text-xs">
+                    <div className="space-y-2">
+                      <p className="font-bold text-foreground uppercase">ĐẠI DIỆN BÊN A</p>
+                      <p className="text-[11px] text-muted-foreground">(EventBox System)</p>
+                      <div className="h-20 flex items-center justify-center">
+                        <span className="inline-block rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 font-bold text-cyan-600">
+                          ✓ EventBox Verified
+                        </span>
+                      </div>
+                      <p className="font-semibold text-foreground">Nền tảng EventBox</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="font-bold text-foreground uppercase">ĐẠI DIỆN BÊN B</p>
+                      <p className="text-[11px] text-muted-foreground">(Chữ ký điện tử của Ban tổ chức)</p>
+                      <div className="h-20 flex items-center justify-center rounded-xl border border-dashed border-border bg-background p-1">
+                        {detail.contract.signatureUrl ? (
+                          <img
+                            src={detail.contract.signatureUrl.startsWith("http") || detail.contract.signatureUrl.startsWith("data:") ? detail.contract.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}${detail.contract.signatureUrl}`}
+                            alt="Chữ ký BTC"
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">✓ Đã xác nhận điện tử</span>
+                        )}
+                      </div>
+                      <p className="font-semibold text-foreground">{detail.contract.repName || detail.organizer}</p>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <p className="mt-2 text-sm text-muted-foreground">Chưa có thông tin hợp đồng.</p>
@@ -389,7 +505,7 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
   )
 }
 
-function InfoRow({ icon: Icon, label, value }: { icon: typeof Mail; label: string; value: string }) {
+function InfoRow({ icon: Icon, label, value }: { icon: typeof Mail; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2.5 rounded-xl border border-border bg-background p-3">
       <Icon className="mt-0.5 h-4 w-4 flex-shrink-0 text-cyan-500" />

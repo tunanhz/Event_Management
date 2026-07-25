@@ -105,11 +105,6 @@ export async function forceAdminEventStatus(
   return res.data
 }
 
-export async function cancelAdminEvent(id: string, reason?: string) {
-  const res = await clientApi.post<ApiEnvelope<AdminEvent>>(`/admin/events/${id}/cancel`, { reason })
-  return res.data
-}
-
 export async function deleteAdminEvent(id: string, force = true) {
   await clientApi.delete(`/admin/events/${id}?force=${force ? "true" : "false"}`)
 }

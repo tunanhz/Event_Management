@@ -21,6 +21,9 @@ class EmailService {
           user: smtp.user,
           pass: smtp.pass,
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
       });
     } else {
       // Fallback: Using Ethereal Email for testing/academic fallback
@@ -157,6 +160,75 @@ class EmailService {
       console.log(`🔗 Preview Email at: ${nodemailer.getTestMessageUrl(sent)}`);
     }
   }
+
+  async sendEventApprovalNotification(email: string, eventTitle: string, serviceCost: number = 0): Promise<void> {
+    const transporter = await this.getTransporter();
+    const isDepositRequired = serviceCost > 0;
+    const depositVnd = (Math.round(serviceCost * 0.2)).toLocaleString('vi-VN');
+
+    const mailOptions = {
+      from: config.smtp.from || '"EventBox Admin" <noreply@eventbox.com>',
+      to: email,
+      subject: `EventBox - Thông báo Phê duyệt sự kiện "${eventTitle}"`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <h2 style="color: #059669; text-align: center;">🎉 Sự kiện đã được Phê duyệt!</h2>
+          <p>Chào bạn,</p>
+          <p>Ban quản trị EventBox xin thông báo sự kiện <b>"${eventTitle}"</b> của bạn đã được kiểm duyệt thành công.</p>
+          ${
+            isDepositRequired
+              ? `<div style="background-color: #fffbeb; border: 1px dashed #d97706; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                  <p style="margin: 5px 0; color: #b45309; font-weight: bold;">⚠️ Trạng thái: Chờ cọc 20% dịch vụ hệ thống</p>
+                  <p style="margin: 5px 0;">Số tiền đặt cọc cần thanh toán: <b>${depositVnd} VNĐ</b></p>
+                  <p style="margin: 5px 0; font-size: 13px; color: #666;">Vui lòng đăng nhập vào kênh Ban tổ chức để hoàn tất thanh toán cọc trước khi sự kiện được mở bán công khai.</p>
+                </div>`
+              : `<div style="background-color: #ecfdf5; border: 1px dashed #059669; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                  <p style="margin: 5px 0; color: #047857; font-weight: bold;">✅ Trạng thái: Đã công bố chính thức (PUBLISHED)</p>
+                  <p style="margin: 5px 0; font-size: 13px; color: #666;">Sự kiện hiện đã hiển thị trên Trang chủ và sẵn sàng tiếp nhận khán giả đặt vé.</p>
+                </div>`
+          }
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 12px; color: #999; text-align: center;">Ban Quản Trị Hệ Thống EventBox.</p>
+        </div>
+      `,
+    };
+
+    const sent = await transporter.sendMail(mailOptions);
+    console.log(`📧 Event Approval Email sent to ${email}. Message ID: ${sent.messageId}`);
+    if (sent.messageId && !config.smtp.user) {
+      console.log(`🔗 Preview Email at: ${nodemailer.getTestMessageUrl(sent)}`);
+    }
+  }
+
+  async sendEventRejectionNotification(email: string, eventTitle: string, reason: string): Promise<void> {
+    const transporter = await this.getTransporter();
+    const mailOptions = {
+      from: config.smtp.from || '"EventBox Admin" <noreply@eventbox.com>',
+      to: email,
+      subject: `EventBox - Thông báo Yêu cầu chỉnh sửa sự kiện "${eventTitle}"`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <h2 style="color: #dc2626; text-align: center;">Yêu cầu Chỉnh sửa Hồ sơ Sự kiện</h2>
+          <p>Chào bạn,</p>
+          <p>Ban quản trị EventBox đã kiểm duyệt hồ sơ sự kiện <b>"${eventTitle}"</b> của bạn. Hiện tại sự kiện chưa đủ điều kiện công bố do các nguyên nhân sau:</p>
+          <div style="background-color: #fef2f2; border: 1px dashed #dc2626; border-radius: 8px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #991b1b; font-weight: bold;">Lý do từ chối / Cần chỉnh sửa:</p>
+            <p style="margin: 8px 0 0 0; color: #7f1d1d; font-size: 14px; white-space: pre-line;">${reason}</p>
+          </div>
+          <p style="font-size: 13px; color: #4b5563;">Vui lòng đăng nhập vào trang Ban tổ chức, tiến hành cập nhật lại các thông tin theo yêu cầu và bấm <b>Gửi duyệt lại</b>.</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 12px; color: #999; text-align: center;">Ban Quản Trị Hệ Thống EventBox.</p>
+        </div>
+      `,
+    };
+
+    const sent = await transporter.sendMail(mailOptions);
+    console.log(`📧 Event Rejection Email sent to ${email}. Message ID: ${sent.messageId}`);
+    if (sent.messageId && !config.smtp.user) {
+      console.log(`🔗 Preview Email at: ${nodemailer.getTestMessageUrl(sent)}`);
+    }
+  }
 }
 
 export const emailService = new EmailService();
+

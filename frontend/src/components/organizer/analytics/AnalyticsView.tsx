@@ -161,23 +161,12 @@ export function AnalyticsView({ eventId }: { eventId: string }) {
         />
       </div>
 
-      {/* Chart + traffic channel */}
-      <div className={styles.grid2}>
-        <div className={styles.panel}>
-          <div className={styles.panelTitleRow}>
-            <h3 className={styles.panelTitle}>Vé bán ra theo thời gian</h3>
-          </div>
-          <VisitsChart data={series} seriesName="Vé bán ra" />
+      {/* Chart */}
+      <div className={styles.panel} style={{ marginBottom: "1.5rem" }}>
+        <div className={styles.panelTitleRow}>
+          <h3 className={styles.panelTitle}>Vé bán ra theo thời gian</h3>
         </div>
-
-        <div className={styles.panel}>
-          <div className={styles.panelTitleRow}>
-            <h3 className={styles.panelTitle}>Số lượt truy cập theo kênh</h3>
-            <Info size={16} className={styles.infoIcon} aria-hidden="true" />
-          </div>
-          <p className={styles.note}>{DISCLAIMER}</p>
-          <NoDataBox />
-        </div>
+        <VisitsChart data={series} seriesName="Vé bán ra" />
       </div>
 
       {/* Revenue per ticket type — real data */}

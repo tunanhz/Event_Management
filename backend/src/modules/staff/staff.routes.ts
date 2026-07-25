@@ -77,8 +77,22 @@ router.get(
 /** Chi tiết sự cố */
 router.get(
   '/incidents/:id',
-  authorize('STAFF', 'ADMIN') as any,
+  authorize('STAFF', 'ADMIN', 'ORGANIZER') as any,
   staffController.getIncidentById
+);
+
+/** Admin/Organizer xem toàn bộ sự cố hệ thống */
+router.get(
+  '/admin/incidents',
+  authorize('ADMIN') as any,
+  staffController.getAllIncidents
+);
+
+/** Cập nhật trạng thái sự cố (Admin/Organizer) */
+router.patch(
+  '/incidents/:id/status',
+  authorize('ADMIN', 'ORGANIZER', 'STAFF') as any,
+  staffController.updateIncidentStatus
 );
 
 export default router;
