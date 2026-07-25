@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Banknote,
   ClipboardCheck,
-  ArrowUpRight,
   ArrowRight,
   Building2,
   Loader2,
@@ -128,10 +127,6 @@ export default function AdminOverview() {
                 <p className="mt-1.5 text-2xl font-bold" style={{ color: "var(--foreground)" }}>
                   {card.value}
                 </p>
-                <span className={`mt-1 inline-flex items-center gap-0.5 text-xs font-medium ${card.textColor}`}>
-                  <ArrowUpRight className="h-3 w-3" />
-                  {card.sub}
-                </span>
               </div>
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-sm ${card.colorClass}`}>
                 <card.icon className="h-5 w-5 text-white" />
