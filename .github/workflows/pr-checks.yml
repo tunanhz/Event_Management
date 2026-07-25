@@ -34,7 +34,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || npm i
 
       - name: Lint (ESLint)
         run: npm run lint
@@ -62,7 +62,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || npm i
 
       - name: Lint (ESLint)
         run: npm run lint
