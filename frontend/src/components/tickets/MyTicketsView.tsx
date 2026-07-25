@@ -36,7 +36,7 @@ export function MyTicketsView() {
         acc[t.status] += 1
         return acc
       },
-      { upcoming: 0, used: 0, cancelled: 0 } as Record<TicketStatus, number>
+      { upcoming: 0, used: 0, expired: 0, cancelled: 0 } as Record<TicketStatus, number>
     )
   }, [tickets])
 

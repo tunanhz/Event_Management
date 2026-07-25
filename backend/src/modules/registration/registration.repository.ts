@@ -50,8 +50,8 @@ export class RegistrationRepository {
   // read-only, so mutating flows keep using findById above.
   async findByIdPopulated(id: string): Promise<IRegistration | null> {
     return Registration.findById(id)
-      .populate('eventId', 'title imageUrl banner date time location startDate city')
-      .populate('ticketId', 'ticketName price')
+      .populate('eventId', 'title imageUrl banner date time location startDate endDate shows city')
+      .populate('ticketId', 'ticketName price showId')
       .lean();
   }
 
@@ -65,8 +65,8 @@ export class RegistrationRepository {
 
     const [data, totalItems] = await Promise.all([
       Registration.find(filter)
-        .populate('eventId', 'title imageUrl banner date time location startDate city')
-        .populate('ticketId', 'ticketName price')
+        .populate('eventId', 'title imageUrl banner date time location startDate endDate shows city')
+        .populate('ticketId', 'ticketName price showId')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)

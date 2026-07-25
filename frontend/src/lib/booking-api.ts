@@ -5,7 +5,13 @@
 import { clientApi } from "@/lib/client-api"
 import type { TicketStatus, UserTicket } from "@/components/tickets/tickets-data"
 
-interface PopulatedRef {
+export interface PopulatedShow {
+  _id?: string
+  startTime?: string
+  endTime?: string
+}
+
+export interface PopulatedRef {
   _id?: string
   title?: string
   imageUrl?: string
@@ -14,10 +20,13 @@ interface PopulatedRef {
   time?: string
   location?: string
   startDate?: string
+  endDate?: string
+  shows?: PopulatedShow[]
+  showId?: string
   ticketName?: string
 }
 
-interface ApiRegistration {
+export interface ApiRegistration {
   _id: string
   eventId: string | PopulatedRef
   ticketId: string | PopulatedRef
@@ -25,6 +34,7 @@ interface ApiRegistration {
   totalAmount: number
   status: "PENDING" | "PAID" | "CANCELLED" | "EXPIRED" | "REFUNDED"
   ticketCode?: string
+  checkedIn?: boolean
   createdAt: string
 }
 
@@ -100,15 +110,25 @@ function formatDate(iso?: string): string {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 }
 
+const CHECK_IN_CLOSE_AFTER_MS = 30 * 60 * 1000
+
 /** Map a populated registration to the "Vé của tôi" card shape. */
-function toUserTicket(r: ApiRegistration): UserTicket {
+export function toUserTicket(r: ApiRegistration, now = Date.now()): UserTicket {
   const ev = ref(r.eventId)
   const tk = ref(r.ticketId)
-  const startISO = ev.startDate || ev.date
-  const eventPassed = startISO ? new Date(startISO).getTime() < Date.now() : false
+  const show = tk.showId
+    ? ev.shows?.find((candidate) => candidate._id === tk.showId)
+    : undefined
+  const startISO = show?.startTime || ev.startDate || ev.date
+  const endISO = show?.endTime || ev.endDate || ev.startDate || ev.date
+  const closesAt = endISO
+    ? new Date(endISO).getTime() + CHECK_IN_CLOSE_AFTER_MS
+    : Number.POSITIVE_INFINITY
+  const checkInExpired = Number.isFinite(closesAt) && closesAt < now
   let status: TicketStatus = "upcoming"
   if (r.status === "CANCELLED" || r.status === "EXPIRED" || r.status === "REFUNDED") status = "cancelled"
-  else if (r.status === "PAID" && eventPassed) status = "used"
+  else if (r.status === "PAID" && r.checkedIn) status = "used"
+  else if (r.status === "PAID" && checkInExpired) status = "expired"
   return {
     id: r._id,
     orderCode: r.ticketCode ?? `EVB-${r._id.slice(-6).toUpperCase()}`,

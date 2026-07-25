@@ -34,6 +34,8 @@ function mapToScannerResult(response: CheckInResponse, code: string): CheckInRes
     invalid: "invalid",
     wrong_event: "invalid",
     cancelled: "invalid",
+    too_early: "invalid",
+    event_ended: "invalid",
   }
   const status = statusMap[response.result] ?? "invalid"
   if (status === "invalid") return { status, message: response.message }

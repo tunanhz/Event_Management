@@ -172,7 +172,7 @@ export class StaffRepository {
       ticketCode: normalizedCode,
     })
       .populate('participantId', 'fullName email')
-      .populate('ticketId', 'ticketName price')
+      .populate('ticketId', 'ticketName price showId')
       .lean();
     if (registration) return registration;
 
@@ -201,7 +201,7 @@ export class StaffRepository {
       },
     })
       .populate('participantId', 'fullName email')
-      .populate('ticketId', 'ticketName price')
+      .populate('ticketId', 'ticketName price showId')
       .lean();
   }
 
@@ -213,7 +213,9 @@ export class StaffRepository {
     return Registration.findOne({
       _id: new mongoose.Types.ObjectId(registrationId),
       eventId: new mongoose.Types.ObjectId(eventId),
-    }).lean();
+    })
+      .populate('ticketId', 'ticketName price showId')
+      .lean();
   }
 
   /**

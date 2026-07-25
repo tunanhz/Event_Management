@@ -15,14 +15,30 @@ import { CheckInLog } from '../../../modules/staff/checkin-log.model';
 import { StaffRepository } from '../../../modules/staff/staff.repository';
 import mongoose from 'mongoose';
 
-async function createCheckInEvent(creatorId?: string) {
+async function createCheckInEvent(
+  creatorId?: string,
+  schedule?: {
+    startDate?: Date;
+    endDate?: Date;
+    shows?: Array<{
+      _id: mongoose.Types.ObjectId;
+      title?: string;
+      startTime: Date;
+      endTime: Date;
+    }>;
+  }
+) {
   const eventId = new mongoose.Types.ObjectId();
+  const startDate = schedule?.startDate ?? new Date(Date.now() - 60 * 60 * 1000);
+  const endDate = schedule?.endDate ?? new Date(Date.now() + 60 * 60 * 1000);
   await Event.create({
     _id: eventId,
     title: 'Check-in Test Event',
     description: 'Test',
     contentBlocks: [],
-    date: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    date: startDate,
+    startDate,
+    endDate,
     sessions: [],
     location: 'Test Location',
     city: 'hcm',
@@ -44,7 +60,7 @@ async function createCheckInEvent(creatorId?: string) {
     finalPaymentStatus: 'UNPAID',
     privacy: 'public',
     logisticsServices: [],
-    shows: [],
+    shows: schedule?.shows ?? [],
     permitDocuments: [],
     ...(creatorId ? { creatorId: new mongoose.Types.ObjectId(creatorId) } : {}),
   });
@@ -54,12 +70,14 @@ async function createCheckInEvent(creatorId?: string) {
 async function createPaidRegistration(
   eventId: mongoose.Types.ObjectId,
   participantId: string,
-  ticketCode: string
+  ticketCode: string,
+  showId?: mongoose.Types.ObjectId
 ) {
   const ticketId = new mongoose.Types.ObjectId();
   await Ticket.create({
     _id: ticketId,
     eventId,
+    ...(showId ? { showId } : {}),
     ticketName: 'General Admission',
     price: 100000,
     quantity: 50,
@@ -329,6 +347,124 @@ describe('Staff Routes', () => {
   });
 
   describe('Check-in consistency and event isolation', () => {
+    it('should reject check-in before the two-hour opening window', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const eventId = await createCheckInEvent(undefined, {
+        startDate: new Date(Date.now() + 3 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() + 5 * 60 * 60 * 1000),
+      });
+      const registration = await createPaidRegistration(
+        eventId,
+        participant.id,
+        'TOO-EARLY-TICKET'
+      );
+      await assignConfirmedStaff(eventId, staff.id);
+
+      const res = await request(app)
+        .post('/api/staff/check-in')
+        .set('Cookie', staff.cookie)
+        .send({ ticketCode: 'TOO-EARLY-TICKET', eventId: eventId.toString() });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.result).toBe('too_early');
+      expect((await Registration.findById(registration._id).lean())?.checkedIn).toBe(false);
+      expect(
+        await CheckInLog.countDocuments({
+          registrationId: registration._id,
+          result: 'too_early',
+        })
+      ).toBe(1);
+    });
+
+    it('should reject check-in after the end-time grace period', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const eventId = await createCheckInEvent(undefined, {
+        startDate: new Date(Date.now() - 3 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() - 31 * 60 * 1000),
+      });
+      const registration = await createPaidRegistration(
+        eventId,
+        participant.id,
+        'ENDED-EVENT-TICKET'
+      );
+      await assignConfirmedStaff(eventId, staff.id);
+
+      const res = await request(app)
+        .post('/api/staff/check-in')
+        .set('Cookie', staff.cookie)
+        .send({ ticketCode: 'ENDED-EVENT-TICKET', eventId: eventId.toString() });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.result).toBe('event_ended');
+      expect((await Registration.findById(registration._id).lean())?.checkedIn).toBe(false);
+    });
+
+    it('should use the ticket show window instead of the event-wide window', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const endedShowId = new mongoose.Types.ObjectId();
+      const activeShowId = new mongoose.Types.ObjectId();
+      const eventId = await createCheckInEvent(undefined, {
+        startDate: new Date(Date.now() - 4 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() + 4 * 60 * 60 * 1000),
+        shows: [
+          {
+            _id: endedShowId,
+            title: 'Suất đã kết thúc',
+            startTime: new Date(Date.now() - 3 * 60 * 60 * 1000),
+            endTime: new Date(Date.now() - 31 * 60 * 1000),
+          },
+          {
+            _id: activeShowId,
+            title: 'Suất đang diễn ra',
+            startTime: new Date(Date.now() - 30 * 60 * 1000),
+            endTime: new Date(Date.now() + 60 * 60 * 1000),
+          },
+        ],
+      });
+      const registration = await createPaidRegistration(
+        eventId,
+        participant.id,
+        'ENDED-SHOW-TICKET',
+        endedShowId
+      );
+      await assignConfirmedStaff(eventId, staff.id);
+
+      const res = await request(app)
+        .post('/api/staff/check-in')
+        .set('Cookie', staff.cookie)
+        .send({ ticketCode: 'ENDED-SHOW-TICKET', eventId: eventId.toString() });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.result).toBe('event_ended');
+      expect((await Registration.findById(registration._id).lean())?.checkedIn).toBe(false);
+    });
+
+    it('should enforce the same time window for manual attendee check-in', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const participant = await createAuthedUser('PARTICIPANT');
+      const eventId = await createCheckInEvent(undefined, {
+        startDate: new Date(Date.now() + 3 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() + 5 * 60 * 60 * 1000),
+      });
+      const registration = await createPaidRegistration(
+        eventId,
+        participant.id,
+        'MANUAL-TOO-EARLY'
+      );
+      await assignConfirmedStaff(eventId, staff.id);
+
+      const res = await request(app)
+        .post(`/api/staff/events/${eventId}/attendees/${registration._id}/check-in`)
+        .set('Cookie', staff.cookie);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Chưa đến giờ check-in');
+      expect((await Registration.findById(registration._id).lean())?.checkedIn).toBe(false);
+    });
+
     it('should reject a manual check-in for a registration from another event', async () => {
       const staff = await createAuthedUser('STAFF');
       const participant = await createAuthedUser('PARTICIPANT');
