@@ -505,7 +505,7 @@ export function ModerationDetailView({ eventId }: { eventId: string }) {
   )
 }
 
-function InfoRow({ icon: Icon, label, value }: { icon: typeof Mail; label: string; value: string }) {
+function InfoRow({ icon: Icon, label, value }: { icon: typeof Mail; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2.5 rounded-xl border border-border bg-background p-3">
       <Icon className="mt-0.5 h-4 w-4 flex-shrink-0 text-cyan-500" />

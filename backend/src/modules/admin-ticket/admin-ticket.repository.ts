@@ -46,7 +46,7 @@ export class AdminTicketRepository {
     }));
 
     return {
-      data: resultData as ITicket[],
+      data: resultData as unknown as ITicket[],
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(totalItems / limit),
@@ -72,6 +72,6 @@ export class AdminTicketRepository {
     return {
       ...ticket,
       soldQuantity: paidCount,
-    } as ITicket;
+    } as unknown as ITicket;
   }
 }

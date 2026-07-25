@@ -1407,7 +1407,7 @@ export class OrganizerService {
       };
     });
 
-    return { event, tickets: updatedTickets };
+    return { event, tickets: updatedTickets as unknown as ITicket[] };
   }
 
   // Loads an event and enforces that only its creator (or an admin) may act on it.

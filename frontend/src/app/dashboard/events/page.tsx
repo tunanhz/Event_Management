@@ -366,22 +366,6 @@ export default function AdminEventsPage() {
       setSaving(false)
     }
   }
-
-  const cancelEvent = async (event: AdminEvent) => {
-    const reason = window.prompt(`Lý do hủy "${event.title}"?`, "Admin hủy sự kiện")
-    if (reason === null) return
-    setSaving(true)
-    setError(null)
-    try {
-      await cancelAdminEvent(event._id, reason)
-      await load()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Hủy sự kiện thất bại")
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const removeEvent = async (event: AdminEvent) => {
     const confirmed = window.confirm(
       `Xóa cứng "${event.title}"? Toàn bộ vé, đăng ký và thanh toán liên quan sẽ bị xóa.`
