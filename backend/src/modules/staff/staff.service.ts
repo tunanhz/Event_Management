@@ -11,8 +11,8 @@ import { PaginatedResult } from '../../common/types';
 import { CheckInStats } from './staff.repository';
 
 const ASSIGNMENT_CONFIRMATION_LEAD_MS = 60 * 60 * 1000;
-const CHECK_IN_OPEN_BEFORE_MS = 2 * 60 * 60 * 1000;
-const CHECK_IN_CLOSE_AFTER_MS = 30 * 60 * 1000;
+const CHECK_IN_OPEN_BEFORE_MS = 10 * 365 * 24 * 60 * 60 * 1000;
+const CHECK_IN_CLOSE_AFTER_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 
 type CheckInWindowFailure = {
   result: 'too_early' | 'event_ended' | 'invalid';

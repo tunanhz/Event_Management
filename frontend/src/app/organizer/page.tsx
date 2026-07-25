@@ -60,6 +60,16 @@ export default function MyEventsPage() {
     setPage(1)
   }
 
+  // Open the tab named by ?tab= on first load — e.g. arriving from the create
+  // wizard with ?tab=draft lands straight on "Nháp". Ignores unknown values.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab")
+    if (requested && TABS.some((t) => t.id === requested)) {
+      selectTab(requested as TabId)
+    }
+    // Run once on mount.
+  }, [])
+
   // Roving focus for the status tablist (WAI-ARIA tabs keyboard pattern).
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const onTabKeyDown = (e: React.KeyboardEvent, index: number) => {
