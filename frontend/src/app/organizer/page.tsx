@@ -1,13 +1,19 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Search, Inbox, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NoticeModal } from "@/components/organizer/NoticeModal"
 import { useOrganizerTitle } from "@/components/organizer/OrganizerShellContext"
 import { MyEventCard } from "@/components/organizer/MyEventCard"
 import type { OrganizerEvent, OrgEventStatus } from "@/components/organizer/my-events-data"
-import { fetchMyEvents, submitForReview, payDeposit, payRemaining } from "@/components/organizer/organizer-my-events-api"
+import {
+  fetchMyEventsPage,
+  submitForReview,
+  payDeposit,
+  payRemaining,
+  type PaginationMeta,
+} from "@/components/organizer/organizer-my-events-api"
 import styles from "./my-events.module.css"
 
 const TABS = [
@@ -29,14 +35,30 @@ export default function MyEventsPage() {
   const [showNotice, setShowNotice] = useState(true)
   const [tab, setTab] = useState<TabId>("upcoming")
   const [query, setQuery] = useState("")
+  const [debouncedQuery, setDebouncedQuery] = useState("")
   const [page, setPage] = useState(1)
 
   const [events, setEvents] = useState<OrganizerEvent[]>([])
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: PAGE_SIZE,
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Bumped to force a refetch of the current tab/page even when neither changed
+  // (e.g. after "gửi duyệt" when the event may leave the list).
+  const [reloadToken, setReloadToken] = useState(0)
   const [submittingId, setSubmittingId] = useState<string | null>(null)
   const [payingDepositId, setPayingDepositId] = useState<string | null>(null)
   const [payingRemainingId, setPayingRemainingId] = useState<string | null>(null)
+
+  // Switch tab and always return to its first page.
+  const selectTab = (id: TabId) => {
+    setTab(id)
+    setPage(1)
+  }
 
   // Roving focus for the status tablist (WAI-ARIA tabs keyboard pattern).
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -50,33 +72,55 @@ export default function MyEventsPage() {
       : e.key === "ArrowLeft" ? (index - 1 + TABS.length) % TABS.length
       : e.key === "Home" ? 0
       : last
-    setTab(TABS[next].id)
+    selectTab(TABS[next].id)
     tabRefs.current[next]?.focus()
   }
 
-  const reload = useCallback(async () => {
+  // Debounce the search box; a changed effective query starts back at page 1.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedQuery(query)
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [query])
+
+  // Server-side pagination: refetch whenever the tab, page, search, or reload
+  // token changes. Each tab maps to a backend bucket that filters by reviewStatus
+  // (+ time window for the PUBLISHED tabs), so pages never mix statuses.
+  useEffect(() => {
+    let cancelled = false
     setLoading(true)
     setError(null)
-    try {
-      setEvents(await fetchMyEvents())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải được danh sách sự kiện")
-    } finally {
-      setLoading(false)
+    fetchMyEventsPage(tab, page, PAGE_SIZE, debouncedQuery)
+      .then((r) => {
+        if (cancelled) return
+        setEvents(r.events)
+        setPagination(r.pagination)
+        // A page left dangling past the end (items moved/removed) snaps back.
+        if (r.pagination.totalPages > 0 && page > r.pagination.totalPages) {
+          setPage(r.pagination.totalPages)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : "Không tải được danh sách sự kiện")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
-  }, [])
-
-  useEffect(() => {
-    void reload()
-  }, [reload])
+  }, [tab, page, debouncedQuery, reloadToken])
 
   const submit = async (id: string) => {
     setSubmittingId(id)
     setError(null)
     try {
       await submitForReview(id)
-      await reload()
-      setTab("pending") // event moves to the "Chờ duyệt" tab
+      selectTab("pending") // event moves to the "Chờ duyệt" tab
+      setReloadToken((n) => n + 1) // ensure a refetch even if already on that tab/page
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gửi duyệt thất bại")
     } finally {
@@ -113,20 +157,7 @@ export default function MyEventsPage() {
     }
   }
 
-  // Events matching the active tab + search query.
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    return events.filter(
-      (e) => e.status === tab && (q === "" || e.title.toLowerCase().includes(q))
-    )
-  }, [events, tab, query])
-
-  // Reset to the first page whenever the filter changes.
-  useEffect(() => setPage(1), [tab, query])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const current = Math.min(page, totalPages)
-  const visible = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
+  const totalPages = Math.max(1, pagination.totalPages)
 
   return (
     <>
@@ -168,7 +199,7 @@ export default function MyEventsPage() {
                   aria-controls="my-events-panel"
                   tabIndex={tab === t.id ? 0 : -1}
                   className={cn(styles.tab, tab === t.id && styles.tabActive)}
-                  onClick={() => setTab(t.id)}
+                  onClick={() => selectTab(t.id)}
                   onKeyDown={(e) => onTabKeyDown(e, i)}
                 >
                   {t.label}
@@ -191,7 +222,7 @@ export default function MyEventsPage() {
           )}
 
           {/* Pending-approval notice (shown on the "Chờ duyệt" tab) */}
-          {tab === "pending" && filtered.length > 0 && (
+          {tab === "pending" && events.length > 0 && (
             <div className={styles.notice} role="note">
               <span>
                 <strong className={styles.noticeStrong}>Lưu ý</strong>: Sự kiện đang
@@ -206,10 +237,10 @@ export default function MyEventsPage() {
               <Loader2 size={48} className={styles.emptyIcon} style={{ animation: "spin 0.8s linear infinite" }} aria-hidden="true" />
               <p className={styles.emptyText}>Đang tải sự kiện của bạn…</p>
             </div>
-          ) : visible.length > 0 ? (
+          ) : events.length > 0 ? (
             <>
               <div className={styles.list}>
-                {visible.map((event) => (
+                {events.map((event) => (
                   <MyEventCard
                     key={event.id}
                     event={event}
@@ -227,8 +258,8 @@ export default function MyEventsPage() {
                 <button
                   type="button"
                   className={styles.pageNav}
-                  onClick={() => setPage(current - 1)}
-                  disabled={current === 1}
+                  onClick={() => setPage(page - 1)}
+                  disabled={page <= 1}
                   aria-label="Trang trước"
                 >
                   <ChevronLeft size={18} />
@@ -237,8 +268,8 @@ export default function MyEventsPage() {
                   <button
                     key={p}
                     type="button"
-                    className={cn(styles.pageBtn, p === current && styles.pageBtnActive)}
-                    aria-current={p === current ? "page" : undefined}
+                    className={cn(styles.pageBtn, p === page && styles.pageBtnActive)}
+                    aria-current={p === page ? "page" : undefined}
                     onClick={() => setPage(p)}
                   >
                     {p}
@@ -247,8 +278,8 @@ export default function MyEventsPage() {
                 <button
                   type="button"
                   className={styles.pageNav}
-                  onClick={() => setPage(current + 1)}
-                  disabled={current === totalPages}
+                  onClick={() => setPage(page + 1)}
+                  disabled={page >= totalPages}
                   aria-label="Trang sau"
                 >
                   <ChevronRight size={18} />
