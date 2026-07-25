@@ -18,6 +18,7 @@ import mongoose from 'mongoose';
 async function createCheckInEvent(
   creatorId?: string,
   schedule?: {
+    title?: string;
     startDate?: Date;
     endDate?: Date;
     shows?: Array<{
@@ -33,7 +34,7 @@ async function createCheckInEvent(
   const endDate = schedule?.endDate ?? new Date(Date.now() + 60 * 60 * 1000);
   await Event.create({
     _id: eventId,
-    title: 'Check-in Test Event',
+    title: schedule?.title ?? 'Check-in Test Event',
     description: 'Test',
     contentBlocks: [],
     date: startDate,
@@ -202,6 +203,47 @@ describe('Staff Routes', () => {
         .set('Cookie', staff.cookie);
 
       expect([200, 400, 404]).toContain(res.status);
+    });
+
+    it('should reject confirmation when the staff already confirmed an overlapping event', async () => {
+      const staff = await createAuthedUser('STAFF');
+      const base = Date.now() + 24 * 60 * 60 * 1000;
+      const confirmedEventId = await createCheckInEvent(undefined, {
+        title: 'Ca đã xác nhận',
+        startDate: new Date(base),
+        endDate: new Date(base + 2 * 60 * 60 * 1000),
+      });
+      const pendingEventId = await createCheckInEvent(undefined, {
+        title: 'Ca chờ xác nhận',
+        startDate: new Date(base + 60 * 60 * 1000),
+        endDate: new Date(base + 3 * 60 * 60 * 1000),
+      });
+      await StaffAssignment.create({
+        eventId: confirmedEventId,
+        staffId: new mongoose.Types.ObjectId(staff.id),
+        gate: 'Không phân cổng',
+        shift: 'Theo lịch sự kiện',
+        responsibility: 'Theo phân công',
+        status: 'confirmed',
+      });
+      const pendingAssignment = await StaffAssignment.create({
+        eventId: pendingEventId,
+        staffId: new mongoose.Types.ObjectId(staff.id),
+        gate: 'Không phân cổng',
+        shift: 'Theo lịch sự kiện',
+        responsibility: 'Theo phân công',
+        status: 'assigned',
+      });
+
+      const res = await request(app)
+        .patch(`/api/staff/assignments/${pendingAssignment._id}/confirm`)
+        .set('Cookie', staff.cookie);
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toContain('Ca đã xác nhận');
+      expect(res.body.message).toContain('trùng lịch');
+      const unchanged = await StaffAssignment.findById(pendingAssignment._id).lean();
+      expect(unchanged?.status).toBe('assigned');
     });
 
     it('should return 401 if unauthenticated', async () => {
@@ -952,6 +994,150 @@ describe('Staff Routes', () => {
         .send({});
 
       expect(res.status).toBe(403);
+    });
+
+    it('should reject assigning staff to overlapping events', async () => {
+      const admin = await createAuthedUser('ADMIN');
+      const staff = await createAuthedUser('STAFF');
+      const base = Date.now() + 24 * 60 * 60 * 1000;
+      const occupiedEventId = await createCheckInEvent(undefined, {
+        title: 'Sự kiện đã nhận',
+        startDate: new Date(base),
+        endDate: new Date(base + 2 * 60 * 60 * 1000),
+      });
+      const targetEventId = await createCheckInEvent(undefined, {
+        title: 'Sự kiện mới',
+        startDate: new Date(base + 60 * 60 * 1000),
+        endDate: new Date(base + 3 * 60 * 60 * 1000),
+      });
+      await StaffAssignment.create({
+        eventId: occupiedEventId,
+        staffId: new mongoose.Types.ObjectId(staff.id),
+        gate: 'Không phân cổng',
+        shift: 'Theo lịch sự kiện',
+        responsibility: 'Theo phân công',
+        status: 'confirmed',
+      });
+
+      const res = await request(app)
+        .post(`/api/admin/events/${targetEventId}/assignments`)
+        .set('Cookie', admin.cookie)
+        .send({ staffId: staff.id, note: '' });
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toContain('Sự kiện đã nhận');
+      expect(res.body.message).toContain('trùng lịch');
+      expect(await StaffAssignment.countDocuments({ eventId: targetEventId })).toBe(0);
+    });
+
+    it('should allow back-to-back event assignments', async () => {
+      const admin = await createAuthedUser('ADMIN');
+      const staff = await createAuthedUser('STAFF');
+      const base = Date.now() + 24 * 60 * 60 * 1000;
+      const firstEventId = await createCheckInEvent(undefined, {
+        startDate: new Date(base),
+        endDate: new Date(base + 2 * 60 * 60 * 1000),
+      });
+      const nextEventId = await createCheckInEvent(undefined, {
+        startDate: new Date(base + 2 * 60 * 60 * 1000),
+        endDate: new Date(base + 4 * 60 * 60 * 1000),
+      });
+      await StaffAssignment.create({
+        eventId: firstEventId,
+        staffId: new mongoose.Types.ObjectId(staff.id),
+        gate: 'Không phân cổng',
+        shift: 'Theo lịch sự kiện',
+        responsibility: 'Theo phân công',
+        status: 'assigned',
+      });
+
+      const res = await request(app)
+        .post(`/api/admin/events/${nextEventId}/assignments`)
+        .set('Cookie', admin.cookie)
+        .send({ staffId: staff.id, note: '' });
+
+      expect(res.status).toBe(201);
+      expect(await StaffAssignment.countDocuments({ staffId: staff.id })).toBe(2);
+    });
+
+    it('should use individual show times instead of the broad event date range', async () => {
+      const admin = await createAuthedUser('ADMIN');
+      const staff = await createAuthedUser('STAFF');
+      const base = Date.now() + 24 * 60 * 60 * 1000;
+      const firstShowId = new mongoose.Types.ObjectId();
+      const secondShowId = new mongoose.Types.ObjectId();
+      const multiShowEventId = await createCheckInEvent(undefined, {
+        startDate: new Date(base),
+        endDate: new Date(base + 72 * 60 * 60 * 1000),
+        shows: [
+          {
+            _id: firstShowId,
+            startTime: new Date(base),
+            endTime: new Date(base + 60 * 60 * 1000),
+          },
+          {
+            _id: secondShowId,
+            startTime: new Date(base + 71 * 60 * 60 * 1000),
+            endTime: new Date(base + 72 * 60 * 60 * 1000),
+          },
+        ],
+      });
+      const eventInGapId = await createCheckInEvent(undefined, {
+        startDate: new Date(base + 36 * 60 * 60 * 1000),
+        endDate: new Date(base + 38 * 60 * 60 * 1000),
+      });
+      await StaffAssignment.create({
+        eventId: multiShowEventId,
+        staffId: new mongoose.Types.ObjectId(staff.id),
+        gate: 'Không phân cổng',
+        shift: 'Theo lịch sự kiện',
+        responsibility: 'Theo phân công',
+        status: 'confirmed',
+      });
+
+      const res = await request(app)
+        .post(`/api/admin/events/${eventInGapId}/assignments`)
+        .set('Cookie', admin.cookie)
+        .send({ staffId: staff.id, note: '' });
+
+      expect(res.status).toBe(201);
+    });
+
+    it('should detect a legacy start-only event inside another event window', async () => {
+      const admin = await createAuthedUser('ADMIN');
+      const staff = await createAuthedUser('STAFF');
+      const base = Date.now() + 24 * 60 * 60 * 1000;
+      const occupiedEventId = await createCheckInEvent(undefined, {
+        startDate: new Date(base),
+        endDate: new Date(base + 3 * 60 * 60 * 1000),
+      });
+      const legacyEventId = await createCheckInEvent(undefined, {
+        startDate: new Date(base + 60 * 60 * 1000),
+        endDate: new Date(base + 2 * 60 * 60 * 1000),
+      });
+      await Event.updateOne(
+        { _id: legacyEventId },
+        {
+          $set: { date: new Date(base + 60 * 60 * 1000) },
+          $unset: { startDate: 1, endDate: 1 },
+        }
+      );
+      await StaffAssignment.create({
+        eventId: occupiedEventId,
+        staffId: new mongoose.Types.ObjectId(staff.id),
+        gate: 'Không phân cổng',
+        shift: 'Theo lịch sự kiện',
+        responsibility: 'Theo phân công',
+        status: 'confirmed',
+      });
+
+      const res = await request(app)
+        .post(`/api/admin/events/${legacyEventId}/assignments`)
+        .set('Cookie', admin.cookie)
+        .send({ staffId: staff.id, note: '' });
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toContain('trùng lịch');
     });
   });
 
