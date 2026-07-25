@@ -162,25 +162,6 @@ const PaymentSchema = new Schema(
 );
 
 /* =========================
-CHECK IN
-========================= */
-const CheckInSchema = new Schema(
-{
-  registrationId: {
-    type: Schema.Types.ObjectId,
-    ref: "Registration"
-  },
-
-  checkInTime: Date,
-
-  status: String,
-
-  note: String
-},
-{ timestamps: true }
-);
-
-/* =========================
 STAFF ASSIGNMENT
 ========================= */
 const StaffAssignmentSchema = new Schema(
@@ -358,7 +339,6 @@ export const Event = mongoose.models.Event || mongoose.model("Event", EventSchem
 export const Ticket = mongoose.models.Ticket || mongoose.model("Ticket", TicketSchema);
 export const Registration = mongoose.models.Registration || mongoose.model("Registration", RegistrationSchema);
 export const Payment = mongoose.models.Payment || mongoose.model("Payment", PaymentSchema);
-export const CheckIn = mongoose.models.CheckIn || mongoose.model("CheckIn", CheckInSchema);
 export const StaffAssignment = mongoose.models.StaffAssignment || mongoose.model("StaffAssignment", StaffAssignmentSchema);
 export const Contract = mongoose.models.Contract || mongoose.model("Contract", ContractSchema);
 export const Withdrawal = mongoose.models.Withdrawal || mongoose.model("Withdrawal", WithdrawalSchema);

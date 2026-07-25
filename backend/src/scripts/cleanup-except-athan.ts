@@ -4,7 +4,8 @@ import { Event } from '../modules/event/event.model';
 import { Ticket } from '../modules/organizer/ticket.model';
 import { Registration } from '../modules/registration/registration.model';
 import { Payment } from '../modules/registration/payment.model';
-import { Contract, Withdrawal, Issue, StaffAssignment, CheckIn } from '../models';
+import { CheckInLog } from '../modules/staff/checkin-log.model';
+import { Contract, Withdrawal, Issue, StaffAssignment } from '../models';
 
 async function run(): Promise<void> {
   await mongoose.connect(config.mongodbUri, { serverSelectionTimeoutMS: 8000 });
@@ -53,7 +54,7 @@ async function run(): Promise<void> {
   console.log(`❌ Đã xoá ${otherWithdrawals.deletedCount} yêu cầu rút tiền khác.`);
 
   // Delete other check-ins
-  const otherCheckIns = await CheckIn.deleteMany({ eventId: { $ne: athanId } });
+  const otherCheckIns = await CheckInLog.deleteMany({ eventId: { $ne: athanId } });
   console.log(`❌ Đã xoá ${otherCheckIns.deletedCount} lượt check-in khác.`);
 
   // Delete other incidents
