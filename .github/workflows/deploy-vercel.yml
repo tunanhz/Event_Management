@@ -1,0 +1,81 @@
+name: Deploy to Vercel (production)
+
+# Auto-deploy on every push to develop. The backend and frontend are separate
+# Vercel projects in this monorepo; each is deployed independently and only when
+# files under its own folder changed. Authentication is a Vercel token (repo
+# secret VERCEL_TOKEN) rather than the Vercel GitHub App, so this works even
+# though the repo owner and the Vercel account are different GitHub identities.
+#
+# Setup (one-time): create a token at Vercel → Account Settings → Tokens, then
+# add it under GitHub repo → Settings → Secrets and variables → Actions as
+# VERCEL_TOKEN. The org/project ids below are not secret.
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_ORG_ID: team_M0eGlx8HXl1ecksVGO2t1VSe
+
+jobs:
+  # Detect which project(s) changed so we don't rebuild both on every push.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+  deploy-backend:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-backend-prod
+      cancel-in-progress: true
+    env:
+      VERCEL_PROJECT_ID: prj_26qt7PeJLaBa58Iah9BcZwG2I5n3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --global vercel@latest
+      # Mirrors the manual `cd backend && vercel --prod`: uploads the backend
+      # folder, builds on Vercel, and promotes to the production alias.
+      - name: Deploy backend to production
+        working-directory: ./backend
+        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+
+  deploy-frontend:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-frontend-prod
+      cancel-in-progress: true
+    env:
+      VERCEL_PROJECT_ID: prj_poRyRlMWFPWXkJj1pH3rVDy9FHaV
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --global vercel@latest
+      # Mirrors the manual `cd frontend && vercel --prod`.
+      - name: Deploy frontend to production
+        working-directory: ./frontend
+        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
