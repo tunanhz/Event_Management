@@ -38,14 +38,6 @@ export class AdminEventController {
     res.json(ApiResponse.ok(result, 'Lấy chi tiết sự kiện thành công'));
   });
 
-  cancelEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const event = await this.adminEventService.cancelEvent(
-      req.params.id as string,
-      (req.body ?? {}).reason
-    );
-    res.json(ApiResponse.ok(event, 'Da huy su kien'));
-  });
-
   deleteEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
     await this.adminEventService.deleteEvent(
       req.params.id as string,

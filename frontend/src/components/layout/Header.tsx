@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Bell, Search, ChevronDown, Menu, UserCog, LogOut } from "lucide-react"
+import { ChevronDown, Menu, UserCog, LogOut } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { AdminNotificationPopover } from "@/components/notifications/AdminNotificationPopover"
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, logout } = useAuth()
@@ -35,7 +36,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-6"
       style={{ borderColor: "var(--border)" }}
     >
-      {/* Menu toggle (mobile) + Search */}
+      {/* Menu toggle (mobile) */}
       <div className="flex flex-1 items-center gap-2">
         <button
           type="button"
@@ -45,40 +46,14 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="relative w-full max-w-sm">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
-            style={{ color: "var(--muted-foreground)" }}
-          />
-          <input
-            type="search"
-            placeholder="Tìm kiếm sự kiện, người tham dự..."
-            aria-label="Tìm kiếm sự kiện, người tham dự"
-            className="h-9 w-full rounded-xl border pl-9 pr-4 text-sm outline-none transition-all focus:ring-2"
-            style={{
-              background: "var(--muted)",
-              borderColor: "var(--border)",
-              color: "var(--foreground)",
-            }}
-          />
-        </div>
       </div>
 
       <div className="flex items-center gap-3">
         {/* Theme toggle */}
         <ThemeToggle className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-cyan-50" />
 
-        {/* Notification bell */}
-        <button
-          className="relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:bg-cyan-50"
-          aria-label="Thông báo"
-        >
-          <Bell className="h-4.5 w-4.5 text-muted-foreground" />
-          <span
-            className="absolute right-2 top-2 flex h-2 w-2 rounded-full"
-            style={{ background: "var(--destructive)" }}
-          />
-        </button>
+        {/* Notification bell popover */}
+        <AdminNotificationPopover />
 
         {/* Divider */}
         <div className="h-6 w-px" style={{ background: "var(--border)" }} />

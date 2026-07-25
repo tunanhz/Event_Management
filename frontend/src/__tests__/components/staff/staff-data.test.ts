@@ -144,6 +144,10 @@ describe('Staff Check-in Data', () => {
     it('should handle newline characters', () => {
       expect(normalizeCode('EVB-3F7K\n0192')).toBe('EVB-3F7K0192');
     });
+
+    it('should remove the display prefix when staff paste a ticket code', () => {
+      expect(normalizeCode('  #evb-3f7k-0192  ')).toBe('EVB-3F7K-0192');
+    });
   });
 
   describe('nowHHmm', () => {

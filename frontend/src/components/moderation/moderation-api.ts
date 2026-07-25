@@ -33,6 +33,7 @@ interface PopulatedRef {
   name?: string
   fullName?: string
   email?: string
+  phone?: string
 }
 
 interface ServerEvent {
@@ -40,6 +41,7 @@ interface ServerEvent {
   title: string
   organizer?: string
   creatorId?: PopulatedRef | string
+  organizerId?: PopulatedRef | string
   category?: string
   categoryId?: PopulatedRef | string
   location?: string
@@ -50,6 +52,7 @@ interface ServerEvent {
   startDate?: string
   endDate?: string
   capacity?: number
+  privacy?: "public" | "private"
   rejectionReason?: string
   permitDocuments?: { name: string; url?: string; sizeKb?: number }[]
   contract?: { repName?: string; signatureUrl?: string; agreed?: boolean; agreedToTerms?: boolean; serviceDepositAgreed?: boolean }
@@ -71,7 +74,7 @@ interface ServerTicket {
   saleEnd?: string
 }
 
-function refField(ref: PopulatedRef | string | undefined, key: "name" | "fullName" | "email"): string {
+function refField(ref: PopulatedRef | string | undefined, key: "name" | "fullName" | "email" | "phone"): string {
   return ref && typeof ref === "object" ? ref[key] ?? "" : ""
 }
 
@@ -130,8 +133,9 @@ export async function fetchModerationDetail(id: string): Promise<ModerationEvent
     startDate: e.startDate || "",
     endDate: e.endDate || "",
     capacity: e.capacity ?? 0,
-    organizerEmail: refField(e.creatorId, "email") || "—",
-    organizerPhone: "—",
+    privacy: e.privacy ?? "public",
+    organizerEmail: refField(e.creatorId, "email") || refField(e.organizerId, "email") || "—",
+    organizerPhone: refField(e.creatorId, "phone") || refField(e.organizerId, "phone") || "—",
     tickets,
     documents,
     rejectionReason: e.rejectionReason,

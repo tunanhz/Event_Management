@@ -10,6 +10,7 @@ import { Registration } from '../registration/registration.model';
 import { CategoryRepository } from '../category/category.repository';
 import { AppError } from '../../common/utils/AppError';
 import { PaginatedResult } from '../../common/types';
+import { emailService } from '../../common/utils/email.service';
 
 const REVIEW_STATUSES = ['DRAFT', 'PENDING_REVIEW', 'APPROVED_WAITING_DEPOSIT', 'PUBLISHED', 'REJECTED'] as const;
 const LIFECYCLE_STATUSES = ['draft', 'published', 'cancelled', 'completed'] as const;
@@ -76,15 +77,29 @@ export class AdminEventService {
     return { event, tickets };
   }
 
-  async cancelEvent(eventId: string, reason?: unknown): Promise<IEvent> {
-    await this.getEventOrThrow(eventId);
-    const trimmedReason = this.asOptionalTrimmedString(reason);
-    const updated = await this.adminEventRepository.updateEvent(eventId, {
-      status: 'cancelled',
-      ...(trimmedReason ? { rejectionReason: trimmedReason } : {}),
-    });
-    if (!updated) throw new AppError('Event not found', 404);
-    return updated;
+  private async findOrganizerEmailForEvent(eventId: string): Promise<string | null> {
+    try {
+      const eventDoc: any = await Event.findById(eventId)
+        .populate('creatorId', 'email fullName')
+        .populate('organizerId', 'email fullName')
+        .lean();
+
+      if (!eventDoc) return null;
+
+      const creator = eventDoc.creatorId || eventDoc.organizerId;
+      if (creator && typeof creator === 'object' && creator.email) {
+        return creator.email;
+      }
+
+      const userId = eventDoc.creatorId || eventDoc.organizerId;
+      if (userId) {
+        const user = await User.findById(userId).lean();
+        if (user?.email) return user.email;
+      }
+    } catch (e) {
+      console.error('Failed to look up organizer email:', e);
+    }
+    return null;
   }
 
   async deleteEvent(eventId: string, force = false): Promise<void> {
@@ -104,33 +119,47 @@ export class AdminEventService {
    * must pay 20% deposit before the event goes public). Otherwise → PUBLISHED.
    */
   async approveEvent(eventId: string, adminId: string, serviceCost: number): Promise<IEvent> {
-    await this.getEventOrThrow(eventId);
+    const event = await this.getEventOrThrow(eventId);
 
-    if (serviceCost > 0) {
+    const hasServices = Array.isArray(event.logisticsServices) && event.logisticsServices.length > 0;
+
+    if (hasServices && (!serviceCost || serviceCost <= 0)) {
+      throw new AppError(
+        'Sự kiện có đăng ký dịch vụ hệ thống. Vui lòng nhập báo giá chi phí dịch vụ (> 0đ) để yêu cầu đặt cọc 20% trước khi phê duyệt.',
+        400
+      );
+    }
+
+    let updated: IEvent | null = null;
+    if (hasServices || serviceCost > 0) {
       const depositAmount = Math.round(serviceCost * 0.2);
-      const updated = await this.adminEventRepository.approveEventWithDeposit(
+      updated = await this.adminEventRepository.approveEventWithDeposit(
         eventId,
         adminId,
         serviceCost,
         depositAmount
       );
-      if (!updated) {
-        throw new AppError(
-          'Sự kiện không còn ở trạng thái chờ duyệt (có thể đã được xử lý bởi admin khác). Vui lòng tải lại hàng đợi.',
-          409
-        );
-      }
-      return updated;
+    } else {
+      updated = await this.adminEventRepository.approveEventDirect(eventId, adminId);
     }
 
-    // No services → publish directly
-    const updated = await this.adminEventRepository.approveEventDirect(eventId, adminId);
     if (!updated) {
       throw new AppError(
-        'Su kien khong con o trang thai cho duyet. Vui long tai lai hang doi.',
+        'Sự kiện không còn ở trạng thái chờ duyệt (có thể đã được xử lý bởi admin khác). Vui lòng tải lại hàng đợi.',
         409
       );
     }
+
+    // Trigger email notification to Organizer
+    const organizerEmail = await this.findOrganizerEmailForEvent(String(updated._id));
+    if (organizerEmail) {
+      emailService
+        .sendEventApprovalNotification(organizerEmail, updated.title, serviceCost)
+        .catch((err) => {
+          console.error('⚠️ Failed to send approval email notification:', err);
+        });
+    }
+
     return updated;
   }
 
@@ -153,6 +182,17 @@ export class AdminEventService {
         409
       );
     }
+
+    // Trigger email notification to Organizer
+    const organizerEmail = await this.findOrganizerEmailForEvent(String(updated._id));
+    if (organizerEmail) {
+      emailService
+        .sendEventRejectionNotification(organizerEmail, updated.title, trimmedReason)
+        .catch((err) => {
+          console.error('⚠️ Failed to send rejection email notification:', err);
+        });
+    }
+
     return updated;
   }
 

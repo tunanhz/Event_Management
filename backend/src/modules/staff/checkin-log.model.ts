@@ -1,6 +1,13 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type CheckInResult = 'success' | 'duplicate' | 'invalid' | 'wrong_event' | 'cancelled';
+export type CheckInResult =
+  | 'success'
+  | 'duplicate'
+  | 'invalid'
+  | 'wrong_event'
+  | 'cancelled'
+  | 'too_early'
+  | 'event_ended';
 
 export interface ICheckInLog extends Document {
   eventId: mongoose.Types.ObjectId;
@@ -25,7 +32,15 @@ const checkInLogSchema = new Schema<ICheckInLog>(
     registrationId: { type: Schema.Types.ObjectId, ref: 'Registration' },
     result: {
       type: String,
-      enum: ['success', 'duplicate', 'invalid', 'wrong_event', 'cancelled'],
+      enum: [
+        'success',
+        'duplicate',
+        'invalid',
+        'wrong_event',
+        'cancelled',
+        'too_early',
+        'event_ended',
+      ],
       required: true,
     },
     gate: { type: String, trim: true },

@@ -62,14 +62,42 @@ export function StaffAssignmentView() {
   useEffect(() => {
     fetchAdminEvents({ status: "published", limit: 100 })
       .then(({ events: ev }) => {
-        const now = new Date()
-        now.setHours(0, 0, 0, 0)
-        
+        const nowMs = Date.now()
+
+        const parseAnyDate = (val: any): number | null => {
+          if (!val) return null
+          if (val instanceof Date) return isNaN(val.getTime()) ? null : val.getTime()
+          if (typeof val === "string") {
+            const s = val.trim()
+            if (s.includes("/")) {
+              const parts = s.split(" ")[0].split("/")
+              if (parts.length === 3) {
+                const [d, m, y] = parts.map(Number)
+                if (d && m && y) {
+                  return new Date(y, m - 1, d, 23, 59, 59).getTime()
+                }
+              }
+            }
+            const ms = Date.parse(s)
+            if (!isNaN(ms)) return ms
+          }
+          return null
+        }
+
         const activeEvents = ev.filter((event) => {
-          const dateStr = event.endDate || event.startDate || event.date
-          if (!dateStr) return true
-          const eventDate = new Date(dateStr)
-          return eventDate >= now
+          if (event.status === "completed" || event.status === "cancelled") {
+            return false
+          }
+          const endMs = parseAnyDate(event.endDate)
+          if (endMs !== null) {
+            return endMs >= nowMs
+          }
+          const startMs = parseAnyDate(event.startDate) || parseAnyDate(event.date)
+          if (startMs !== null) {
+            const endOfDayMs = new Date(startMs).setHours(23, 59, 59, 999)
+            return endOfDayMs >= nowMs
+          }
+          return true
         })
 
         setEvents(activeEvents)
@@ -264,14 +292,27 @@ export function StaffAssignmentView() {
                   >
                     <p className="font-semibold text-foreground">{event.title}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      {(event.startDate || event.date) && (
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="h-3.5 w-3.5" />
-                          {new Date(event.startDate ?? event.date ?? "").toLocaleDateString("vi-VN")}
-                        </span>
-                      )}
                       <span className="flex items-center gap-1">
-                        <Users className="h-3.5 w-3.5" />
+                        <CalendarDays className="h-3.5 w-3.5 text-cyan-600" />
+                        {(() => {
+                          const formatSingle = (val?: string | Date) => {
+                            if (!val) return ""
+                            if (val instanceof Date) return isNaN(val.getTime()) ? "" : val.toLocaleDateString("vi-VN")
+                            const s = String(val).trim()
+                            if (s.includes("/")) return s.split(" ")[0]
+                            const d = new Date(s)
+                            return isNaN(d.getTime()) ? s : d.toLocaleDateString("vi-VN")
+                          }
+                          const startStr = formatSingle(event.startDate || event.date)
+                          const endStr = formatSingle(event.endDate)
+                          if (startStr && endStr && startStr !== endStr) {
+                            return `${startStr} - ${endStr}`
+                          }
+                          return startStr || endStr || "Chưa đặt ngày"
+                        })()}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
                         {active ? assignments.length : "–"} staff được phân
                       </span>
                     </div>

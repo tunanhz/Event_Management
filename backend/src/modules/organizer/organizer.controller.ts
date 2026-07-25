@@ -180,6 +180,14 @@ export class OrganizerController {
     res.json(ApiResponse.ok(members, 'Lấy danh sách thành viên thành công'));
   });
 
+  getEventIncidents = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const incidents = await this.organizerService.getEventIncidents(req.params.id as string, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
+    res.json(ApiResponse.ok(incidents, 'Lấy danh sách báo cáo sự cố thành công'));
+  });
+
   // ─── Analytics ("Phân tích") ──────────────────────────────────────────
   getEventAnalytics = asyncHandler(async (req: AuthRequest, res: Response) => {
     const analytics = await this.organizerService.getEventAnalytics(

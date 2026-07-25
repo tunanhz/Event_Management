@@ -53,7 +53,14 @@ export interface StaffAssignment {
   updatedAt: string;
 }
 
-export type CheckInResult = "success" | "duplicate" | "invalid" | "wrong_event" | "cancelled";
+export type CheckInResult =
+  | "success"
+  | "duplicate"
+  | "invalid"
+  | "wrong_event"
+  | "cancelled"
+  | "too_early"
+  | "event_ended";
 
 export interface CheckInResponse {
   result: CheckInResult;

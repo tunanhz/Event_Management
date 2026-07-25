@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { cn } from "@/lib/utils"
 import {
-  cancelAdminEvent,
   deleteAdminEvent,
   fetchAdminEvents,
   forceAdminEventStatus,
@@ -45,7 +44,6 @@ const TIME_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "upcoming", label: "Sắp tới" },
   { value: "ongoing", label: "Đang diễn ra" },
   { value: "completed", label: "Đã qua" },
-  { value: "cancelled", label: "Đã hủy" },
 ]
 
 const PRIVACY_OPTIONS: { value: string; label: string }[] = [
@@ -65,7 +63,7 @@ const REVIEW_LABEL: Record<ReviewStatus, string> = {
 const STATUS_LABEL: Record<LifecycleStatus, string> = {
   draft: "Nháp",
   published: "Công khai",
-  cancelled: "Đã hủy",
+  cancelled: "Hủy",
   completed: "Hoàn tất",
 }
 
@@ -368,22 +366,6 @@ export default function AdminEventsPage() {
       setSaving(false)
     }
   }
-
-  const cancelEvent = async (event: AdminEvent) => {
-    const reason = window.prompt(`Lý do hủy "${event.title}"?`, "Admin hủy sự kiện")
-    if (reason === null) return
-    setSaving(true)
-    setError(null)
-    try {
-      await cancelAdminEvent(event._id, reason)
-      await load()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Hủy sự kiện thất bại")
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const removeEvent = async (event: AdminEvent) => {
     const confirmed = window.confirm(
       `Xóa cứng "${event.title}"? Toàn bộ vé, đăng ký và thanh toán liên quan sẽ bị xóa.`
