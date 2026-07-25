@@ -19,6 +19,16 @@ type CheckInWindowFailure = {
   message: string;
 };
 
+type ScheduleWindow = {
+  start: Date;
+  end: Date;
+};
+
+type AssignmentConflict = {
+  eventTitle: string;
+  overlapStart: Date;
+};
+
 // ─── Input types ─────────────────────────────────────────────────────────────
 
 export interface CreateAssignmentInput {
@@ -90,6 +100,12 @@ export class StaffService {
       throw new AppError('Nhân viên này đã được phân công cho sự kiện đó', 409);
     }
 
+    await this.assertNoAssignmentConflict(
+      event,
+      input.staffId,
+      ['assigned', 'confirmed']
+    );
+
     const note = this.normalizeAssignmentNote(input.note);
 
     return this.staffRepository.createAssignment({
@@ -152,6 +168,8 @@ export class StaffService {
       await this.staffRepository.transitionPendingAssignment(assignmentId, 'expired');
       throw new AppError('Đã quá hạn xác nhận ca. Bạn được ghi nhận là không làm ca này', 400);
     }
+
+    await this.assertNoAssignmentConflict(event, staffId, ['confirmed']);
 
     const updated = await this.staffRepository.transitionPendingAssignment(
       assignmentId,
@@ -469,6 +487,89 @@ export class StaffService {
       throw new AppError('Ghi chú nhiệm vụ không được vượt quá 500 ký tự', 400);
     }
     return note;
+  }
+
+  private async assertNoAssignmentConflict(
+    event: IEvent,
+    staffId: string,
+    statuses: Array<'assigned' | 'confirmed'>
+  ): Promise<void> {
+    const targetWindows = this.resolveAssignmentWindows(event);
+    if (targetWindows.length === 0) return;
+
+    const assignments = await this.staffRepository.findSchedulingAssignmentsForStaff(
+      staffId,
+      statuses,
+      event._id.toString()
+    );
+
+    for (const assignment of assignments) {
+      const assignedEvent = assignment.eventId as unknown as IEvent;
+      if (!assignedEvent || assignedEvent.status === 'cancelled') continue;
+
+      const assignedWindows = this.resolveAssignmentWindows(assignedEvent);
+      for (const target of targetWindows) {
+        for (const occupied of assignedWindows) {
+          if (target.start < occupied.end && occupied.start < target.end) {
+            const conflict: AssignmentConflict = {
+              eventTitle: assignedEvent.title || 'sự kiện khác',
+              overlapStart: new Date(
+                Math.max(target.start.getTime(), occupied.start.getTime())
+              ),
+            };
+            const conflictTime = conflict.overlapStart.toLocaleString('vi-VN', {
+              timeZone: 'Asia/Ho_Chi_Minh',
+            });
+            throw new AppError(
+              `Không thể phân công: nhân viên đã có nhiệm vụ tại sự kiện "${conflict.eventTitle}" trùng lịch vào ${conflictTime}`,
+              409
+            );
+          }
+        }
+      }
+    }
+  }
+
+  private resolveAssignmentWindows(
+    event: Pick<IEvent, 'shows' | 'startDate' | 'endDate' | 'date'>
+  ): ScheduleWindow[] {
+    const showWindows = (event.shows ?? [])
+      .map((show) => this.toAssignmentWindow(show.startTime, show.endTime))
+      .filter((window): window is ScheduleWindow => window !== null);
+
+    // shows[] is the source of truth for multi-show events. Using the broad
+    // event startDate/endDate envelope would incorrectly block staff during
+    // gaps between two separate showings.
+    if (showWindows.length > 0) return showWindows;
+
+    const start = event.startDate ?? event.date;
+    const end = event.endDate ?? start;
+    const fallbackWindow = this.toAssignmentWindow(start, end);
+    return fallbackWindow ? [fallbackWindow] : [];
+  }
+
+  private toAssignmentWindow(
+    startValue: Date | string | undefined,
+    endValue: Date | string | undefined
+  ): ScheduleWindow | null {
+    if (!startValue || !endValue) return null;
+    const start = new Date(startValue);
+    const parsedEnd = new Date(endValue);
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(parsedEnd.getTime()) ||
+      parsedEnd < start
+    ) {
+      return null;
+    }
+
+    // Legacy events may only have a start timestamp. Treat that timestamp as
+    // a minimal occupied interval so an event starting inside another shift
+    // (or at the exact same time) is still detected as a conflict.
+    const end = parsedEnd.getTime() === start.getTime()
+      ? new Date(start.getTime() + 1)
+      : parsedEnd;
+    return { start, end };
   }
 
   private async getCheckInWindowFailure(

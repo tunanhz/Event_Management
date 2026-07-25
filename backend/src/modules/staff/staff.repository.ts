@@ -71,6 +71,24 @@ export class StaffRepository {
     }).lean();
   }
 
+  async findSchedulingAssignmentsForStaff(
+    staffId: string,
+    statuses: AssignmentStatus[],
+    excludeEventId?: string
+  ): Promise<IStaffAssignment[]> {
+    const eventFilter = excludeEventId
+      ? { $ne: new mongoose.Types.ObjectId(excludeEventId) }
+      : undefined;
+
+    return StaffAssignment.find({
+      staffId: new mongoose.Types.ObjectId(staffId),
+      status: { $in: statuses },
+      ...(eventFilter ? { eventId: eventFilter } : {}),
+    })
+      .populate('eventId', 'title date startDate endDate shows status')
+      .lean();
+  }
+
   async createAssignment(data: {
     eventId: string;
     staffId: string;

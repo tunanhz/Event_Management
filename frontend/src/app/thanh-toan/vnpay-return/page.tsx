@@ -24,9 +24,12 @@ export default function VnpayReturnPage() {
 
 import { useAuth } from "@/context/AuthContext"
 import { useEffect } from "react"
+import { Loader2 } from "lucide-react"
+import { useVnpayReturnProxy } from "@/lib/use-vnpay-return-proxy"
 
 function VnpayReturnResult() {
   const params = useSearchParams()
+  const proxying = useVnpayReturnProxy()
   const success = params.get("status") === "success"
   const message = params.get("message")
   const { user } = useAuth()
@@ -56,6 +59,17 @@ function VnpayReturnResult() {
       }
     }
   }, [success, user])
+
+  // Still carrying VNPAY's callback params — the proxy hook is redirecting to the
+  // backend verify endpoint; show a neutral state instead of a false "failed".
+  if (proxying) {
+    return (
+      <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+        <Loader2 className="mx-auto h-9 w-9 animate-spin text-cyan-600" />
+        <p className="text-sm text-muted-foreground">Đang xác nhận thanh toán VNPAY…</p>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
