@@ -110,8 +110,6 @@ function formatDate(iso?: string): string {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 }
 
-const CHECK_IN_CLOSE_AFTER_MS = 30 * 60 * 1000
-
 /** Map a populated registration to the "Vé của tôi" card shape. */
 export function toUserTicket(r: ApiRegistration, now = Date.now()): UserTicket {
   const ev = ref(r.eventId)
@@ -121,14 +119,12 @@ export function toUserTicket(r: ApiRegistration, now = Date.now()): UserTicket {
     : undefined
   const startISO = show?.startTime || ev.startDate || ev.date
   const endISO = show?.endTime || ev.endDate || ev.startDate || ev.date
-  const closesAt = endISO
-    ? new Date(endISO).getTime() + CHECK_IN_CLOSE_AFTER_MS
-    : Number.POSITIVE_INFINITY
-  const checkInExpired = Number.isFinite(closesAt) && closesAt < now
+  const closesAt = endISO ? new Date(endISO).getTime() : Number.POSITIVE_INFINITY
+  const eventEnded = Number.isFinite(closesAt) && closesAt < now
   let status: TicketStatus = "upcoming"
   if (r.status === "CANCELLED" || r.status === "EXPIRED" || r.status === "REFUNDED") status = "cancelled"
   else if (r.status === "PAID" && r.checkedIn) status = "used"
-  else if (r.status === "PAID" && checkInExpired) status = "expired"
+  else if (r.status === "PAID" && eventEnded) status = "expired"
   return {
     id: r._id,
     orderCode: r.ticketCode ?? `EVB-${r._id.slice(-6).toUpperCase()}`,

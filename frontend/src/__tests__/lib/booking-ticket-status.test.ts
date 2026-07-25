@@ -31,7 +31,7 @@ function registration(
 }
 
 describe("Vé của tôi status mapping", () => {
-  it("keeps an unchecked ticket upcoming after start but before check-in closes", () => {
+  it("keeps an unchecked ticket upcoming after start but before the event ends", () => {
     expect(toUserTicket(registration(), NOW).status).toBe("upcoming")
   })
 
@@ -41,13 +41,13 @@ describe("Vé của tôi status mapping", () => {
     ).toBe("used")
   })
 
-  it("marks an unchecked ticket expired after end time plus 30 minutes", () => {
+  it("marks an unchecked ticket expired as soon as the event end time passes", () => {
     const ticket = registration({
       eventId: {
         _id: "64b000000000000000000010",
         title: "Ended Event",
         startDate: "2026-07-25T06:00:00.000Z",
-        endDate: "2026-07-25T09:29:59.000Z",
+        endDate: "2026-07-25T09:59:59.000Z",
       },
     })
 
