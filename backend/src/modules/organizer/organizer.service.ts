@@ -556,16 +556,17 @@ export class OrganizerService {
     }));
   }
 
-  // The ticket's showId scopes its sale window to that show's end time; events
-  // with no shows fall back to the event's own end date so selling can never
-  // outlive the event itself.
-  private resolveTicketSaleEndCap(event: IEvent, showId?: string): Date | undefined {
+  // The ticket's showId scopes its sale window to that show's *start* time —
+  // validateTicketInput closes sales 30 minutes before it. Events with no shows
+  // fall back to the event's own start date, so selling always stops before the
+  // doors open rather than running on into the event.
+  private resolveTicketSaleAnchor(event: IEvent, showId?: string): Date | undefined {
     if (event.shows && event.shows.length > 0 && showId) {
       const show = event.shows.find((s) => String(s._id) === String(showId));
-      if (show?.endTime) return new Date(show.endTime);
+      if (show?.startTime) return new Date(show.startTime);
     }
-    const cap = event.endDate ?? event.date;
-    return cap ? new Date(cap) : undefined;
+    const anchor = event.startDate ?? event.date;
+    return anchor ? new Date(anchor) : undefined;
   }
 
   async addTicket(
@@ -575,7 +576,7 @@ export class OrganizerService {
   ): Promise<ITicket> {
     const event = await this.getOwnedEvent(eventId, actor);
     this.assertEditable(event, 'thêm loại vé');
-    validateTicketInput(input, this.resolveTicketSaleEndCap(event, input.showId));
+    validateTicketInput(input, this.resolveTicketSaleAnchor(event, input.showId));
     const showId = this.resolveTicketShowId(event, input.showId);
 
     const created = await this.organizerRepository.createTicket(
@@ -639,7 +640,7 @@ export class OrganizerService {
       status: data.status ?? (ticket.status === 'SOLD_OUT' ? undefined : ticket.status),
     };
     const effectiveShowId = data.showId ?? (ticket.showId ? String(ticket.showId) : undefined);
-    validateTicketInput(merged, this.resolveTicketSaleEndCap(event, effectiveShowId));
+    validateTicketInput(merged, this.resolveTicketSaleAnchor(event, effectiveShowId));
 
     const ticketUpdate: Partial<ITicket> = {
       ticketName: merged.ticketName,
@@ -707,7 +708,7 @@ export class OrganizerService {
       throw new AppError('Cần cấu hình ít nhất 1 loại vé', 400);
     }
     for (const ticket of tickets) {
-      validateTicketInput(ticket, this.resolveTicketSaleEndCap(event, ticket.showId));
+      validateTicketInput(ticket, this.resolveTicketSaleAnchor(event, ticket.showId));
       // Fails fast on rows targeting a show that doesn't belong to this event.
       this.resolveTicketShowId(event, ticket.showId);
     }

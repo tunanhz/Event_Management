@@ -33,12 +33,24 @@ const SIGNATURE_URL_REGEX = uploadedUrlRegex('signatures', 'png');
 const LIMITS = { orgName: 80, orgInfo: 500, confirmationMessage: 500, contractRepName: 80 };
 
 /**
- * @param saleEndCap The show (or event, for the legacy flat payload) end
- *   time this ticket sells into — selling must stop once that show/event is
- *   over, so `saleEnd` may not land after it. Undefined when the caller has
- *   no end time to check against yet.
+ * Ticket sales must close this far ahead of the show starting, so the gate has
+ * a settled attendee list to check in against (no walk-up sales mid-check-in).
  */
-export function validateTicketInput(ticket: CreateTicketInput, saleEndCap?: Date): void {
+export const TICKET_SALE_END_LEAD_MS = 30 * 60 * 1000;
+
+/** Latest `saleEnd` allowed for a tier selling into a show that starts at
+ *  `showStart` — 30 minutes before the doors, per the organizer rule. */
+export function ticketSaleEndCap(showStart: Date): Date {
+  return new Date(showStart.getTime() - TICKET_SALE_END_LEAD_MS);
+}
+
+/**
+ * @param showStart The show (or event, for the legacy flat payload) *start*
+ *   time this ticket sells into. Selling must stop 30 minutes before it, so
+ *   `saleEnd` may not land after `showStart - 30m`. Undefined when the caller
+ *   has no start time to check against yet.
+ */
+export function validateTicketInput(ticket: CreateTicketInput, showStart?: Date): void {
   if (!ticket.ticketName) {
     throw new AppError('ticketName là bắt buộc cho mỗi loại vé', 400);
   }
@@ -72,10 +84,14 @@ export function validateTicketInput(ticket: CreateTicketInput, saleEndCap?: Date
       throw new AppError('saleEnd phải sau saleStart', 400);
     }
   }
-  if (ticket.saleEnd && saleEndCap && !Number.isNaN(saleEndCap.getTime())) {
+  if (ticket.saleEnd && showStart && !Number.isNaN(showStart.getTime())) {
     const end = new Date(ticket.saleEnd);
-    if (!Number.isNaN(end.getTime()) && end.getTime() > saleEndCap.getTime()) {
-      throw new AppError('saleEnd không được sau thời điểm kết thúc sự kiện/suất diễn', 400);
+    const cap = ticketSaleEndCap(showStart);
+    if (!Number.isNaN(end.getTime()) && end.getTime() > cap.getTime()) {
+      throw new AppError(
+        'Thời gian kết thúc bán vé phải trước thời điểm bắt đầu sự kiện/suất diễn ít nhất 30 phút',
+        400
+      );
     }
   }
   if (ticket.status && ticket.status !== 'ACTIVE' && ticket.status !== 'HIDDEN') {
@@ -185,7 +201,9 @@ export function resolveCreateSchedule(input: CreateEventInput): ResolvedCreateSc
     if (allTickets.length === 0) {
       throw new AppError('Cần cấu hình ít nhất 1 loại vé', 400);
     }
-    shows.forEach((s) => s.tickets.forEach((t) => validateTicketInput(t, s.endTime)));
+    // Each tier closes 30m before *its own* show — a later show keeps selling
+    // after an earlier one has already started.
+    shows.forEach((s) => s.tickets.forEach((t) => validateTicketInput(t, s.startTime)));
     return { shows, flatTickets: [], startDate, endDate };
   }
 
@@ -204,7 +222,7 @@ export function resolveCreateSchedule(input: CreateEventInput): ResolvedCreateSc
   if (endDate.getTime() < startDate.getTime()) {
     throw new AppError('Ngày kết thúc phải sau ngày bắt đầu', 400);
   }
-  input.tickets.forEach((t) => validateTicketInput(t, endDate));
+  input.tickets.forEach((t) => validateTicketInput(t, startDate));
   return { shows: [], flatTickets: input.tickets, startDate, endDate };
 }
 

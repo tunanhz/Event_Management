@@ -9,6 +9,7 @@ import {
   composeLocation,
   validateWizardFields,
   buildContractSubdoc,
+  TICKET_SALE_END_LEAD_MS,
 } from '../../../modules/organizer/event-wizard-validation';
 import { CreateEventInput, UpdateEventInput } from '../../../modules/organizer/event-wizard-types';
 
@@ -181,38 +182,41 @@ describe('event-wizard-validation.ts', () => {
       }).not.toThrow();
     });
 
-    it('should reject saleEnd after saleEndCap', () => {
-      const cap = new Date(Date.now() + 86400000);
-      const afterCap = new Date(Date.now() + 2 * 86400000);
-      expect(() => {
-        validateTicketInput(
-          {
-            ticketName: 'VIP',
-            price: 100,
-            quantity: 10,
-            saleStart: futureDate,
-            saleEnd: afterCap,
-          },
-          cap
-        );
-      }).toThrow(AppError);
-    });
+    // Sales must close 30 minutes before the show starts, so check-in opens
+    // against a settled attendee list.
+    describe('saleEnd vs show start (30-minute lead)', () => {
+      const showStart = new Date(Date.now() + 2 * 86400000);
+      const ticketAt = (saleEnd: Date) => ({
+        ticketName: 'VIP',
+        price: 100,
+        quantity: 10,
+        saleStart: futureDate,
+        saleEnd,
+      });
 
-    it('should accept saleEnd before saleEndCap', () => {
-      const cap = new Date(Date.now() + 2 * 86400000);
-      const saleEnd = new Date(Date.now() + 1.5 * 86400000);
-      expect(() => {
-        validateTicketInput(
-          {
-            ticketName: 'VIP',
-            price: 100,
-            quantity: 10,
-            saleStart: futureDate,
-            saleEnd,
-          },
-          cap
-        );
-      }).not.toThrow();
+      it('should reject saleEnd after the show starts', () => {
+        const afterStart = new Date(showStart.getTime() + 60 * 60 * 1000);
+        expect(() => validateTicketInput(ticketAt(afterStart), showStart)).toThrow(AppError);
+      });
+
+      it('should reject saleEnd inside the 30-minute lead window', () => {
+        const tooLate = new Date(showStart.getTime() - 10 * 60 * 1000);
+        expect(() => validateTicketInput(ticketAt(tooLate), showStart)).toThrow(AppError);
+      });
+
+      it('should reject saleEnd exactly at the show start', () => {
+        expect(() => validateTicketInput(ticketAt(showStart), showStart)).toThrow(AppError);
+      });
+
+      it('should accept saleEnd exactly 30 minutes before the show starts', () => {
+        const atCap = new Date(showStart.getTime() - TICKET_SALE_END_LEAD_MS);
+        expect(() => validateTicketInput(ticketAt(atCap), showStart)).not.toThrow();
+      });
+
+      it('should accept saleEnd comfortably before the lead window', () => {
+        const early = new Date(showStart.getTime() - 6 * 60 * 60 * 1000);
+        expect(() => validateTicketInput(ticketAt(early), showStart)).not.toThrow();
+      });
     });
 
     it('should reject invalid status', () => {
@@ -531,23 +535,70 @@ describe('event-wizard-validation.ts', () => {
       }).toThrow(AppError);
     });
 
-    it('should validate each show ticket against its endTime', () => {
-      const show = { startTime: futureStart, endTime: futureEnd };
+    it('should accept a show ticket closing exactly 30 minutes before its start', () => {
       expect(() => {
         resolveCreateSchedule({
           shows: [
             {
-              ...show,
+              startTime: futureStart,
+              endTime: futureEnd,
               tickets: [
                 {
                   ...validTicket,
-                  saleEnd: new Date(Date.now() + 3 * 86400000), // after show end
+                  saleEnd: new Date(futureStart.getTime() - TICKET_SALE_END_LEAD_MS),
                 },
               ],
             },
           ],
         } as any);
+      }).not.toThrow();
+    });
+
+    it('should reject a show ticket selling past its start minus 30 minutes', () => {
+      expect(() => {
+        resolveCreateSchedule({
+          shows: [
+            {
+              startTime: futureStart,
+              endTime: futureEnd,
+              tickets: [{ ...validTicket, saleEnd: futureStart }],
+            },
+          ],
+        } as any);
       }).toThrow(AppError);
+    });
+
+    it('should cap each show independently, so a later show keeps selling', () => {
+      const show1Start = new Date(Date.now() + 86400000);
+      const show2Start = new Date(Date.now() + 5 * 86400000);
+      expect(() => {
+        resolveCreateSchedule({
+          shows: [
+            {
+              startTime: show1Start,
+              endTime: new Date(show1Start.getTime() + 3600000),
+              tickets: [
+                {
+                  ...validTicket,
+                  saleEnd: new Date(show1Start.getTime() - TICKET_SALE_END_LEAD_MS),
+                },
+              ],
+            },
+            {
+              startTime: show2Start,
+              endTime: new Date(show2Start.getTime() + 3600000),
+              // Closes long after show 1 has already started — still valid,
+              // because it is capped against show 2's own start.
+              tickets: [
+                {
+                  ...validTicket,
+                  saleEnd: new Date(show2Start.getTime() - TICKET_SALE_END_LEAD_MS),
+                },
+              ],
+            },
+          ],
+        } as any);
+      }).not.toThrow();
     });
 
     it('should use legacy flat payload when no shows', () => {

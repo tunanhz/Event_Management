@@ -17,6 +17,7 @@ import { User } from '../modules/user/user.model';
 import { Category } from '../modules/category/category.model';
 import { Event, IEvent } from '../modules/event/event.model';
 import { Ticket } from '../modules/organizer/ticket.model';
+import { TICKET_SALE_END_LEAD_MS } from '../modules/organizer/event-wizard-validation';
 
 const ORGANIZER = {
   fullName: 'EventBox Demo Organizer',
@@ -233,7 +234,8 @@ async function run(): Promise<void> {
         price: t.price,
         quantity: t.quantity,
         saleStart: past(1),
-        saleEnd: s.startDate,
+        // Sales close 30 minutes before the doors — see TICKET_SALE_END_LEAD_MS.
+        saleEnd: new Date(s.startDate.getTime() - TICKET_SALE_END_LEAD_MS),
         status: 'ACTIVE',
       });
     }

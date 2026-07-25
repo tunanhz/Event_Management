@@ -499,22 +499,34 @@ describe('wizard-validation', () => {
       jest.useRealTimers()
     })
 
-    it('should reject sale end after show end', () => {
-      const form: CreateEventForm = {
-        ...INITIAL_FORM,
-        shows: [
-          {
-            ...createEmptyShow(),
-            startTime: '2026-07-21T10:00',
-            endTime: '2026-07-21T12:00',
-            tickets: [
-              { ...createEmptyTicket(), saleEnd: '2026-07-21T13:00' },
-            ],
-          },
-        ],
-      }
-      const errors = validateStep(2, form)
-      expect(errors.some((e) => e.includes('thời gian kết thúc bán vé không được sau thời gian kết thúc suất diễn'))).toBe(true)
+    // Sales must close 30 minutes before the show starts (show starts 10:00 ⇒
+    // the latest allowed saleEnd is 09:30).
+    const showWithSaleEnd = (saleEnd: string): CreateEventForm => ({
+      ...INITIAL_FORM,
+      shows: [
+        {
+          ...createEmptyShow(),
+          startTime: '2026-07-21T10:00',
+          endTime: '2026-07-21T12:00',
+          tickets: [{ ...createEmptyTicket(), saleEnd }],
+        },
+      ],
+    })
+    const saleEndError = (form: CreateEventForm) =>
+      validateStep(2, form).some((e) =>
+        e.includes('thời gian kết thúc bán vé phải trước giờ bắt đầu suất diễn ít nhất 30 phút')
+      )
+
+    it('should reject sale end after the show starts', () => {
+      expect(saleEndError(showWithSaleEnd('2026-07-21T11:00'))).toBe(true)
+    })
+
+    it('should reject sale end inside the 30-minute lead window', () => {
+      expect(saleEndError(showWithSaleEnd('2026-07-21T09:50'))).toBe(true)
+    })
+
+    it('should accept sale end exactly 30 minutes before the show starts', () => {
+      expect(saleEndError(showWithSaleEnd('2026-07-21T09:30'))).toBe(false)
     })
 
     it('should require ticket name', () => {

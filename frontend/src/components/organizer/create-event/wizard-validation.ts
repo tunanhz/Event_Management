@@ -7,7 +7,7 @@
  * (empty ⇒ valid). `firstInvalidStep` finds the earliest incomplete step,
  * used to gate forward tab navigation and the final save.
  */
-import { DESCRIPTION_TEMPLATE, LIMITS, SETTINGS_LIMITS, type CreateEventForm, type EventShow, type WizardStep } from "./create-event-data"
+import { DESCRIPTION_TEMPLATE, LIMITS, SETTINGS_LIMITS, saleEndCapFor, type CreateEventForm, type EventShow, type WizardStep } from "./create-event-data"
 
 /** Plain-text length of rich-text HTML (strips tags + entities). */
 function htmlText(html: string): string {
@@ -157,11 +157,12 @@ function validateStep2(f: CreateEventForm): string[] {
       // from an earlier draft that has since become past-dated.
       if (t.saleStart && new Date(t.saleStart).getTime() <= Date.now())
         e.push(`Vé "${name}" (${label}): thời gian bắt đầu bán vé phải ở tương lai.`)
-      // Sales may run right up to the show's end (multi-day events sell through,
-      // even after they've started) — just never past it. Also catches a ticket
-      // left over from before the organizer shortened this show's end time.
-      if (show.endTime && t.saleEnd && t.saleEnd > show.endTime)
-        e.push(`Vé "${name}" (${label}): thời gian kết thúc bán vé không được sau thời gian kết thúc suất diễn.`)
+      // Sales must close 30 minutes before this show starts, so check-in opens
+      // against a settled attendee list. Also catches a ticket left over from
+      // before the organizer moved this show's start time earlier.
+      const saleEndCap = saleEndCapFor(show.startTime)
+      if (saleEndCap && t.saleEnd && t.saleEnd > saleEndCap)
+        e.push(`Vé "${name}" (${label}): thời gian kết thúc bán vé phải trước giờ bắt đầu suất diễn ít nhất 30 phút.`)
     })
   })
   return e

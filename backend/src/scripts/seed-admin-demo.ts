@@ -4,6 +4,7 @@ import { User } from '../modules/user/user.model';
 import { Category } from '../modules/category/category.model';
 import { Event, IEvent } from '../modules/event/event.model';
 import { Ticket } from '../modules/organizer/ticket.model';
+import { TICKET_SALE_END_LEAD_MS } from '../modules/organizer/event-wizard-validation';
 import { Registration } from '../modules/registration/registration.model';
 import { Payment } from '../modules/registration/payment.model';
 
@@ -439,7 +440,8 @@ async function run(): Promise<void> {
         minPerOrder: seedTicket.minPerOrder ?? 1,
         maxPerOrder: seedTicket.maxPerOrder ?? 10,
         saleStart: past(7, 9),
-        saleEnd: seedEvent.startDate,
+        // Sales close 30 minutes before the doors — see TICKET_SALE_END_LEAD_MS.
+        saleEnd: new Date(seedEvent.startDate.getTime() - TICKET_SALE_END_LEAD_MS),
         status: seedTicket.status ?? 'ACTIVE',
       });
       createdTickets += 1;

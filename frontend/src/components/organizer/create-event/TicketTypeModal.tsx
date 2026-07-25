@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { X, Inbox } from "lucide-react"
-import { TICKET_LIMITS, createEmptyTicket, type TicketType } from "./create-event-data"
+import { TICKET_LIMITS, createEmptyTicket, saleEndCapFor, toLocalDateTime, type TicketType } from "./create-event-data"
 import formStyles from "./create-event-form.module.css"
 import styles from "./ticket-type-modal.module.css"
 
@@ -12,9 +12,9 @@ interface TicketTypeModalProps {
   /** For create mode: a previously-dismissed draft to resume from, so an
    *  accidental close doesn't wipe what was already filled in. */
   initialDraft?: TicketType | null
-  /** End of the show this tier sells into (datetime-local string) — sales can
-   *  run right up to it, but not past it. */
-  showEndTime: string
+  /** Start of the show this tier sells into (datetime-local string) — sales
+   *  must close 30 minutes before it. */
+  showStartTime: string
   /** Called on any dismissal with the current draft, so the parent can keep it. */
   onClose: (draft: TicketType) => void
   onSave: (ticket: TicketType) => void
@@ -22,29 +22,24 @@ interface TicketTypeModalProps {
 
 type Errors = Partial<Record<keyof TicketType, string>>
 
-/** Format a Date as a local `datetime-local` value (YYYY-MM-DDTHH:mm).
- *  Local — not UTC — so the pre-filled value matches the organizer's clock. */
-function toLocalDateTime(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
-}
-
 /**
  * Create / edit modal for a ticket tier. Mirrors the reference fields (name,
  * price/free, quantity, per-order limits, sale window, description, artwork)
  * and validates the numeric + date constraints on submit.
  */
-export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, onSave }: TicketTypeModalProps) {
+export function TicketTypeModal({ ticket, initialDraft, showStartTime, onClose, onSave }: TicketTypeModalProps) {
+  // Latest sale close allowed for this show: 30 minutes before it starts.
+  const saleEndCap = saleEndCapFor(showStartTime)
   // New tickets pre-fill a valid, editable sale window: it opens ~1h from now
-  // (must be in the future) and closes when the show ends (its natural cap).
-  // An existing ticket / resumed draft keeps its own values untouched.
+  // (must be in the future) and closes at that cap. An existing ticket /
+  // resumed draft keeps its own values untouched.
   const [draft, setDraft] = useState<TicketType>(() => {
     if (ticket) return ticket
     if (initialDraft) return initialDraft
     return {
       ...createEmptyTicket(),
       saleStart: toLocalDateTime(new Date(Date.now() + 60 * 60 * 1000)),
-      saleEnd: showEndTime || "",
+      saleEnd: saleEndCap,
     }
   })
   // Errors recompute live from the draft; a field turns red once it's been
@@ -90,8 +85,8 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
     if (!draft.saleEnd) e.saleEnd = "Chọn thời gian kết thúc"
     else if (draft.saleStart && draft.saleEnd <= draft.saleStart)
       e.saleEnd = "Phải sau thời gian bắt đầu bán"
-    else if (showEndTime && draft.saleEnd > showEndTime)
-      e.saleEnd = "Không được sau thời gian kết thúc suất diễn"
+    else if (saleEndCap && draft.saleEnd > saleEndCap)
+      e.saleEnd = "Phải trước giờ bắt đầu suất diễn ít nhất 30 phút"
     return e
   }
 
@@ -194,7 +189,7 @@ export function TicketTypeModal({ ticket, initialDraft, showEndTime, onClose, on
                 type="datetime-local"
                 style={{ padding: "0 1rem" }}
                 value={draft.saleEnd}
-                max={showEndTime || undefined}
+                max={saleEndCap || undefined}
                 onChange={(e) => set("saleEnd", e.target.value)}
               />
             </Field>
