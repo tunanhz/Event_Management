@@ -145,5 +145,5 @@ export function toUserTicket(r: ApiRegistration, now = Date.now()): UserTicket {
 /** GET /registrations/me — the signed-in participant's tickets, mapped. */
 export async function fetchMyTickets(): Promise<UserTicket[]> {
   const res = await clientApi.get<ApiEnvelope<ApiRegistration[]>>("/registrations/me?limit=100")
-  return (res.data ?? []).map(toUserTicket)
+  return (res.data ?? []).map((r) => toUserTicket(r))
 }
