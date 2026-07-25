@@ -5,7 +5,7 @@
  * Exercises against a *running* backend (`npm run dev`). Self-contained:
  * registers its own ORGANIZER + PARTICIPANT, creates an event, buys tickets
  * for real through /registrations + confirm-payment, and seeds the two
- * flows that belong to other roles directly in MongoDB (CheckIn — staff flow;
+ * flows that belong to other roles directly in MongoDB (CheckInLog — staff flow;
  * StaffAssignment — admin flow) so the organizer read endpoints have data.
  *
  *   npx tsx src/modules/organizer/organizer-workspace.qa.ts
@@ -220,7 +220,7 @@ async function main() {
     a.salesByTicket
   );
 
-  console.log('5. Check-in report — empty, then seed a staff CheckIn (SUCCESS)');
+  console.log('5. Check-in report — empty, then seed a staff CheckInLog (success)');
   const checkins0 = await api(
     'GET',
     `/api/organizer/events/${eventId}/checkins`,
