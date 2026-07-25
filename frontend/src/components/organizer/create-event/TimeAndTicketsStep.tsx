@@ -165,6 +165,7 @@ export function TimeAndTicketsStep({ form, update, showErrors, onShowFieldBlur }
           ticket={modal.ticket}
           initialDraft={modal.ticket === null ? newTicketDrafts[modal.showId] ?? null : null}
           showStartTime={modalShow?.startTime ?? ""}
+          showEndTime={modalShow?.endTime ?? ""}
           onClose={closeModal}
           onSave={saveTicket}
         />

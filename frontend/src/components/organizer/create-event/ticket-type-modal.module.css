@@ -108,6 +108,39 @@
   cursor: pointer;
 }
 
+/* Read-only schedule reminder shown above the sale-window fields, so the
+   organizer can see the show's slot while choosing when selling stops. */
+.showTimes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+.showTimesIcon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.showTimesLabel {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.showTimesValue {
+  color: var(--foreground);
+  font-weight: 600;
+  /* Keep the range on one line where it fits, wrapping as a unit when it doesn't. */
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.showTimesArrow { color: var(--muted-foreground); }
+
 /* datetime-local styled like the shared inputs */
 .dateInputWrap { position: relative; }
 .dateInput::-webkit-calendar-picker-indicator {

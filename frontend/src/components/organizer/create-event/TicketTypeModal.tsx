@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { X, Inbox } from "lucide-react"
+import { X, Inbox, CalendarClock } from "lucide-react"
 import { TICKET_LIMITS, createEmptyTicket, saleEndCapFor, toLocalDateTime, type TicketType } from "./create-event-data"
 import formStyles from "./create-event-form.module.css"
 import styles from "./ticket-type-modal.module.css"
@@ -15,6 +15,10 @@ interface TicketTypeModalProps {
   /** Start of the show this tier sells into (datetime-local string) — sales
    *  must close 30 minutes before it. */
   showStartTime: string
+  /** End of that same show (datetime-local string). Display only — shown next
+   *  to the start so the organizer can see the whole slot while picking the
+   *  sale window, without leaving the modal. Never used for validation. */
+  showEndTime: string
   /** Called on any dismissal with the current draft, so the parent can keep it. */
   onClose: (draft: TicketType) => void
   onSave: (ticket: TicketType) => void
@@ -22,12 +26,22 @@ interface TicketTypeModalProps {
 
 type Errors = Partial<Record<keyof TicketType, string>>
 
+/** `datetime-local` string → "HH:mm DD/MM/YYYY" for read-only display.
+ *  Returns "—" for an empty/unparseable value (show not filled in yet). */
+function formatShowTime(value: string): string {
+  if (!value) return "—"
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return "—"
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${p(d.getHours())}:${p(d.getMinutes())} ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`
+}
+
 /**
  * Create / edit modal for a ticket tier. Mirrors the reference fields (name,
  * price/free, quantity, per-order limits, sale window, description, artwork)
  * and validates the numeric + date constraints on submit.
  */
-export function TicketTypeModal({ ticket, initialDraft, showStartTime, onClose, onSave }: TicketTypeModalProps) {
+export function TicketTypeModal({ ticket, initialDraft, showStartTime, showEndTime, onClose, onSave }: TicketTypeModalProps) {
   // Latest sale close allowed for this show: 30 minutes before it starts.
   const saleEndCap = saleEndCapFor(showStartTime)
   // New tickets pre-fill a valid, editable sale window: it opens ~1h from now
@@ -171,6 +185,23 @@ export function TicketTypeModal({ ticket, initialDraft, showStartTime, onClose, 
             <NumField label="Số vé tối thiểu trong một đơn hàng" value={draft.minPerOrder} error={shownErr("minPerOrder")} onChange={(v) => set("minPerOrder", v)} />
             <NumField label="Số vé tối đa trong một đơn hàng" value={draft.maxPerOrder} error={shownErr("maxPerOrder")} onChange={(v) => set("maxPerOrder", v)} />
           </div>
+
+          {/* Read-only reminder of the show this tier sells into, so the sale
+              window can be set without leaving the modal to check the schedule. */}
+          {(showStartTime || showEndTime) && (
+            <div className={styles.showTimes}>
+              <CalendarClock size={16} className={styles.showTimesIcon} aria-hidden="true" />
+              <span className={styles.showTimesLabel}>Suất diễn:</span>
+              <span
+                className={styles.showTimesValue}
+                aria-label={`Từ ${formatShowTime(showStartTime)} đến ${formatShowTime(showEndTime)}`}
+              >
+                {formatShowTime(showStartTime)}
+                <span className={styles.showTimesArrow} aria-hidden="true">→</span>
+                {formatShowTime(showEndTime)}
+              </span>
+            </div>
+          )}
 
           {/* Sale window */}
           <div className={styles.grid2}>
