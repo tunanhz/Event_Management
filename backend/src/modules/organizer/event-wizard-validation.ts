@@ -30,10 +30,10 @@ function uploadedUrlRegex(subdir: string, extensions: string): RegExp {
 
 const PERMIT_URL_REGEX = uploadedUrlRegex('permits', 'pdf|docx|png');
 const SIGNATURE_URL_REGEX = uploadedUrlRegex('signatures', 'png');
-const LIMITS = { orgName: 80, orgInfo: 500, confirmationMessage: 500, contractRepName: 80, description: 600 };
+const LIMITS = { orgName: 80, orgInfo: 500, confirmationMessage: 500, contractRepName: 80, description: 2000 };
 
 /** Plain-text length of the rich-text description (tags/entities stripped), so
- *  the 600-char cap counts what the organizer actually wrote, not the HTML
+ *  the character cap counts what the organizer actually wrote, not the HTML
  *  markup. Mirrors the frontend's htmlText() so both sides agree on the count. */
 function plainTextLength(html: string): number {
   return html

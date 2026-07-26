@@ -111,7 +111,7 @@ export const LIMITS = {
   orgName: 80,
   orgInfo: 500,
   // Plain-text (tags stripped) length cap for the rich-text event description.
-  description: 600,
+  description: 2000,
 } as const
 
 /** Character / value limits for the ticket-type modal. */

@@ -996,13 +996,13 @@ describe('event-wizard-validation.ts', () => {
       }).toThrow(AppError);
     });
 
-    it('should reject description over 600 plain-text chars', () => {
+    it('should reject description over 2000 plain-text chars', () => {
       expect(() => {
-        validateWizardFields({ description: '<p>' + 'a'.repeat(601) + '</p>' });
+        validateWizardFields({ description: '<p>' + 'a'.repeat(2001) + '</p>' });
       }).toThrow(AppError);
     });
 
-    it('should accept description within 600 text chars despite HTML markup', () => {
+    it('should accept description within 2000 text chars despite HTML markup', () => {
       expect(() => {
         validateWizardFields({ description: '<h3>Title</h3><p>' + 'a'.repeat(500) + '</p>' });
       }).not.toThrow();

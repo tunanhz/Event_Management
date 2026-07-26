@@ -258,7 +258,7 @@ describe('wizard-validation', () => {
       )
     })
 
-    it('should reject description over 600 plain-text chars', () => {
+    it('should reject description over 2000 plain-text chars', () => {
       const form: CreateEventForm = {
         ...INITIAL_FORM,
         bannerImage: 'data:image/png;base64,abc',
@@ -267,11 +267,11 @@ describe('wizard-validation', () => {
         category: 'cat',
         orgName: 'Org',
         orgInfo: 'Info',
-        // HTML tags must not count toward the 600 cap — only the text does.
-        description: '<p>' + 'a'.repeat(601) + '</p>',
+        // HTML tags must not count toward the 2000 cap — only the text does.
+        description: '<p>' + 'a'.repeat(2001) + '</p>',
       }
       const errors = validateStep(1, form)
-      expect(errors).toContain('Mô tả sự kiện tối đa 600 ký tự.')
+      expect(errors).toContain('Mô tả sự kiện tối đa 2000 ký tự.')
     })
 
     it('should pass step 1 when all fields valid', () => {
