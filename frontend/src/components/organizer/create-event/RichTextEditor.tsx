@@ -24,9 +24,16 @@ import styles from "./RichTextEditor.module.css"
 export function RichTextEditor({
   initialHTML,
   onChange,
+  maxChars,
+  currentChars,
 }: {
   initialHTML: string
   onChange: (html: string) => void
+  /** Optional plain-text character cap — shows a live counter under the editor.
+   *  Counting is owned by the parent (so it matches the wizard's validation)
+   *  and passed back in via `currentChars`. */
+  maxChars?: number
+  currentChars?: number
 }) {
   const ref = useRef<HTMLDivElement>(null)
   // Seed the DOM imperatively, once, on mount — never via the declarative
@@ -135,6 +142,20 @@ export function RichTextEditor({
         data-placeholder="Giới thiệu sự kiện, chương trình chính, khách mời, trải nghiệm đặc biệt, điều khoản và điều kiện..."
         onInput={emit}
       />
+
+      {maxChars != null && (
+        <div
+          aria-live="polite"
+          style={{
+            marginTop: 6,
+            textAlign: "right",
+            fontSize: 12,
+            color: (currentChars ?? 0) > maxChars ? "#ef4444" : "var(--muted-foreground, #71717a)",
+          }}
+        >
+          {currentChars ?? 0}/{maxChars} ký tự
+        </div>
+      )}
     </div>
   )
 }

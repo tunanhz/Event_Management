@@ -88,6 +88,18 @@ describe('event-wizard-validation.ts', () => {
       }).not.toThrow();
     });
 
+    it('should throw when price reaches 1 tỷ (must be strictly under)', () => {
+      expect(() => {
+        validateTicketInput({ ticketName: 'VIP', price: 1_000_000_000, quantity: 10 });
+      }).toThrow(AppError);
+    });
+
+    it('should accept price just under 1 tỷ', () => {
+      expect(() => {
+        validateTicketInput({ ticketName: 'VIP', price: 999_999_999, quantity: 10 });
+      }).not.toThrow();
+    });
+
     it('should throw when quantity is not a number', () => {
       expect(() => {
         validateTicketInput({ ticketName: 'VIP', price: 100, quantity: 'not-a-number' as any });
@@ -982,6 +994,18 @@ describe('event-wizard-validation.ts', () => {
           paymentInfo: { accountHolder: 'a'.repeat(101) },
         });
       }).toThrow(AppError);
+    });
+
+    it('should reject description over 600 plain-text chars', () => {
+      expect(() => {
+        validateWizardFields({ description: '<p>' + 'a'.repeat(601) + '</p>' });
+      }).toThrow(AppError);
+    });
+
+    it('should accept description within 600 text chars despite HTML markup', () => {
+      expect(() => {
+        validateWizardFields({ description: '<h3>Title</h3><p>' + 'a'.repeat(500) + '</p>' });
+      }).not.toThrow();
     });
   });
 

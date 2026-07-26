@@ -89,6 +89,8 @@ export function TicketTypeModal({ ticket, initialDraft, showStartTime, showEndTi
     const e: Errors = {}
     if (!draft.name.trim()) e.name = "Vui lòng nhập tên vé"
     if (!draft.isFree && draft.price <= 0) e.price = "Giá vé phải lớn hơn 0"
+    else if (!draft.isFree && draft.price >= TICKET_LIMITS.maxPrice)
+      e.price = "Giá vé phải dưới 1.000.000.000đ"
     if (draft.quantity < 1) e.quantity = "Tối thiểu 1 vé"
     if (draft.minPerOrder < 1) e.minPerOrder = "Tối thiểu 1"
     if (draft.maxPerOrder < draft.minPerOrder) e.maxPerOrder = "Phải ≥ số vé tối thiểu"
@@ -164,6 +166,7 @@ export function TicketTypeModal({ ticket, initialDraft, showStartTime, showEndTi
                   className={`${formStyles.input} ${styles.priceInput}`}
                   type="number"
                   min={0}
+                  max={TICKET_LIMITS.maxPrice - 1}
                   step={1000}
                   style={{ paddingRight: "1rem" }}
                   value={draft.isFree ? 0 : draft.price}

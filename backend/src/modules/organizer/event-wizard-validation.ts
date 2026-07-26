@@ -30,13 +30,27 @@ function uploadedUrlRegex(subdir: string, extensions: string): RegExp {
 
 const PERMIT_URL_REGEX = uploadedUrlRegex('permits', 'pdf|docx|png');
 const SIGNATURE_URL_REGEX = uploadedUrlRegex('signatures', 'png');
-const LIMITS = { orgName: 80, orgInfo: 500, confirmationMessage: 500, contractRepName: 80 };
+const LIMITS = { orgName: 80, orgInfo: 500, confirmationMessage: 500, contractRepName: 80, description: 600 };
+
+/** Plain-text length of the rich-text description (tags/entities stripped), so
+ *  the 600-char cap counts what the organizer actually wrote, not the HTML
+ *  markup. Mirrors the frontend's htmlText() so both sides agree on the count. */
+function plainTextLength(html: string): number {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim().length;
+}
 
 /**
  * Ticket sales must close this far ahead of the show starting, so the gate has
  * a settled attendee list to check in against (no walk-up sales mid-check-in).
  */
 export const TICKET_SALE_END_LEAD_MS = 30 * 60 * 1000;
+
+/** Ticket price must stay strictly under 1 tỷ VND (exclusive upper bound). */
+const TICKET_PRICE_MAX = 1_000_000_000;
 
 /** Latest `saleEnd` allowed for a tier selling into a show that starts at
  *  `showStart` — 30 minutes before the doors, per the organizer rule. */
@@ -56,6 +70,9 @@ export function validateTicketInput(ticket: CreateTicketInput, showStart?: Date)
   }
   if (typeof ticket.price !== 'number' || ticket.price < 0) {
     throw new AppError('price của vé phải là số >= 0', 400);
+  }
+  if (ticket.price >= TICKET_PRICE_MAX) {
+    throw new AppError('Giá vé phải dưới 1.000.000.000đ (1 tỷ)', 400);
   }
   if (typeof ticket.quantity !== 'number' || ticket.quantity < 1) {
     throw new AppError('quantity của vé phải >= 1', 400);
@@ -274,6 +291,12 @@ export function validateWizardFields(input: UpdateEventInput): void {
   }
   if (typeof input.orgInfo === 'string' && input.orgInfo.length > LIMITS.orgInfo) {
     throw new AppError(`orgInfo tối đa ${LIMITS.orgInfo} ký tự`, 400);
+  }
+  if (
+    typeof input.description === 'string' &&
+    plainTextLength(input.description) > LIMITS.description
+  ) {
+    throw new AppError(`Mô tả sự kiện tối đa ${LIMITS.description} ký tự`, 400);
   }
   if (input.logisticsServices !== undefined) {
     const ok =

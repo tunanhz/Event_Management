@@ -16,10 +16,12 @@ import { ContractStep } from "./ContractStep"
 import { PaymentStep } from "./PaymentStep"
 import {
   WIZARD_STEPS,
+  LIMITS,
   type CreateEventForm,
   type WizardStep,
 } from "./create-event-data"
 import {
+  htmlText,
   firstInvalidStep,
   validateStep,
   fieldErrors,
@@ -324,6 +326,8 @@ export function EventWizard({
             <RichTextEditor
               initialHTML={form.description}
               onChange={(html) => update({ description: html })}
+              maxChars={LIMITS.description}
+              currentChars={htmlText(form.description).length}
             />
           </SectionCard>
 

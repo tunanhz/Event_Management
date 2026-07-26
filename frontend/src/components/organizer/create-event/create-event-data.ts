@@ -110,12 +110,16 @@ export const LIMITS = {
   street: 80,
   orgName: 80,
   orgInfo: 500,
+  // Plain-text (tags stripped) length cap for the rich-text event description.
+  description: 600,
 } as const
 
 /** Character / value limits for the ticket-type modal. */
 export const TICKET_LIMITS = {
   name: 50,
   description: 1000,
+  // Ticket price must stay under 1 tỷ VND — exclusive upper bound (price < maxPrice).
+  maxPrice: 1_000_000_000,
 } as const
 
 /** Ticket sales must close this far before the show starts, so check-in opens

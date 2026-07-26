@@ -7,10 +7,10 @@
  * (empty ⇒ valid). `firstInvalidStep` finds the earliest incomplete step,
  * used to gate forward tab navigation and the final save.
  */
-import { DESCRIPTION_TEMPLATE, LIMITS, SETTINGS_LIMITS, saleEndCapFor, type CreateEventForm, type EventShow, type WizardStep } from "./create-event-data"
+import { DESCRIPTION_TEMPLATE, LIMITS, SETTINGS_LIMITS, TICKET_LIMITS, saleEndCapFor, type CreateEventForm, type EventShow, type WizardStep } from "./create-event-data"
 
 /** Plain-text length of rich-text HTML (strips tags + entities). */
-function htmlText(html: string): string {
+export function htmlText(html: string): string {
   return html
     .replace(/<[^>]*>/g, " ")
     .replace(/&nbsp;/g, " ")
@@ -82,6 +82,8 @@ function validateStep1(f: CreateEventForm): string[] {
     e.push("Vui lòng nhập mô tả sự kiện (tối thiểu 10 ký tự).")
   else if (descText === htmlText(DESCRIPTION_TEMPLATE))
     e.push("Vui lòng thay nội dung mẫu bằng mô tả thực tế cho sự kiện của bạn.")
+  else if (descText.length > LIMITS.description)
+    e.push(`Mô tả sự kiện tối đa ${LIMITS.description} ký tự.`)
   push("orgName")
   push("orgInfo")
   return e
@@ -144,6 +146,8 @@ function validateStep2(f: CreateEventForm): string[] {
       // modal, which rejects price ≤ 0 for a non-free tier.
       if (!t.isFree && (typeof t.price !== "number" || t.price <= 0))
         e.push(`Vé "${name}" (${label}): giá vé phải lớn hơn 0.`)
+      else if (!t.isFree && t.price >= TICKET_LIMITS.maxPrice)
+        e.push(`Vé "${name}" (${label}): giá vé phải dưới 1.000.000.000đ.`)
       if (typeof t.quantity !== "number" || t.quantity < 1)
         e.push(`Vé "${name}" (${label}): số lượng phải ≥ 1.`)
       if (t.minPerOrder < 1)
