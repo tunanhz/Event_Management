@@ -9,7 +9,7 @@ export const config = {
     secret: process.env.JWT_SECRET || 'default_secret',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  frontendUrl: process.env.FRONTEND_URL || 'https://eventbox-vn.vercel.app',
   smtp: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT || '587', 10),
