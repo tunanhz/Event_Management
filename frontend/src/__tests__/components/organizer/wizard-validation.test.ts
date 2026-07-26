@@ -29,6 +29,20 @@ import {
 } from '@/components/organizer/create-event/create-event-data'
 
 describe('wizard-validation', () => {
+  // Freeze the clock before the hardcoded show dates used across the Step-2
+  // tests (2026-07-21). Those dates were written to be in the future; once the
+  // real clock passes them they'd read as "past" and trip the "must start in
+  // the future" rule, failing tests that expect no error. Pinning "now" keeps
+  // them valid regardless of when the suite runs. Tests that need a specific
+  // "now" still override it inline (jest.setSystemTime).
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.setSystemTime(new Date('2026-07-20T00:00:00Z'))
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
   describe('fieldErrors (Step 1)', () => {
     it('should require event name', () => {
       const form: CreateEventForm = { ...INITIAL_FORM, name: '' }
